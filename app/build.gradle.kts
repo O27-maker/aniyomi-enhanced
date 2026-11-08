@@ -54,6 +54,9 @@ android {
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
 
+            // Use the Android debug keystore for installable community test builds.
+            signingConfig = signingConfigs.getByName("debug")
+
             buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = true)}\"")
         }
 
