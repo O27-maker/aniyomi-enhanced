@@ -63,9 +63,11 @@ internal class MangaExtensionApi {
                 .awaitSuccess()
 
             response.body.source().decompressIfGzipped().use { source ->
-                val index = protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore>(
-                    source.readByteArray(),
-                )
+                val index = when (source.peek().readByte()) {
+                    // JSON-encoded protobuf-compatible index.
+                    0x7B.toByte() -> json.decodeFromBufferedSource<NetworkAnimeExtensionStore>(source)
+                    else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore>(source.readByteArray())
+                }
                 val extensionList = index.extensionList ?: index.extensionListUrl?.let { url ->
                     val listResponse = networkService.client.newCall(GET(url)).awaitSuccess()
                     listResponse.body.source().decompressIfGzipped().use { listSource ->
