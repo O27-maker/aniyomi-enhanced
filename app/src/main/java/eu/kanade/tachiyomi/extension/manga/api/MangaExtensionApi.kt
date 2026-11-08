@@ -73,7 +73,9 @@ internal class MangaExtensionApi {
                     listResponse.body.source().decompressIfGzipped().use { listSource ->
                         when (listSource.peek().readByte()) {
                             // JSON-encoded protobuf-compatible extension list.
-                            0x7B.toByte() -> json.decodeFromBufferedSource<NetworkAnimeExtensionStore.ExtensionList>(listSource)
+                            0x7B.toByte() -> json.decodeFromBufferedSource<NetworkAnimeExtensionStore.ExtensionList>(
+                                listSource,
+                            )
                             else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore.ExtensionList>(
                                 listSource.readByteArray(),
                             )
@@ -97,7 +99,9 @@ internal class MangaExtensionApi {
     ): List<MangaExtension.Installed>? {
         if (fromAvailableExtensionList &&
             Instant.now().toEpochMilli() < lastExtCheck.get() + 1.days.inWholeMilliseconds
-        ) return null
+        ) {
+            return null
+        }
 
         updateExtensionRepo.awaitAll()
         val extensions = if (fromAvailableExtensionList) {
@@ -132,7 +136,9 @@ internal class MangaExtensionApi {
             val libVersion = extension.extensionLib.toDoubleOrNull() ?: return@mapNotNull null
             if (libVersion < MangaExtensionLoader.LIB_VERSION_MIN ||
                 libVersion > MangaExtensionLoader.LIB_VERSION_MAX
-            ) return@mapNotNull null
+            ) {
+                return@mapNotNull null
+            }
 
             val languages = extension.sources.map { it.language }.toSet()
             MangaExtension.Available(
