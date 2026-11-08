@@ -20,7 +20,7 @@ class CreateMangaExtensionRepo(
             ?.takeIf { it.matches(repoRegex) }
             ?: return Result.InvalidUrl
 
-        val baseUrl = formattedIndexUrl.removeSuffix("/index.min.json")
+        val baseUrl = formattedIndexUrl.removeSuffix("/index.pb")
         return service.fetchRepoDetails(baseUrl)?.let { insert(it) } ?: Result.InvalidUrl
     }
 
