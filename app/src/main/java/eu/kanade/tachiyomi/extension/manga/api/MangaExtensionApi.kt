@@ -40,7 +40,7 @@ internal class MangaExtensionApi {
     private val updateExtensionRepo: UpdateMangaExtensionRepo by injectLazy()
     private val extensionManager: MangaExtensionManager by injectLazy()
     private val json: Json by injectLazy()
-    private val protoBuf: ProtoBuf by injectLazy()
+    private val protoBuf: ProtoBuf = ProtoBuf {}
 
     private val lastExtCheck: Preference<Long> by lazy {
         preferenceStore.getLong("last_ext_check", 0)
