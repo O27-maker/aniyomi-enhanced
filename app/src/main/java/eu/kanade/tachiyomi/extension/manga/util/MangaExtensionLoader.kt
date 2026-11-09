@@ -141,6 +141,14 @@ internal object MangaExtensionLoader {
             pkgManager.getInstalledPackages(PACKAGE_FLAGS)
         }
 
+        // Keep package discovery diagnosable: packages can be installed but omitted
+        // from the extension list when their manifest does not declare the feature.
+        installedPkgs
+            .filter { it.packageName.contains(".extension.") }
+            .forEach { pkgInfo ->
+                logPackageDiscovery(pkgInfo)
+            }
+
         val sharedExtPkgs = installedPkgs
             .asSequence()
             .filter { isPackageAnExtension(it) }
@@ -227,6 +235,7 @@ internal object MangaExtensionLoader {
 
         val sharedPkg = try {
             context.packageManager.getPackageInfo(pkgName, PACKAGE_FLAGS)
+                .also { logPackageDiscovery(it) }
                 .takeIf { isPackageAnExtension(it) }
                 ?.let {
                     MangaExtensionInfo(
@@ -235,6 +244,7 @@ internal object MangaExtensionLoader {
                     )
                 }
         } catch (error: PackageManager.NameNotFoundException) {
+            logcat(LogPriority.WARN) { "Manga extension package is not installed: $pkgName" }
             null
         }
 
@@ -401,6 +411,20 @@ internal object MangaExtensionLoader {
             shared
         } else {
             private
+        }
+    }
+
+    /**
+     * Logs the manifest information used by manga extension discovery.
+     * This is intentionally diagnostic only; it does not relax validation.
+     */
+    private fun logPackageDiscovery(pkgInfo: PackageInfo) {
+        val features = pkgInfo.reqFeatures.orEmpty().mapNotNull { it.name }
+        val isExtension = EXTENSION_FEATURE in features
+        logcat(if (isExtension) LogPriority.DEBUG else LogPriority.WARN) {
+            "Manga extension discovery: package=${pkgInfo.packageName}, " +
+                "featurePresent=$isExtension, reqFeatures=$features, " +
+                "metadataKeys=${pkgInfo.applicationInfo?.metaData?.keySet()?.sorted()}"
         }
     }
 
