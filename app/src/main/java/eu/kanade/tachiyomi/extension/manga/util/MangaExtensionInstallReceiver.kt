@@ -91,8 +91,11 @@ internal class MangaExtensionInstallReceiver(
                         }
                     }
                     is MangaLoadResult.NotLoaded -> {
-                        if (event.isUpdate) listener.onExtensionUpdated(result.extension)
-                        else listener.onExtensionInstalled(result.extension)
+                        if (event.isUpdate) {
+                            listener.onExtensionUpdated(result.extension)
+                        } else {
+                            listener.onExtensionInstalled(result.extension)
+                        }
                     }
                     is MangaLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
                     MangaLoadResult.Error -> logcat(LogPriority.WARN) {
