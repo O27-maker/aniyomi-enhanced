@@ -176,6 +176,20 @@ private fun ExtensionDetails(
             }
         }
 
+        if (extension.loadError != null) {
+            item {
+                Text(
+                    text = "Failed to load extension sources:\n\n${extension.loadError}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = MaterialTheme.padding.medium)
+                        .padding(vertical = MaterialTheme.padding.small),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+
         item {
             DetailsHeader(
                 extension = extension,
