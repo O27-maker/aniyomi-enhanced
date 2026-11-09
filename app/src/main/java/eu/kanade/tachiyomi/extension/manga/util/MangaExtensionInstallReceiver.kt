@@ -84,8 +84,11 @@ internal class MangaExtensionInstallReceiver(
             is Event.Installed -> {
                 when (val result = MangaExtensionLoader.loadMangaExtensionFromPkgName(event.context, event.pkgName)) {
                     is MangaLoadResult.Success -> {
-                        if (event.isUpdate) listener.onExtensionUpdated(result.extension)
-                        else listener.onExtensionInstalled(result.extension)
+                        if (event.isUpdate) {
+                            listener.onExtensionUpdated(result.extension)
+                        } else {
+                            listener.onExtensionInstalled(result.extension)
+                        }
                     }
                     is MangaLoadResult.NotLoaded -> {
                         if (event.isUpdate) listener.onExtensionUpdated(result.extension)
