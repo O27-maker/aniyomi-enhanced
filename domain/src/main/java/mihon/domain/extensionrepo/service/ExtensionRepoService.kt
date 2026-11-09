@@ -9,7 +9,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
 import mihon.domain.extensionrepo.model.ExtensionRepo
-import okio.buffer
 import okio.gzip
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
@@ -54,7 +53,7 @@ class ExtensionRepoService(
                         raw[0] == 0x1f.toByte() &&
                         raw[1] == 0x8b.toByte()
                     ) {
-                        raw.inputStream().source().gzip().buffer().readByteArray()
+                        okio.Buffer().write(raw).gzip().readByteArray()
                     } else {
                         raw
                     }
