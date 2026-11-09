@@ -20,7 +20,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
-import mihon.data.extension.anime.model.NetworkAnimeExtensionStore
+import eu.kanade.tachiyomi.extension.manga.api.NetworkMangaExtensionStore
 import mihon.domain.extensionrepo.manga.interactor.GetMangaExtensionRepo
 import mihon.domain.extensionrepo.manga.interactor.UpdateMangaExtensionRepo
 import mihon.domain.extensionrepo.model.ExtensionRepo
@@ -69,7 +69,7 @@ internal class MangaExtensionApi {
             response.body.source().decompressIfGzipped().use { source ->
                 val index = when (source.peek().readByte()) {
                     // JSON-encoded protobuf-compatible index.
-                    0x7B.toByte() -> json.decodeFromJsonElement<NetworkAnimeExtensionStore>(source.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields())
+                    0x7B.toByte() -> json.decodeFromJsonElement<NetworkMangaExtensionStore>(source.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields())
                     else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore>(source.readByteArray())
                 }
                 val extensionList = index.extensionList ?: index.extensionListUrl?.let { url ->
