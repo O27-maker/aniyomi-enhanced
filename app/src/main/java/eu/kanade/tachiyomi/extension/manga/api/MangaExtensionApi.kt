@@ -69,18 +69,20 @@ internal class MangaExtensionApi {
             response.body.source().decompressIfGzipped().use { source ->
                 val index = when (source.peek().readByte()) {
                     // JSON-encoded protobuf-compatible index.
-                    0x7B.toByte() -> json.decodeFromJsonElement<NetworkMangaExtensionStore>(source.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields())
-                    else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore>(source.readByteArray())
+                    0x7B.toByte() -> json.decodeFromJsonElement<NetworkMangaExtensionStore>(
+                        source.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields(),
+                    )
+                    else -> protoBuf.decodeFromByteArray<NetworkMangaExtensionStore>(source.readByteArray())
                 }
                 val extensionList = index.extensionList ?: index.extensionListUrl?.let { url ->
                     val listResponse = networkService.client.newCall(GET(url)).awaitSuccess()
                     listResponse.body.source().decompressIfGzipped().use { listSource ->
                         when (listSource.peek().readByte()) {
                             // JSON-encoded protobuf-compatible extension list.
-                            0x7B.toByte() -> json.decodeFromJsonElement<NetworkAnimeExtensionStore.ExtensionList>(
+                            0x7B.toByte() -> json.decodeFromJsonElement<NetworkMangaExtensionStore.ExtensionList>(
                                 listSource.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields(),
                             )
-                            else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore.ExtensionList>(
+                            else -> protoBuf.decodeFromByteArray<NetworkMangaExtensionStore.ExtensionList>(
                                 listSource.readByteArray(),
                             )
                         }
@@ -133,7 +135,6 @@ internal class MangaExtensionApi {
         return extensionsWithUpdate
     }
 
-
     /**
      * Protobuf JSON represents 64-bit integer fields as quoted decimal strings.
      * Normalize those values before decoding into Kotlin Long properties.
@@ -155,7 +156,7 @@ internal class MangaExtensionApi {
         else -> this
     }
 
-    private fun NetworkAnimeExtensionStore.ExtensionList.toMangaExtensions(
+    private fun NetworkMangaExtensionStore.ExtensionList.toMangaExtensions(
         repoUrl: String,
     ): List<MangaExtension.Available> {
         return extensions.mapNotNull { extension ->
@@ -174,7 +175,7 @@ internal class MangaExtensionApi {
                 versionCode = extension.versionCode,
                 libVersion = libVersion,
                 lang = if (languages.size == 1) languages.first() else "all",
-                isNsfw = extension.contentWarning >= NetworkAnimeExtensionStore.ContentWarning.MIXED,
+                isNsfw = extension.contentWarning >= NetworkMangaExtensionStore.ContentWarning.MIXED,
                 sources = extension.sources.map { source ->
                     MangaExtension.Available.MangaSource(
                         id = source.id,
