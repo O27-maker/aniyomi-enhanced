@@ -269,9 +269,31 @@ internal object MangaExtensionLoader {
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
+        fun notLoaded(
+            reason: String,
+            libVersion: Double? = null,
+            isNsfw: Boolean = false,
+        ): MangaLoadResult.NotLoaded {
+            val extension = MangaExtension.Installed(
+                name = extName,
+                pkgName = pkgName,
+                versionName = versionName?.takeIf { it.isNotBlank() } ?: "Unknown",
+                versionCode = versionCode,
+                libVersion = libVersion ?: 0.0,
+                lang = "",
+                isNsfw = isNsfw,
+                sources = emptyList(),
+                pkgFactory = appInfo.metaData?.getString(METADATA_SOURCE_FACTORY),
+                icon = runCatching { appInfo.loadIcon(pkgManager) }.getOrNull(),
+                isShared = extensionInfo.isShared,
+                loadError = reason,
+            )
+            return MangaLoadResult.NotLoaded(extension)
+        }
+
         if (versionName.isNullOrEmpty()) {
             logcat(LogPriority.WARN) { "Missing versionName for extension $extName" }
-            return MangaLoadResult.Error
+            return notLoaded("Missing version name")
         }
 
         // Validate lib version
@@ -282,13 +304,20 @@ internal object MangaExtensionLoader {
                 "Lib version is $libVersion, while only versions " +
                     "$LIB_VERSION_MIN to $LIB_VERSION_MAX are allowed"
             }
-            return MangaLoadResult.Error
+            return notLoaded("Unsupported extension library version: $libVersion", libVersion)
+        }
+
+        val contentWarning = appInfo.metaData?.getInt(METADATA_CONTENT_WARNING, -1) ?: -1
+        val isNsfw = if (contentWarning >= 0) {
+            contentWarning >= 1
+        } else {
+            appInfo.metaData?.getInt(METADATA_NSFW, 0) == 1
         }
 
         val signatures = getSignatures(pkgInfo)
         if (signatures.isNullOrEmpty()) {
             logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
-            return MangaLoadResult.Error
+            return notLoaded("Extension package is not signed", libVersion, isNsfw)
         } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
             val extension = MangaExtension.Untrusted(
                 extName,
@@ -302,28 +331,22 @@ internal object MangaExtensionLoader {
             return MangaLoadResult.Untrusted(extension)
         }
 
-        val contentWarning = appInfo.metaData?.getInt(METADATA_CONTENT_WARNING, -1) ?: -1
-        val isNsfw = if (contentWarning >= 0) {
-            contentWarning >= 1
-        } else {
-            appInfo.metaData?.getInt(METADATA_NSFW, 0) == 1
-        }
         if (!loadNsfwSource && isNsfw) {
             logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
-            return MangaLoadResult.Error
+            return notLoaded("NSFW extension is disabled in source settings", libVersion, isNsfw)
         }
 
         val classLoader = try {
             ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($pkgName)" }
-            return MangaLoadResult.Error
+            return notLoaded(e.message ?: "Unable to create extension class loader", libVersion, isNsfw)
         }
 
         val sourceClasses = appInfo.metaData?.getString(METADATA_SOURCE_CLASS)
         if (sourceClasses.isNullOrBlank()) {
             logcat(LogPriority.ERROR) { "Missing source class metadata for $pkgName" }
-            return MangaLoadResult.Error
+            return notLoaded("Missing source class metadata", libVersion, isNsfw)
         }
 
         val sources = sourceClasses.split(";")
@@ -360,11 +383,11 @@ internal object MangaExtensionLoader {
                         }
                     } catch (e: Throwable) {
                         logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
-                        return MangaLoadResult.Error
+                        return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw)
                     }
                 } catch (e: Throwable) {
                     logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
-                    return MangaLoadResult.Error
+                    return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw)
                 }
             }
 
