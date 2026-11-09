@@ -30,7 +30,7 @@ fun ExtensionRepoCreateDialog(
     onDismissRequest: () -> Unit,
     onCreate: (String) -> Unit,
     repoUrls: ImmutableSet<String>,
-    message: StringResource = AYMR.strings.action_add_repo_message,
+    message: StringResource = MR.strings.action_add_repo_message,
 ) {
     var name by remember { mutableStateOf("") }
 
