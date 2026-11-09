@@ -75,6 +75,10 @@ class MangaExtensionManager(
     private val untrustedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Untrusted>())
     val untrustedExtensionsFlow = untrustedExtensionsMapFlow.mapExtensions(scope)
 
+    // Package events received during the initial scan must win over its snapshot.
+    private val initializationLock = Any()
+    private val initializationChangedPackages = mutableSetOf<String>()
+
     init {
         MangaExtensionInstallReceiver(InstallationListener()).register(context)
         scope.launch {
@@ -131,15 +135,25 @@ class MangaExtensionManager(
     private fun initExtensions() {
         val extensions = MangaExtensionLoader.loadMangaExtensions(context)
 
-        installedExtensionsMapFlow.value = extensions
+        val scannedInstalled = extensions
             .filterIsInstance<MangaLoadResult.Success>()
             .associate { it.extension.pkgName to it.extension }
-
-        untrustedExtensionsMapFlow.value = extensions
+        val scannedUntrusted = extensions
             .filterIsInstance<MangaLoadResult.Untrusted>()
             .associate { it.extension.pkgName to it.extension }
 
-        _isInitialized.value = true
+        synchronized(initializationLock) {
+            // Keep the scan's results for untouched packages, but preserve every package
+            // changed by a receiver event while the scan was in progress. This also prevents
+            // a package removed during the scan from being re-added by the stale snapshot.
+            val untouchedInstalled = scannedInstalled.filterKeys { it !in initializationChangedPackages }
+            val untouchedUntrusted = scannedUntrusted.filterKeys { it !in initializationChangedPackages }
+
+            installedExtensionsMapFlow.value = untouchedInstalled + installedExtensionsMapFlow.value
+            untrustedExtensionsMapFlow.value = untouchedUntrusted + untrustedExtensionsMapFlow.value
+            _isInitialized.value = true
+        }
+        updatePendingUpdatesCount()
     }
 
     /**
@@ -341,24 +355,36 @@ class MangaExtensionManager(
     private inner class InstallationListener : MangaExtensionInstallReceiver.Listener {
 
         override fun onExtensionInstalled(extension: MangaExtension.Installed) {
-            registerNewExtension(extension.withUpdateCheck())
+            synchronized(initializationLock) {
+                if (!_isInitialized.value) initializationChangedPackages += extension.pkgName
+                registerNewExtension(extension.withUpdateCheck())
+            }
             updatePendingUpdatesCount()
         }
 
         override fun onExtensionUpdated(extension: MangaExtension.Installed) {
-            registerUpdatedExtension(extension.withUpdateCheck())
+            synchronized(initializationLock) {
+                if (!_isInitialized.value) initializationChangedPackages += extension.pkgName
+                registerUpdatedExtension(extension.withUpdateCheck())
+            }
             updatePendingUpdatesCount()
         }
 
         override fun onExtensionUntrusted(extension: MangaExtension.Untrusted) {
-            installedExtensionsMapFlow.value -= extension.pkgName
-            untrustedExtensionsMapFlow.value += extension
+            synchronized(initializationLock) {
+                if (!_isInitialized.value) initializationChangedPackages += extension.pkgName
+                installedExtensionsMapFlow.value -= extension.pkgName
+                untrustedExtensionsMapFlow.value += extension
+            }
             updatePendingUpdatesCount()
         }
 
         override fun onPackageUninstalled(pkgName: String) {
-            MangaExtensionLoader.uninstallPrivateExtension(context, pkgName)
-            unregisterExtension(pkgName)
+            synchronized(initializationLock) {
+                if (!_isInitialized.value) initializationChangedPackages += pkgName
+                MangaExtensionLoader.uninstallPrivateExtension(context, pkgName)
+                unregisterExtension(pkgName)
+            }
             updatePendingUpdatesCount()
         }
     }
