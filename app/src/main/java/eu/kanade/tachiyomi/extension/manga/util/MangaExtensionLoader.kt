@@ -18,7 +18,8 @@ import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
-import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
+import java.net.URL
+import java.util.Collections
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -397,7 +398,7 @@ internal object MangaExtensionLoader {
         }
 
         val classLoader = try {
-            ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
+            MangaDelegateLastPathClassLoader(appInfo.sourceDir, null, context.classLoader)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($pkgName)" }
             return notLoaded(e.message ?: "Unable to create extension class loader", libVersion, isNsfw)
@@ -559,4 +560,59 @@ internal object MangaExtensionLoader {
         val packageInfo: PackageInfo,
         val isShared: Boolean,
     )
+}
+
+
+/**
+ * Mihon-compatible parent-last loader for manga extension APKs.
+ *
+ * The boot class loader is checked first, then the extension APK, then the app.
+ * Using the app/system class loader before the APK can shadow classes bundled by an
+ * extension and cause its source classes to fail verification or instantiation.
+ */
+private class MangaDelegateLastPathClassLoader(
+    dexPath: String,
+    librarySearchPath: String?,
+    parent: ClassLoader,
+) : PathClassLoader(dexPath, librarySearchPath, parent) {
+
+    private val bootClassLoader: ClassLoader? = Any::class.java.classLoader
+
+    override fun loadClass(name: String?, resolve: Boolean): Class<*> {
+        findLoadedClass(name)?.let { return it }
+
+        if (bootClassLoader != null) {
+            try {
+                return bootClassLoader.loadClass(name)
+            } catch (_: ClassNotFoundException) {
+            }
+        }
+
+        val fromExtension = try {
+            return findClass(name)
+        } catch (e: ClassNotFoundException) {
+            e
+        }
+
+        return try {
+            parent.loadClass(name)
+        } catch (_: ClassNotFoundException) {
+            throw fromExtension
+        }
+    }
+
+    override fun getResource(name: String?): URL? {
+        return bootClassLoader?.getResource(name)
+            ?: findResource(name)
+            ?: parent?.getResource(name)
+    }
+
+    override fun getResources(name: String?): Enumeration<URL> {
+        val resources = buildList {
+            bootClassLoader?.getResources(name)?.let { addAll(it.toList()) }
+            findResources(name)?.let { addAll(it.toList()) }
+            parent?.getResources(name)?.let { addAll(it.toList()) }
+        }
+        return Collections.enumeration(resources)
+    }
 }
