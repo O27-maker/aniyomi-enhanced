@@ -56,11 +56,14 @@ internal class MangaExtensionApi {
             getExtensionRepo.getAll()
                 .map { async { getExtensions(it) } }
                 .awaitAll()
+                .map { result ->
+                    result ?: throw IllegalStateException("Failed to refresh one or more manga extension repositories")
+                }
                 .flatten()
         }
     }
 
-    private suspend fun getExtensions(extRepo: ExtensionRepo): List<MangaExtension.Available> {
+    private suspend fun getExtensions(extRepo: ExtensionRepo): List<MangaExtension.Available>? {
         val repoBaseUrl = extRepo.baseUrl
         return try {
             val response = networkService.client
@@ -98,7 +101,7 @@ internal class MangaExtensionApi {
             throw e
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to get extensions from $repoBaseUrl" }
-            emptyList()
+            null
         }
     }
 
