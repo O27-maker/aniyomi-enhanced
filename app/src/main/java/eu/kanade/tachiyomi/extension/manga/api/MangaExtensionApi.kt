@@ -13,7 +13,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.okio.decodeFromBufferedSource
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
 import mihon.data.extension.anime.model.NetworkAnimeExtensionStore
@@ -65,7 +69,7 @@ internal class MangaExtensionApi {
             response.body.source().decompressIfGzipped().use { source ->
                 val index = when (source.peek().readByte()) {
                     // JSON-encoded protobuf-compatible index.
-                    0x7B.toByte() -> json.decodeFromBufferedSource<NetworkAnimeExtensionStore>(source)
+                    0x7B.toByte() -> json.decodeFromJsonElement<NetworkAnimeExtensionStore>(source.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields())
                     else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore>(source.readByteArray())
                 }
                 val extensionList = index.extensionList ?: index.extensionListUrl?.let { url ->
@@ -73,8 +77,8 @@ internal class MangaExtensionApi {
                     listResponse.body.source().decompressIfGzipped().use { listSource ->
                         when (listSource.peek().readByte()) {
                             // JSON-encoded protobuf-compatible extension list.
-                            0x7B.toByte() -> json.decodeFromBufferedSource<NetworkAnimeExtensionStore.ExtensionList>(
-                                listSource,
+                            0x7B.toByte() -> json.decodeFromJsonElement<NetworkAnimeExtensionStore.ExtensionList>(
+                                listSource.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields(),
                             )
                             else -> protoBuf.decodeFromByteArray<NetworkAnimeExtensionStore.ExtensionList>(
                                 listSource.readByteArray(),
@@ -127,6 +131,28 @@ internal class MangaExtensionApi {
             ExtensionUpdateNotifier(context).promptUpdates(extensionsWithUpdate.map { it.name })
         }
         return extensionsWithUpdate
+    }
+
+
+    /**
+     * Protobuf JSON represents 64-bit integer fields as quoted decimal strings.
+     * Normalize those values before decoding into Kotlin Long properties.
+     */
+    private fun JsonElement.normalizeNumericStringFields(): JsonElement = when (this) {
+        is JsonObject -> JsonObject(
+            mapValues { (key, value) ->
+                if (key == "id" || key == "versionCode") {
+                    val primitive = value as? JsonPrimitive
+                    primitive?.takeIf { it.isString }?.content?.toLongOrNull()
+                        ?.let(::JsonPrimitive)
+                        ?: value.normalizeNumericStringFields()
+                } else {
+                    value.normalizeNumericStringFields()
+                }
+            },
+        )
+        is JsonArray -> JsonArray(map { it.normalizeNumericStringFields() })
+        else -> this
     }
 
     private fun NetworkAnimeExtensionStore.ExtensionList.toMangaExtensions(
