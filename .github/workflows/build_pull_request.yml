@@ -41,9 +41,6 @@ jobs:
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b # v4.3.0
 
-      - name: Install Android API 37
-        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'platforms;android-37'"
-
       - name: Check code format
         run: ./gradlew spotlessCheck
 
