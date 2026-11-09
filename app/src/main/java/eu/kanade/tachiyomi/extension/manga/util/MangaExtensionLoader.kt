@@ -28,6 +28,7 @@ import uy.kohesive.injekt.injectLazy
 import java.io.File
 import java.net.URL
 import java.util.Collections
+import java.util.Enumeration
 
 /**
  * Class that handles the loading of the extensions. Supports two kinds of extensions:
