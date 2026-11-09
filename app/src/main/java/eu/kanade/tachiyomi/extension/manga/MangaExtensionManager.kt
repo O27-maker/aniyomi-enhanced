@@ -204,8 +204,10 @@ class MangaExtensionManager(
     private fun updatedInstalledExtensionsStatuses(
         availableExtensions: List<MangaExtension.Available>,
     ) {
+        // Like Mihon, an empty/unavailable listing is not evidence that installed
+        // extensions are obsolete or that pending updates disappeared.
         if (availableExtensions.isEmpty()) {
-            preferences.mangaExtensionUpdatesCount().set(0)
+            updatePendingUpdatesCount()
             return
         }
 
@@ -214,25 +216,22 @@ class MangaExtensionManager(
 
         for ((pkgName, extension) in installedExtensionsMap) {
             val availableExt = availableExtensions.find { it.pkgName == pkgName }
+            val updatedExtension = if (availableExt == null) {
+                extension.copy(isObsolete = true)
+            } else {
+                extension.copy(
+                    hasUpdate = extension.updateExists(availableExt),
+                    isObsolete = false,
+                    repoUrl = availableExt.repoUrl,
+                )
+            }
 
-            if (availableExt == null && !extension.isObsolete) {
-                installedExtensionsMap[pkgName] = extension.copy(isObsolete = true)
-                changed = true
-            } else if (availableExt != null) {
-                val hasUpdate = extension.updateExists(availableExt)
-                if (extension.hasUpdate != hasUpdate) {
-                    installedExtensionsMap[pkgName] = extension.copy(
-                        hasUpdate = hasUpdate,
-                        repoUrl = availableExt.repoUrl,
-                    )
-                } else {
-                    installedExtensionsMap[pkgName] = extension.copy(
-                        repoUrl = availableExt.repoUrl,
-                    )
-                }
+            if (updatedExtension != extension) {
+                installedExtensionsMap[pkgName] = updatedExtension
                 changed = true
             }
         }
+
         if (changed) {
             installedExtensionsMapFlow.value = installedExtensionsMap
         }
