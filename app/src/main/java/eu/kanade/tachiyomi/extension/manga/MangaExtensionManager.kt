@@ -145,8 +145,10 @@ class MangaExtensionManager(
     private fun loadExtensionsLocked() {
         val extensions = MangaExtensionLoader.loadMangaExtensions(context)
 
-        val installed = (extensions.filterIsInstance<MangaLoadResult.Success>() +
-            extensions.filterIsInstance<MangaLoadResult.NotLoaded>())
+        val installed = (
+            extensions.filterIsInstance<MangaLoadResult.Success>() +
+                extensions.filterIsInstance<MangaLoadResult.NotLoaded>()
+            )
             .associate { it.extension.pkgName to it.extension }
         val untrusted = extensions
             .filterIsInstance<MangaLoadResult.Untrusted>()
