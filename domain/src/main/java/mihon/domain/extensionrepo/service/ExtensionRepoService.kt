@@ -53,7 +53,9 @@ class ExtensionRepoService(
                         raw[0] == 0x1f.toByte() &&
                         raw[1] == 0x8b.toByte()
                     ) {
-                        okio.Buffer().write(raw).gzip().readByteArray()
+                        okio.Buffer().write(raw).let { buffer ->
+                            (buffer as okio.Source).gzip().buffer().readByteArray()
+                        }
                     } else {
                         raw
                     }
