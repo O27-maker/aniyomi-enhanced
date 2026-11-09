@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
@@ -189,7 +190,7 @@ internal object MangaExtensionLoader {
         // Load each extension concurrently and wait for completion
         return runBlocking {
             val deferred = extPkgs.map {
-                async { loadMangaExtension(context, it) }
+                async { loadMangaExtensionSafely(context, it) }
             }
             deferred.awaitAll()
         }
@@ -205,7 +206,7 @@ internal object MangaExtensionLoader {
             logcat(LogPriority.ERROR) { "Extension package is not found ($pkgName)" }
             return MangaLoadResult.Error
         }
-        return loadMangaExtension(context, extensionPackage)
+        return loadMangaExtensionSafely(context, extensionPackage)
     }
 
     fun getMangaExtensionPackageInfoFromPkgName(context: Context, pkgName: String): PackageInfo? {
@@ -250,6 +251,65 @@ internal object MangaExtensionLoader {
         }
 
         return selectExtensionPackage(sharedPkg, privatePkg)
+    }
+
+    /**
+     * One malformed installed APK must not abort discovery of every other extension.
+     * Keep it visible as installed-but-not-loaded, matching Mihon's NotLoaded behavior.
+     */
+    private suspend fun loadMangaExtensionSafely(
+        context: Context,
+        extensionInfo: MangaExtensionInfo,
+    ): MangaLoadResult {
+        return try {
+            loadMangaExtension(context, extensionInfo)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            val pkgInfo = extensionInfo.packageInfo
+            val appInfo = pkgInfo.applicationInfo
+            val pkgName = pkgInfo.packageName
+            val pkgManager = context.packageManager
+            val name = appInfo?.metaData?.getString(METADATA_EXTENSION_NAME)
+                ?: appInfo?.let {
+                    runCatching {
+                        pkgManager.getApplicationLabel(it).toString().substringAfter("Tachiyomi: ")
+                    }.getOrNull()
+                }
+                ?: pkgName
+            val versionName = pkgInfo.versionName?.takeIf { it.isNotBlank() } ?: "Unknown"
+            val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
+            val libVersion = appInfo?.metaData
+                ?.getFloat(METADATA_EXTENSION_LIB, 0f)
+                ?.takeIf { it > 0f }
+                ?.toDouble()
+                ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+                ?: 0.0
+            val contentWarning = appInfo?.metaData?.getInt(METADATA_CONTENT_WARNING, -1) ?: -1
+            val isNsfw = if (contentWarning >= 0) {
+                contentWarning >= 1
+            } else {
+                appInfo?.metaData?.getInt(METADATA_NSFW, 0) == 1
+            }
+
+            logcat(LogPriority.ERROR, e) { "Extension load error: $name ($pkgName)" }
+            MangaLoadResult.NotLoaded(
+                MangaExtension.Installed(
+                    name = name,
+                    pkgName = pkgName,
+                    versionName = versionName,
+                    versionCode = versionCode,
+                    libVersion = libVersion,
+                    lang = "",
+                    isNsfw = isNsfw,
+                    sources = emptyList(),
+                    pkgFactory = appInfo?.metaData?.getString(METADATA_SOURCE_FACTORY),
+                    icon = appInfo?.let { runCatching { it.loadIcon(pkgManager) }.getOrNull() },
+                    isShared = extensionInfo.isShared,
+                    loadError = e.message ?: e::class.java.simpleName,
+                ),
+            )
+        }
     }
 
     /**
