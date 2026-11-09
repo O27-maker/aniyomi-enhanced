@@ -1,6 +1,7 @@
 package mihon.domain.extensionrepo.service
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoNumber
 import mihon.domain.extensionrepo.model.ExtensionRepo
 
@@ -17,6 +18,7 @@ data class ExtensionRepoDto(
     val signingKeyFingerprint: String,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 internal data class MangaExtensionStoreIndex(
     @ProtoNumber(1) val name: String = "",
