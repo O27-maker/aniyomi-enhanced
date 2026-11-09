@@ -27,6 +27,7 @@ import mihon.domain.extensionrepo.model.ExtensionRepo
 import okio.BufferedSource
 import okio.buffer
 import okio.gzip
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withIOContext
@@ -75,7 +76,9 @@ internal class MangaExtensionApi {
                     else -> protoBuf.decodeFromByteArray<NetworkMangaExtensionStore>(source.readByteArray())
                 }
                 val extensionList = index.extensionList ?: index.extensionListUrl?.let { url ->
-                    val listResponse = networkService.client.newCall(GET(url)).awaitSuccess()
+                    val listUrl = (repoBaseUrl.trimEnd('/') + "/").toHttpUrl().resolve(url)?.toString()
+                        ?: throw IllegalArgumentException("Invalid extension list URL: $url")
+                    val listResponse = networkService.client.newCall(GET(listUrl)).awaitSuccess()
                     listResponse.body.source().decompressIfGzipped().use { listSource ->
                         when (listSource.peek().readByte()) {
                             // JSON-encoded protobuf-compatible extension list.
