@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.util.Log
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import dalvik.system.PathClassLoader
@@ -421,11 +422,10 @@ internal object MangaExtensionLoader {
     private fun logPackageDiscovery(pkgInfo: PackageInfo) {
         val features = pkgInfo.reqFeatures.orEmpty().mapNotNull { it.name }
         val isExtension = EXTENSION_FEATURE in features
-        logcat(if (isExtension) LogPriority.DEBUG else LogPriority.WARN) {
-            "Manga extension discovery: package=${pkgInfo.packageName}, " +
-                "featurePresent=$isExtension, reqFeatures=$features, " +
-                "metadataKeys=${pkgInfo.applicationInfo?.metaData?.keySet()?.sorted()}"
-        }
+        val message = "Manga extension discovery: package=${pkgInfo.packageName}, " +
+            "featurePresent=$isExtension, reqFeatures=$features, " +
+            "metadataKeys=${pkgInfo.applicationInfo?.metaData?.keySet()?.sorted()}"
+        Log.w("MangaExtensionLoader", message)
     }
 
     /**
