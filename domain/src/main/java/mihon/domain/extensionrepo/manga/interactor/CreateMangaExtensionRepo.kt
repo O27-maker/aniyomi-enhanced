@@ -21,7 +21,7 @@ class CreateMangaExtensionRepo(
             ?: return Result.InvalidUrl
 
         val baseUrl = formattedIndexUrl.removeSuffix("/index.pb")
-        return service.fetchRepoDetails(baseUrl)?.let { insert(it) } ?: Result.InvalidUrl
+        return service.fetchMangaRepoDetails(baseUrl)?.let { insert(it) } ?: Result.InvalidUrl
     }
 
     private suspend fun insert(repo: ExtensionRepo): Result {
