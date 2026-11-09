@@ -82,9 +82,13 @@ class MangaExtensionManager(
     private val installReceiver = MangaExtensionInstallReceiver(InstallationListener(), scope)
 
     init {
-        installReceiver.register(context)
         scope.launch {
-            initExtensions()
+            // Acquire the same lock used by package events before registering the receiver.
+            // Events are then queued during the scan and applied afterward.
+            loadMutex.withLock {
+                installReceiver.register(context)
+                loadExtensionsLocked()
+            }
         }
     }
 
@@ -135,6 +139,10 @@ class MangaExtensionManager(
      * Loads and registers the installed extensions.
      */
     private suspend fun initExtensions() = loadMutex.withLock {
+        loadExtensionsLocked()
+    }
+
+    private fun loadExtensionsLocked() {
         val extensions = MangaExtensionLoader.loadMangaExtensions(context)
 
         val installed = (extensions.filterIsInstance<MangaLoadResult.Success>() +
