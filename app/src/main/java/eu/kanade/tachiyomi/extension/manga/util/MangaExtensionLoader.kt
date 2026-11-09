@@ -18,8 +18,6 @@ import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
-import java.net.URL
-import java.util.Collections
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -28,6 +26,8 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
+import java.net.URL
+import java.util.Collections
 
 /**
  * Class that handles the loading of the extensions. Supports two kinds of extensions:
@@ -561,7 +561,6 @@ internal object MangaExtensionLoader {
         val isShared: Boolean,
     )
 }
-
 
 /**
  * Mihon-compatible parent-last loader for manga extension APKs.
