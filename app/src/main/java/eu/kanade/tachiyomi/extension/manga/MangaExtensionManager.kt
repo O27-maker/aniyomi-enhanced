@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
@@ -75,12 +77,12 @@ class MangaExtensionManager(
     private val untrustedExtensionsMapFlow = MutableStateFlow(emptyMap<String, MangaExtension.Untrusted>())
     val untrustedExtensionsFlow = untrustedExtensionsMapFlow.mapExtensions(scope)
 
-    // Package events received during the initial scan must win over its snapshot.
-    private val initializationLock = Any()
-    private val initializationChangedPackages = mutableSetOf<String>()
+    // Serialize full scans with package events so a stale scan can never overwrite a newer install/removal.
+    private val loadMutex = Mutex()
+    private val installReceiver = MangaExtensionInstallReceiver(InstallationListener(), scope)
 
     init {
-        MangaExtensionInstallReceiver(InstallationListener()).register(context)
+        installReceiver.register(context)
         scope.launch {
             initExtensions()
         }
@@ -132,28 +134,30 @@ class MangaExtensionManager(
     /**
      * Loads and registers the installed extensions.
      */
-    private fun initExtensions() {
+    private suspend fun initExtensions() = loadMutex.withLock {
         val extensions = MangaExtensionLoader.loadMangaExtensions(context)
 
-        val scannedInstalled = extensions
-            .filterIsInstance<MangaLoadResult.Success>()
+        val installed = (extensions.filterIsInstance<MangaLoadResult.Success>() +
+            extensions.filterIsInstance<MangaLoadResult.NotLoaded>())
             .associate { it.extension.pkgName to it.extension }
-        val scannedUntrusted = extensions
+        val untrusted = extensions
             .filterIsInstance<MangaLoadResult.Untrusted>()
             .associate { it.extension.pkgName to it.extension }
 
-        synchronized(initializationLock) {
-            // Keep the scan's results for untouched packages, but preserve every package
-            // changed by a receiver event while the scan was in progress. This also prevents
-            // a package removed during the scan from being re-added by the stale snapshot.
-            val untouchedInstalled = scannedInstalled.filterKeys { it !in initializationChangedPackages }
-            val untouchedUntrusted = scannedUntrusted.filterKeys { it !in initializationChangedPackages }
-
-            installedExtensionsMapFlow.value = untouchedInstalled + installedExtensionsMapFlow.value
-            untrustedExtensionsMapFlow.value = untouchedUntrusted + untrustedExtensionsMapFlow.value
-            _isInitialized.value = true
-        }
+        installedExtensionsMapFlow.value = installed
+        untrustedExtensionsMapFlow.value = untrusted
+        _isInitialized.value = true
         updatePendingUpdatesCount()
+    }
+
+    /**
+     * Re-scans Android's installed packages after an installation succeeds. This is also a
+     * recovery path when the package-added broadcast is delayed or not delivered.
+     */
+    fun refreshInstalledExtensions() {
+        scope.launch {
+            initExtensions()
+        }
     }
 
     /**
@@ -290,6 +294,9 @@ class MangaExtensionManager(
 
     fun updateInstallStep(downloadId: Long, step: InstallStep) {
         installer.updateInstallStep(downloadId, step)
+        if (step == InstallStep.Installed) {
+            refreshInstalledExtensions()
+        }
     }
 
     /**
@@ -312,11 +319,17 @@ class MangaExtensionManager(
 
         trustExtension.trust(extension.pkgName, extension.versionCode, extension.signatureHash)
 
-        untrustedExtensionsMapFlow.value -= extension.pkgName
-
-        MangaExtensionLoader.loadMangaExtensionFromPkgName(context, extension.pkgName)
-            .let { it as? MangaLoadResult.Success }
-            ?.let { registerNewExtension(it.extension) }
+        val result = MangaExtensionLoader.loadMangaExtensionFromPkgName(context, extension.pkgName)
+        loadMutex.withLock {
+            untrustedExtensionsMapFlow.value -= extension.pkgName
+            when (result) {
+                is MangaLoadResult.Success -> registerNewExtension(result.extension.withUpdateCheck())
+                is MangaLoadResult.NotLoaded -> registerNewExtension(result.extension.withUpdateCheck())
+                is MangaLoadResult.Untrusted -> untrustedExtensionsMapFlow.value += result.extension
+                MangaLoadResult.Error -> unregisterExtension(extension.pkgName)
+            }
+            updatePendingUpdatesCount()
+        }
     }
 
     /**
@@ -354,37 +367,27 @@ class MangaExtensionManager(
      */
     private inner class InstallationListener : MangaExtensionInstallReceiver.Listener {
 
-        override fun onExtensionInstalled(extension: MangaExtension.Installed) {
-            synchronized(initializationLock) {
-                if (!_isInitialized.value) initializationChangedPackages += extension.pkgName
-                registerNewExtension(extension.withUpdateCheck())
-            }
+        override suspend fun onExtensionInstalled(extension: MangaExtension.Installed) = loadMutex.withLock {
+            untrustedExtensionsMapFlow.value -= extension.pkgName
+            registerNewExtension(extension.withUpdateCheck())
             updatePendingUpdatesCount()
         }
 
-        override fun onExtensionUpdated(extension: MangaExtension.Installed) {
-            synchronized(initializationLock) {
-                if (!_isInitialized.value) initializationChangedPackages += extension.pkgName
-                registerUpdatedExtension(extension.withUpdateCheck())
-            }
+        override suspend fun onExtensionUpdated(extension: MangaExtension.Installed) = loadMutex.withLock {
+            untrustedExtensionsMapFlow.value -= extension.pkgName
+            registerUpdatedExtension(extension.withUpdateCheck())
             updatePendingUpdatesCount()
         }
 
-        override fun onExtensionUntrusted(extension: MangaExtension.Untrusted) {
-            synchronized(initializationLock) {
-                if (!_isInitialized.value) initializationChangedPackages += extension.pkgName
-                installedExtensionsMapFlow.value -= extension.pkgName
-                untrustedExtensionsMapFlow.value += extension
-            }
+        override suspend fun onExtensionUntrusted(extension: MangaExtension.Untrusted) = loadMutex.withLock {
+            installedExtensionsMapFlow.value -= extension.pkgName
+            untrustedExtensionsMapFlow.value += extension
             updatePendingUpdatesCount()
         }
 
-        override fun onPackageUninstalled(pkgName: String) {
-            synchronized(initializationLock) {
-                if (!_isInitialized.value) initializationChangedPackages += pkgName
-                MangaExtensionLoader.uninstallPrivateExtension(context, pkgName)
-                unregisterExtension(pkgName)
-            }
+        override suspend fun onPackageUninstalled(pkgName: String) = loadMutex.withLock {
+            MangaExtensionLoader.uninstallPrivateExtension(context, pkgName)
+            unregisterExtension(pkgName)
             updatePendingUpdatesCount()
         }
     }
