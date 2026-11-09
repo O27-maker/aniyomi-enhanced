@@ -24,10 +24,10 @@ import logcat.LogPriority
 import mihon.domain.extensionrepo.manga.interactor.GetMangaExtensionRepo
 import mihon.domain.extensionrepo.manga.interactor.UpdateMangaExtensionRepo
 import mihon.domain.extensionrepo.model.ExtensionRepo
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okio.BufferedSource
 import okio.buffer
 import okio.gzip
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withIOContext
