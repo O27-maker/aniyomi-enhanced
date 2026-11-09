@@ -13,8 +13,11 @@ import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstallReceiver
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionInstaller
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,7 +48,8 @@ class MangaExtensionManager(
     private val trustExtension: TrustMangaExtension = Injekt.get(),
 ) {
 
-    val scope = CoroutineScope(SupervisorJob())
+    // Extension APK inspection performs package-manager and class-loader work; keep it off the UI thread.
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
@@ -72,8 +76,10 @@ class MangaExtensionManager(
     val untrustedExtensionsFlow = untrustedExtensionsMapFlow.mapExtensions(scope)
 
     init {
-        initExtensions()
         MangaExtensionInstallReceiver(InstallationListener()).register(context)
+        scope.launch {
+            initExtensions()
+        }
     }
 
     private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages().isSet()
@@ -142,10 +148,15 @@ class MangaExtensionManager(
     suspend fun findAvailableExtensions() {
         val extensions: List<MangaExtension.Available> = try {
             api.findExtensions()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            // Match Mihon's behavior: a failed repository refresh must not be treated as
+            // a successful empty index, otherwise installed extensions become obsolete
+            // and the pending update count is incorrectly reset to zero.
             logcat(LogPriority.ERROR, e)
             withUIContext { context.toast(MR.strings.extension_api_error) }
-            emptyList()
+            return
         }
 
         enableAdditionalSubLanguages(extensions)
