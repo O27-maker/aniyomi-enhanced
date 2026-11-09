@@ -19,6 +19,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.coroutines.delay
 import mihon.domain.extensionrepo.model.ExtensionRepo
+import dev.icerock.moko.resources.StringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -29,6 +30,7 @@ fun ExtensionRepoCreateDialog(
     onDismissRequest: () -> Unit,
     onCreate: (String) -> Unit,
     repoUrls: ImmutableSet<String>,
+    message: StringResource = AYMR.strings.action_add_repo_message,
 ) {
     var name by remember { mutableStateOf("") }
 
@@ -58,7 +60,7 @@ fun ExtensionRepoCreateDialog(
         },
         text = {
             Column {
-                Text(text = stringResource(AYMR.strings.action_add_repo_message))
+                Text(text = stringResource(message))
 
                 OutlinedTextField(
                     modifier = Modifier

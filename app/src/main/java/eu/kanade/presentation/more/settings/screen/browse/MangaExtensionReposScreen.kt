@@ -59,6 +59,7 @@ class MangaExtensionReposScreen(
                     onDismissRequest = screenModel::dismissDialog,
                     onCreate = { screenModel.createRepo(it) },
                     repoUrls = successState.repos.map { it.baseUrl }.toImmutableSet(),
+                    message = AYMR.strings.action_add_manga_repo_message,
                 )
             }
             is RepoDialog.Delete -> {
