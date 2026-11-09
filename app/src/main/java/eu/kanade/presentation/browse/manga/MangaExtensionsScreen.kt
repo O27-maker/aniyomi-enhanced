@@ -369,6 +369,15 @@ private fun ExtensionItemContent(
                     )
                 }
 
+                if (extension is MangaExtension.Installed && extension.loadError != null) {
+                    Text(
+                        text = "Failed to load",
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
                 val warning = when {
                     extension is MangaExtension.Untrusted -> MR.strings.ext_untrusted
                     extension is MangaExtension.Installed && extension.isObsolete -> MR.strings.ext_obsolete
