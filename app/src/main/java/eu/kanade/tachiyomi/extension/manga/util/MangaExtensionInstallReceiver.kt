@@ -9,9 +9,9 @@ import androidx.core.net.toUri
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
@@ -20,12 +20,28 @@ import tachiyomi.core.common.util.system.logcat
  * Broadcast receiver that listens for the system's packages installed, updated or removed, and only
  * notifies the given [listener] when the package is an extension.
  *
- * @param listener The listener that should be notified of extension installation events.
+ * Package events are processed sequentially so a later removal cannot be overtaken by an earlier
+ * asynchronous APK load.
  */
-internal class MangaExtensionInstallReceiver(private val listener: Listener) : BroadcastReceiver() {
+internal class MangaExtensionInstallReceiver(
+    private val listener: Listener,
+    scope: CoroutineScope,
+) : BroadcastReceiver() {
 
-    // Package inspection and extension class loading must not run on the broadcast/UI thread.
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val events = Channel<Event>(Channel.UNLIMITED)
+
+    init {
+        scope.launch {
+            for (event in events) {
+                try {
+                    handle(event)
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e) { "Failed to handle manga extension package event: $event" }
+                }
+            }
+        }
+    }
 
     fun register(context: Context) {
         ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
@@ -41,84 +57,68 @@ internal class MangaExtensionInstallReceiver(private val listener: Listener) : B
         addDataScheme("package")
     }
 
-    /**
-     * Called when one of the events of the [filter] is received. When the package is an extension,
-     * it's loaded in background and it notifies the [listener] when finished.
-     */
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent == null) return
 
         when (intent.action) {
             Intent.ACTION_PACKAGE_ADDED, ACTION_EXTENSION_ADDED -> {
                 if (isReplacing(intent)) return
-
-                scope.launch {
-                    when (val result = getExtensionFromIntent(context, intent)) {
-                        is MangaLoadResult.Success -> listener.onExtensionInstalled(result.extension)
-                        is MangaLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
-                        else -> {}
-                    }
+                getPackageNameFromIntent(intent)?.let {
+                    events.trySend(Event.Installed(context.applicationContext, it, isUpdate = false))
                 }
             }
             Intent.ACTION_PACKAGE_REPLACED, ACTION_EXTENSION_REPLACED -> {
-                scope.launch {
-                    when (val result = getExtensionFromIntent(context, intent)) {
-                        is MangaLoadResult.Success -> listener.onExtensionUpdated(result.extension)
-                        is MangaLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
-                        else -> {}
-                    }
+                getPackageNameFromIntent(intent)?.let {
+                    events.trySend(Event.Installed(context.applicationContext, it, isUpdate = true))
                 }
             }
             Intent.ACTION_PACKAGE_REMOVED, ACTION_EXTENSION_REMOVED -> {
                 if (isReplacing(intent)) return
-
-                val pkgName = getPackageNameFromIntent(intent)
-                if (pkgName != null) {
-                    listener.onPackageUninstalled(pkgName)
-                }
+                getPackageNameFromIntent(intent)?.let { events.trySend(Event.Removed(it)) }
             }
         }
     }
 
-    /**
-     * Returns true if this package is performing an update.
-     *
-     * @param intent The intent that triggered the event.
-     */
+    private suspend fun handle(event: Event) {
+        when (event) {
+            is Event.Installed -> {
+                when (val result = MangaExtensionLoader.loadMangaExtensionFromPkgName(event.context, event.pkgName)) {
+                    is MangaLoadResult.Success -> {
+                        if (event.isUpdate) listener.onExtensionUpdated(result.extension)
+                        else listener.onExtensionInstalled(result.extension)
+                    }
+                    is MangaLoadResult.NotLoaded -> {
+                        if (event.isUpdate) listener.onExtensionUpdated(result.extension)
+                        else listener.onExtensionInstalled(result.extension)
+                    }
+                    is MangaLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
+                    MangaLoadResult.Error -> logcat(LogPriority.WARN) {
+                        "Installed package is not a loadable manga extension: ${event.pkgName}"
+                    }
+                }
+            }
+            is Event.Removed -> listener.onPackageUninstalled(event.pkgName)
+        }
+    }
+
     private fun isReplacing(intent: Intent): Boolean {
         return intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
     }
 
-    /**
-     * Returns the extension triggered by the given intent.
-     *
-     * @param context The application context.
-     * @param intent The intent containing the package name of the extension.
-     */
-    private suspend fun getExtensionFromIntent(context: Context, intent: Intent?): MangaLoadResult {
-        val pkgName = getPackageNameFromIntent(intent)
-        if (pkgName == null) {
-            logcat(LogPriority.WARN) { "Package name not found" }
-            return MangaLoadResult.Error
-        }
-        return MangaExtensionLoader.loadMangaExtensionFromPkgName(context, pkgName)
-    }
-
-    /**
-     * Returns the package name of the installed, updated or removed application.
-     */
     private fun getPackageNameFromIntent(intent: Intent?): String? {
-        return intent?.data?.encodedSchemeSpecificPart ?: return null
+        return intent?.data?.encodedSchemeSpecificPart
     }
 
-    /**
-     * Listener that receives extension installation events.
-     */
     interface Listener {
-        fun onExtensionInstalled(extension: MangaExtension.Installed)
-        fun onExtensionUpdated(extension: MangaExtension.Installed)
-        fun onExtensionUntrusted(extension: MangaExtension.Untrusted)
-        fun onPackageUninstalled(pkgName: String)
+        suspend fun onExtensionInstalled(extension: MangaExtension.Installed)
+        suspend fun onExtensionUpdated(extension: MangaExtension.Installed)
+        suspend fun onExtensionUntrusted(extension: MangaExtension.Untrusted)
+        suspend fun onPackageUninstalled(pkgName: String)
+    }
+
+    private sealed interface Event {
+        data class Installed(val context: Context, val pkgName: String, val isUpdate: Boolean) : Event
+        data class Removed(val pkgName: String) : Event
     }
 
     companion object {
