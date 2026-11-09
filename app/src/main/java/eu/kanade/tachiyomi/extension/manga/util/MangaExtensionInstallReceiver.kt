@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import logcat.LogPriority
@@ -23,7 +24,8 @@ import tachiyomi.core.common.util.system.logcat
  */
 internal class MangaExtensionInstallReceiver(private val listener: Listener) : BroadcastReceiver() {
 
-    val scope = CoroutineScope(SupervisorJob())
+    // Package inspection and extension class loading must not run on the broadcast/UI thread.
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun register(context: Context) {
         ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
