@@ -1,7 +1,7 @@
 package mihon.domain.extensionrepo.service
 
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
 import mihon.domain.extensionrepo.model.ExtensionRepo
 
