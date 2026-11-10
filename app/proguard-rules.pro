@@ -1,6 +1,12 @@
 -dontobfuscate
 
 -keep,allowoptimization class eu.kanade.**
+
+# Extension APKs subclass HttpSource and override this API method.
+# Prevent R8 from devirtualizing it into a final method in release builds.
+-keepclassmembers class eu.kanade.tachiyomi.source.online.HttpSource {
+    public eu.kanade.tachiyomi.source.model.FilterList getFilterList();
+}
 -keep,allowoptimization class tachiyomi.**
 -keep,allowoptimization class mihon.**
 
