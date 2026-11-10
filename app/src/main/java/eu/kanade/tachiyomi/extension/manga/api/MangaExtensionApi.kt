@@ -13,12 +13,6 @@ import eu.kanade.tachiyomi.network.awaitSuccess
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
 import mihon.domain.extensionrepo.manga.interactor.GetMangaExtensionRepo
@@ -44,7 +38,6 @@ internal class MangaExtensionApi {
     private val getExtensionRepo: GetMangaExtensionRepo by injectLazy()
     private val updateExtensionRepo: UpdateMangaExtensionRepo by injectLazy()
     private val extensionManager: MangaExtensionManager by injectLazy()
-    private val json: Json by injectLazy()
     private val protoBuf: ProtoBuf = ProtoBuf {}
 
     private val lastExtCheck: Preference<Long> by lazy {
@@ -71,27 +64,15 @@ internal class MangaExtensionApi {
                 .awaitSuccess()
 
             response.body.source().decompressIfGzipped().use { source ->
-                val index = when (source.peek().readByte()) {
-                    // JSON-encoded protobuf-compatible index.
-                    0x7B.toByte() -> json.decodeFromJsonElement<NetworkMangaExtensionStore>(
-                        source.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields(),
-                    )
-                    else -> protoBuf.decodeFromByteArray<NetworkMangaExtensionStore>(source.readByteArray())
-                }
+                val index = protoBuf.decodeFromByteArray<NetworkMangaExtensionStore>(source.readByteArray())
                 val extensionList = index.extensionList ?: index.extensionListUrl?.let { url ->
                     val listUrl = (repoBaseUrl.trimEnd('/') + "/").toHttpUrl().resolve(url)?.toString()
                         ?: throw IllegalArgumentException("Invalid extension list URL: $url")
                     val listResponse = networkService.client.newCall(GET(listUrl)).awaitSuccess()
                     listResponse.body.source().decompressIfGzipped().use { listSource ->
-                        when (listSource.peek().readByte()) {
-                            // JSON-encoded protobuf-compatible extension list.
-                            0x7B.toByte() -> json.decodeFromJsonElement<NetworkMangaExtensionStore.ExtensionList>(
-                                listSource.readUtf8().let(json::parseToJsonElement).normalizeNumericStringFields(),
-                            )
-                            else -> protoBuf.decodeFromByteArray<NetworkMangaExtensionStore.ExtensionList>(
-                                listSource.readByteArray(),
-                            )
-                        }
+                        protoBuf.decodeFromByteArray<NetworkMangaExtensionStore.ExtensionList>(
+                            listSource.readByteArray(),
+                        )
                     }
                 } ?: throw IllegalArgumentException("Repository index has no extension list")
 
@@ -139,27 +120,6 @@ internal class MangaExtensionApi {
             ExtensionUpdateNotifier(context).promptUpdates(extensionsWithUpdate.map { it.name })
         }
         return extensionsWithUpdate
-    }
-
-    /**
-     * Protobuf JSON represents 64-bit integer fields as quoted decimal strings.
-     * Normalize those values before decoding into Kotlin Long properties.
-     */
-    private fun JsonElement.normalizeNumericStringFields(): JsonElement = when (this) {
-        is JsonObject -> JsonObject(
-            mapValues { (key, value) ->
-                if (key == "id" || key == "versionCode") {
-                    val primitive = value as? JsonPrimitive
-                    primitive?.takeIf { it.isString }?.content?.toLongOrNull()
-                        ?.let(::JsonPrimitive)
-                        ?: value.normalizeNumericStringFields()
-                } else {
-                    value.normalizeNumericStringFields()
-                }
-            },
-        )
-        is JsonArray -> JsonArray(map { it.normalizeNumericStringFields() })
-        else -> this
     }
 
     private fun NetworkMangaExtensionStore.ExtensionList.toMangaExtensions(
