@@ -95,7 +95,7 @@ internal fun Project.configureCompose(commonExtension: CommonExtension) {
         }
 
         if (enableReports) {
-            rootBuildDir.resolve("compose-reports").resolve(relativePath).let(metricsDestination::set)
+            rootBuildDir.resolve("compose-reports").resolve(relativePath).let(reportsDestination::set)
         }
     }
 }
