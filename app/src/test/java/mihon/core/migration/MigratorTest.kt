@@ -86,7 +86,7 @@ class MigratorTest {
 
         verify { migrationJobFactory.create(capture(migrations)) }
         assertEquals(2, migrations.captured.size)
-        verify { migrationCompletedListener() }
+        verify(timeout = 1000) { migrationCompletedListener() }
     }
 
     @Test
