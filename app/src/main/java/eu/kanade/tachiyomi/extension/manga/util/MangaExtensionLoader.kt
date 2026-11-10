@@ -284,6 +284,7 @@ internal object MangaExtensionLoader {
             val libVersion = appInfo?.metaData
                 ?.getFloat(METADATA_EXTENSION_LIB, 0f)
                 ?.takeIf { it > 0f }
+                ?.toString()
                 ?.toDouble()
                 ?: versionName.substringBeforeLast('.').toDoubleOrNull()
                 ?: 0.0
@@ -359,7 +360,7 @@ internal object MangaExtensionLoader {
         }
 
         // Validate lib version
-        val metadataLibVersion = appInfo.metaData?.getFloat(METADATA_EXTENSION_LIB, 0f)?.takeIf { it > 0f }?.toDouble()
+        val metadataLibVersion = appInfo.metaData?.getFloat(METADATA_EXTENSION_LIB, 0f)?.takeIf { it > 0f }?.toString()?.toDouble()
         val libVersion = metadataLibVersion ?: versionName.substringBeforeLast('.').toDoubleOrNull()
         if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
             logcat(LogPriority.WARN) {
