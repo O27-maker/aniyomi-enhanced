@@ -44,18 +44,7 @@ jobs:
           packages: platform-tools
 
       - name: Install Android SDK 37
-        run: |
-          sdkmanager "platforms;android-37.0"
-          cp -a "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
-          sed -i 's/platforms;android-37\.0/platforms;android-37/g' "$ANDROID_HOME/platforms/android-37/package.xml"
-          if ! grep -q '^Pkg.Path=' "$ANDROID_HOME/platforms/android-37/source.properties"; then
-            printf '\nPkg.Path=platforms;android-37\n' >> "$ANDROID_HOME/platforms/android-37/source.properties"
-          else
-            sed -i 's#^Pkg.Path=.*#Pkg.Path=platforms;android-37#' "$ANDROID_HOME/platforms/android-37/source.properties"
-          fi
-          echo "--- Gradle SDK platform metadata ---"
-          grep -o 'localPackage path="[^"]*"' "$ANDROID_HOME/platforms/android-37/package.xml" | head -1
-          grep -E '^(Pkg.Path|Platform.Version|Pkg.Revision)=' "$ANDROID_HOME/platforms/android-37/source.properties"
+        run: sdkmanager "platforms;android-37"
 
       - name: Provide legacy Android annotations jar for L8
         run: |
