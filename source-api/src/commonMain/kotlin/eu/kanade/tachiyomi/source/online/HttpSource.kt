@@ -457,5 +457,5 @@ abstract class HttpSource : CatalogueSource {
     /**
      * Returns the list of filters for the source.
      */
-    override open fun getFilterList() = FilterList()
+    open override fun getFilterList() = FilterList()
 }
