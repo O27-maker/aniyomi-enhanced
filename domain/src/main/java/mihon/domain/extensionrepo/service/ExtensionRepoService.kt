@@ -60,11 +60,7 @@ class ExtensionRepoService(
                     } else {
                         raw
                     }
-                    val index = if (bytes.firstOrNull() == 0x7B.toByte()) {
-                        json.decodeFromString<MangaExtensionStoreIndex>(bytes.decodeToString())
-                    } else {
-                        protoBuf.decodeFromByteArray<MangaExtensionStoreIndex>(bytes)
-                    }
+                    val index = protoBuf.decodeFromByteArray<MangaExtensionStoreIndex>(bytes)
                     index.toExtensionRepo(repo)
                 }
             } catch (e: Exception) {
