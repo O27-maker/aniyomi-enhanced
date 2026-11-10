@@ -2,16 +2,15 @@ import mihon.buildlogic.Config
 import mihon.buildlogic.getBuildTime
 import mihon.buildlogic.getCommitCount
 import mihon.buildlogic.getGitSha
+import mihon.buildlogic.PrepareShortcutTask
 
 plugins {
     id("mihon.android.application")
     id("mihon.android.application.compose")
-    id("com.github.zellius.shortcut-helper")
     kotlin("plugin.serialization")
     alias(libs.plugins.aboutLibraries)
 }
 
-shortcutHelper.setFilePath("./shortcuts.xml")
 
 android {
     namespace = "eu.kanade.tachiyomi"
@@ -321,6 +320,20 @@ dependencies {
 }
 
 androidComponents {
+    onVariants(selector().all()) { variant ->
+        val prepareShortcuts = tasks.register<PrepareShortcutTask>(
+            "prepare${variant.name.replaceFirstChar { it.uppercase() }}Shortcuts",
+        ) {
+            shortcutFile.set(layout.projectDirectory.file("shortcuts.xml"))
+            applicationId.set(variant.applicationId)
+            outputDirectory.set(layout.buildDirectory.dir("generated/res/shortcuts/${variant.name}"))
+        }
+        variant.sources.res?.addGeneratedSourceDirectory(
+            prepareShortcuts,
+            PrepareShortcutTask::outputDirectory,
+        )
+    }
+
     beforeVariants { variantBuilder ->
         // Disables standardBenchmark
         if (variantBuilder.buildType == "benchmark") {
