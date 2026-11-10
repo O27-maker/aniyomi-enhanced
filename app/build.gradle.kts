@@ -1,8 +1,8 @@
 import mihon.buildlogic.Config
+import mihon.buildlogic.PrepareShortcutTask
 import mihon.buildlogic.getBuildTime
 import mihon.buildlogic.getCommitCount
 import mihon.buildlogic.getGitSha
-import mihon.buildlogic.PrepareShortcutTask
 
 plugins {
     id("mihon.android.application")
@@ -10,7 +10,6 @@ plugins {
     kotlin("plugin.serialization")
     alias(libs.plugins.aboutLibraries)
 }
-
 
 android {
     namespace = "eu.kanade.tachiyomi"
