@@ -95,14 +95,14 @@ internal fun Project.configureCompose(commonExtension: CommonExtension) {
         }
 
         if (enableReports) {
-            rootBuildDir.resolve("compose-reports").resolve(relativePath).let(reportsDestination::set)
+            rootBuildDir.resolve("compose-reports").resolve(relativePath).let(metricsDestination::set)
         }
     }
 }
 
 internal fun Project.configureTest() {
-    dependencies {
-        "testRuntimeOnly"(libs.junit.platform.launcher)
+    configurations.matching { it.name == "testRuntimeOnly" }.configureEach {
+        this@configureTest.dependencies.add(name, this@configureTest.libs.junit.platform.launcher)
     }
 
     tasks.withType<Test> {
