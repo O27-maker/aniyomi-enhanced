@@ -432,8 +432,8 @@ internal object MangaExtensionLoader {
                         else -> throw Exception("Unknown source class type: ${obj.javaClass}")
                     }
                 } catch (e: LinkageError) {
+                    val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, context.classLoader)
                     try {
-                        val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, context.classLoader)
                         when (
                             val obj = Class.forName(
                                 it,
