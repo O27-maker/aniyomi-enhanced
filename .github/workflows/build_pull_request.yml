@@ -65,7 +65,7 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Run unit tests
-        run: ./gradlew testReleaseUnitTest
+        run: ./gradlew testDebugUnitTest
 
       - name: Upload installable APKs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
