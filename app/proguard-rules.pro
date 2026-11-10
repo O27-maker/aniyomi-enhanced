@@ -8,6 +8,10 @@
     public long getId();
     public eu.kanade.tachiyomi.source.model.FilterList getFilterList();
 }
+# Extensions reflectively access HttpSource's delegated headers property.
+-keepclassmembers class eu.kanade.tachiyomi.source.online.HttpSource {
+    private kotlin.Lazy headers$delegate;
+}
 -keep,allowoptimization class tachiyomi.**
 -keep,allowoptimization class mihon.**
 
@@ -69,11 +73,11 @@
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.** # core serialization annotations
 
-# kotlinx-serialization-json specific. Add this if you have java.lang.NoClassDefFoundError kotlinx.serialization.json.JsonObjectSerializer
+# kotlinx-serialization-json specific. Add this if there is java.lang.NoClassDefFoundError kotlinx.serialization.json.JsonObjectSerializer
 -keepclassmembers class kotlinx.serialization.json.** {
     *** Companion;
 }
--keepclasseswithmembers class kotlinx.serialization.json.** {
+-keepclassmembers class kotlinx.serialization.json.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
