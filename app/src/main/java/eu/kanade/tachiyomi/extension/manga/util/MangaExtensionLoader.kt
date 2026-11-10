@@ -360,7 +360,9 @@ internal object MangaExtensionLoader {
         }
 
         // Validate lib version
-        val metadataLibVersion = appInfo.metaData?.getFloat(METADATA_EXTENSION_LIB, 0f)?.takeIf { it > 0f }?.toString()?.toDouble()
+        val metadataLibVersion = appInfo.metaData?.getFloat(METADATA_EXTENSION_LIB, 0f)?.takeIf {
+            it > 0f
+        }?.toString()?.toDouble()
         val libVersion = metadataLibVersion ?: versionName.substringBeforeLast('.').toDoubleOrNull()
         if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
             logcat(LogPriority.WARN) {
