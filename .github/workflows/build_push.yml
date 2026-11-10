@@ -36,6 +36,9 @@ jobs:
         run: |
           sdkmanager "platforms;android-37.0"
           sdkmanager --list_installed | grep -F "platforms;android-37.0"
+          test -d "$ANDROID_HOME/platforms/android-37.0"
+          ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
+          test -d "$ANDROID_HOME/platforms/android-37"
 
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b # v4.3.0
