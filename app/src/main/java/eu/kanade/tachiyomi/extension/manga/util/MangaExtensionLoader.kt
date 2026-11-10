@@ -449,12 +449,20 @@ internal object MangaExtensionLoader {
                         }
                     } catch (e: Throwable) {
                         logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
-                        Log.e("MangaExtensionLoader", "Extension source class load failed: $extName ($pkgName), class=$it, loader=${fallBackClassLoader.javaClass.name}", e)
+                        Log.e(
+                            "MangaExtensionLoader",
+                            "Extension source class load failed: $extName ($pkgName), class=$it, loader=${fallBackClassLoader.javaClass.name}",
+                            e,
+                        )
                         return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw)
                     }
                 } catch (e: Throwable) {
                     logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
-                    Log.e("MangaExtensionLoader", "Extension source class load failed: $extName ($pkgName), class=$it, loader=${classLoader.javaClass.name}", e)
+                    Log.e(
+                        "MangaExtensionLoader",
+                        "Extension source class load failed: $extName ($pkgName), class=$it, loader=${classLoader.javaClass.name}",
+                        e,
+                    )
                     return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw)
                 }
             }
