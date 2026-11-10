@@ -1,6 +1,11 @@
 package mihon.buildlogic
 
+import com.android.build.api.dsl.BuildFeatures
 import com.android.build.api.dsl.CommonExtension
+import com.android.build.api.dsl.CompileOptions
+import com.android.build.api.dsl.CompileSdkSpec
+import com.android.build.api.dsl.CompileSdkVersion
+import com.android.build.api.dsl.DefaultConfig
 import org.gradle.accessors.dm.LibrariesForAndroidx
 import org.gradle.accessors.dm.LibrariesForCompose
 import org.gradle.accessors.dm.LibrariesForKotlinx
@@ -105,3 +110,23 @@ internal fun Project.configureTest() {
 }
 
 val Project.generatedBuildDir: File get() = project.layout.buildDirectory.asFile.get().resolve("generated/mihon")
+
+
+private fun CommonExtension.defaultConfig(block: DefaultConfig.() -> Unit) {
+    defaultConfig.apply(block)
+}
+
+private fun CommonExtension.compileOptions(block: CompileOptions.() -> Unit) {
+    compileOptions.apply(block)
+}
+
+private fun CommonExtension.buildFeatures(block: BuildFeatures.() -> Unit) {
+    buildFeatures.apply(block)
+}
+
+private fun CompileSdkSpec.release(version: String): CompileSdkVersion {
+    val (major, minor) = version.split(".", limit = 2).let {
+        it[0].toInt() to it.getOrNull(1)?.toInt()
+    }
+    return release(major) { minorApiLevel = minor }
+}
