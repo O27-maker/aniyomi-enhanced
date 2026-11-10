@@ -57,6 +57,11 @@ jobs:
           grep -o 'localPackage path="[^"]*"' "$ANDROID_HOME/platforms/android-37/package.xml" | head -1
           grep -E '^(Pkg.Path|Platform.Version|Pkg.Revision)=' "$ANDROID_HOME/platforms/android-37/source.properties"
 
+      - name: Provide legacy Android annotations jar for L8
+        run: |
+          mkdir -p "$ANDROID_HOME/tools/support" /tmp/empty-android-annotations
+          jar --create --file "$ANDROID_HOME/tools/support/annotations.jar" -C /tmp/empty-android-annotations .
+
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b # v4.3.0
 
