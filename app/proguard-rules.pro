@@ -4,6 +4,11 @@
 -keep,allowoptimization class tachiyomi.**
 -keep,allowoptimization class mihon.**
 
+# WorkManager instantiates its generated Room database reflectively.
+-keep class androidx.work.impl.WorkDatabase_Impl {
+    public <init>();
+}
+
 # Keep common dependencies used in extensions
 -keep,allowoptimization class androidx.preference.** { public protected *; }
 -keep,allowoptimization class android.content.** { *; }
@@ -69,7 +74,7 @@
 -keepclassmembers class eu.kanade.** {
     *** Companion;
 }
--keepclasseswithmembers class eu.kanade.** {
+-keepclassmembers class eu.kanade.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
