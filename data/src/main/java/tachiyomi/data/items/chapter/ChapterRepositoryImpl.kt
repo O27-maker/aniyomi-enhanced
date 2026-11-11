@@ -71,7 +71,7 @@ class ChapterRepositoryImpl(
                     chapterId = chapterUpdate.id,
                     version = chapterUpdate.version,
                     isSyncing = 0,
-                    memo = chapterUpdate.memo?.let(Json::encodeToString),
+                    memo = chapterUpdate.memo?.let { Json.encodeToString(it) },
                 )
             }
         }
