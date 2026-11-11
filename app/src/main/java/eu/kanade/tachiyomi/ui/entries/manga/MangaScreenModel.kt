@@ -267,12 +267,10 @@ class MangaScreenModel(
         }
     }
 
-    // Manga info and chapters - start
+    // Manga info - start
 
     /**
      * Fetch manga information and/or chapters through the combined source API.
-     * This lets newer extensions override getMangaUpdate() while keeping the
-     * legacy getMangaDetails() and getChapterList() defaults available.
      */
     private suspend fun fetchMangaUpdateFromSource(
         fetchDetails: Boolean,
@@ -289,11 +287,9 @@ class MangaScreenModel(
                     fetchDetails = fetchDetails,
                     fetchChapters = fetchChapters,
                 )
-
                 if (fetchDetails) {
                     updateManga.awaitUpdateFromSource(state.manga, update.manga, manualFetch)
                 }
-
                 if (fetchChapters) {
                     val newChapters = syncChaptersWithSource.await(
                         update.chapters,
@@ -301,27 +297,18 @@ class MangaScreenModel(
                         state.source,
                         manualFetch,
                     )
-
-                    if (manualFetch) {
-                        downloadNewChapters(newChapters)
-                    }
+                    if (manualFetch) downloadNewChapters(newChapters)
                 }
             }
         } catch (e: Throwable) {
-            // Ignore early hints "errors" that aren't handled by OkHttp
             if (e is HttpException && e.code == 103) return
-
             val message = if (fetchChapters && e is NoChaptersException) {
                 context.stringResource(MR.strings.no_chapters_error)
             } else {
                 logcat(LogPriority.ERROR, e)
                 with(context) { e.formattedMessage }
             }
-
-            screenModelScope.launch {
-                snackbarHostState.showSnackbar(message = message)
-            }
-
+            screenModelScope.launch { snackbarHostState.showSnackbar(message = message) }
             if (fetchChapters) {
                 val newManga = mangaRepository.getMangaById(mangaId)
                 updateSuccessState { it.copy(manga = newManga, isRefreshingData = false) }
@@ -329,7 +316,279 @@ class MangaScreenModel(
         }
     }
 
-    // Manga info and chapters - end
+    fun toggleFavorite() {
+        toggleFavorite(
+            onRemoved = {
+                screenModelScope.launch {
+                    if (!hasDownloads()) return@launch
+                    val result = snackbarHostState.showSnackbar(
+                        message = context.stringResource(MR.strings.delete_downloads_for_manga),
+                        actionLabel = context.stringResource(MR.strings.action_delete),
+                        withDismissAction = true,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        deleteDownloads()
+                    }
+                }
+            },
+        )
+    }
+
+    /**
+     * Update favorite status of manga, (removes / adds) manga (to / from) library.
+     */
+    fun toggleFavorite(
+        onRemoved: () -> Unit,
+        checkDuplicate: Boolean = true,
+    ) {
+        val state = successState ?: return
+        screenModelScope.launchIO {
+            val manga = state.manga
+
+            if (isFavorited) {
+                // Remove from library
+                if (updateManga.awaitUpdateFavorite(manga.id, false)) {
+                    // Remove covers and update last modified in db
+                    if (manga.removeCovers() != manga) {
+                        updateManga.awaitUpdateCoverLastModified(manga.id)
+                    }
+                    withUIContext { onRemoved() }
+                }
+            } else {
+                // Add to library
+                // First, check if duplicate exists if callback is provided
+                if (checkDuplicate) {
+                    val duplicate = getDuplicateLibraryManga.await(manga).getOrNull(0)
+
+                    if (duplicate != null) {
+                        updateSuccessState {
+                            it.copy(
+                                dialog = Dialog.DuplicateManga(manga, duplicate),
+                            )
+                        }
+                        return@launchIO
+                    }
+                }
+
+                // Now check if user previously set categories, when available
+                val categories = getCategories()
+                val defaultCategoryId = libraryPreferences.defaultMangaCategory().get().toLong()
+                val defaultCategory = categories.find { it.id == defaultCategoryId }
+                when {
+                    // Default category set
+                    defaultCategory != null -> {
+                        val result = updateManga.awaitUpdateFavorite(manga.id, true)
+                        if (!result) return@launchIO
+                        moveMangaToCategory(defaultCategory)
+                    }
+
+                    // Automatic 'Default' or no categories
+                    defaultCategoryId == 0L || categories.isEmpty() -> {
+                        val result = updateManga.awaitUpdateFavorite(manga.id, true)
+                        if (!result) return@launchIO
+                        moveMangaToCategory(null)
+                    }
+
+                    // Choose a category
+                    else -> {
+                        isFromChangeCategory = true
+                        showChangeCategoryDialog()
+                    }
+                }
+
+                // Finally match with enhanced tracking when available
+                addTracks.bindEnhancedTrackers(manga, state.source)
+                if (autoOpenTrack) {
+                    showTrackDialog()
+                }
+            }
+        }
+    }
+
+    fun showChangeCategoryDialog() {
+        val manga = successState?.manga ?: return
+        screenModelScope.launch {
+            val categories = getCategories()
+            val selection = getMangaCategoryIds(manga)
+            updateSuccessState { successState ->
+                successState.copy(
+                    dialog = Dialog.ChangeCategory(
+                        manga = manga,
+                        initialSelection = categories.mapAsCheckboxState { it.id in selection }.toImmutableList(),
+                    ),
+                )
+            }
+        }
+    }
+
+    fun showSetMangaFetchIntervalDialog() {
+        val manga = successState?.manga ?: return
+        updateSuccessState {
+            it.copy(dialog = Dialog.SetMangaFetchInterval(manga))
+        }
+    }
+
+    fun setFetchInterval(manga: Manga, interval: Int) {
+        screenModelScope.launchIO {
+            if (
+                updateManga.awaitUpdateFetchInterval(
+                    // Custom intervals are negative
+                    manga.copy(fetchInterval = -interval),
+                )
+            ) {
+                val updatedManga = mangaRepository.getMangaById(manga.id)
+                updateSuccessState { it.copy(manga = updatedManga) }
+            }
+        }
+    }
+
+    /**
+     * Returns true if the manga has any downloads.
+     */
+    private fun hasDownloads(): Boolean {
+        val manga = successState?.manga ?: return false
+        return downloadManager.getDownloadCount(manga) > 0
+    }
+
+    /**
+     * Deletes all the downloads for the manga.
+     */
+    private fun deleteDownloads() {
+        val state = successState ?: return
+        downloadManager.deleteManga(state.manga, state.source)
+    }
+
+    /**
+     * Get user categories.
+     *
+     * @return List of categories, not including the default category
+     */
+    suspend fun getCategories(): List<Category> {
+        return getCategories.await().filterNot { it.isSystemCategory }
+    }
+
+    /**
+     * Gets the category id's the manga is in, if the manga is not in a category, returns the default id.
+     *
+     * @param manga the manga to get categories from.
+     * @return Array of category ids the manga is in, if none returns default id
+     */
+    private suspend fun getMangaCategoryIds(manga: Manga): List<Long> {
+        return getCategories.await(manga.id)
+            .map { it.id }
+    }
+
+    fun moveMangaToCategoriesAndAddToLibrary(manga: Manga, categories: List<Long>) {
+        moveMangaToCategory(categories)
+        if (manga.favorite) return
+
+        screenModelScope.launchIO {
+            updateManga.awaitUpdateFavorite(manga.id, true)
+        }
+    }
+
+    /**
+     * Move the given manga to categories.
+     *
+     * @param categories the selected categories.
+     */
+    private fun moveMangaToCategories(categories: List<Category>) {
+        val categoryIds = categories.map { it.id }
+        moveMangaToCategory(categoryIds)
+    }
+
+    private fun moveMangaToCategory(categoryIds: List<Long>) {
+        screenModelScope.launchIO {
+            setMangaCategories.await(mangaId, categoryIds)
+        }
+    }
+
+    /**
+     * Move the given manga to the category.
+     *
+     * @param category the selected category, or null for default category.
+     */
+    private fun moveMangaToCategory(category: Category?) {
+        moveMangaToCategories(listOfNotNull(category))
+    }
+
+    // Manga info - end
+
+    // Chapters list - start
+
+    private fun observeDownloads() {
+        screenModelScope.launchIO {
+            downloadManager.statusFlow()
+                .filter { it.manga.id == successState?.manga?.id }
+                .catch { error -> logcat(LogPriority.ERROR, error) }
+                .flowWithLifecycle(lifecycle)
+                .collect {
+                    withUIContext {
+                        updateDownloadState(it)
+                    }
+                }
+        }
+
+        screenModelScope.launchIO {
+            downloadManager.progressFlow()
+                .filter { it.manga.id == successState?.manga?.id }
+                .catch { error -> logcat(LogPriority.ERROR, error) }
+                .flowWithLifecycle(lifecycle)
+                .collect {
+                    withUIContext {
+                        updateDownloadState(it)
+                    }
+                }
+        }
+    }
+
+    private fun updateDownloadState(download: MangaDownload) {
+        updateSuccessState { successState ->
+            val modifiedIndex = successState.chapters.indexOfFirst { it.id == download.chapter.id }
+            if (modifiedIndex < 0) return@updateSuccessState successState
+
+            val newChapters = successState.chapters.toMutableList().apply {
+                val item = removeAt(modifiedIndex)
+                    .copy(downloadState = download.status, downloadProgress = download.progress)
+                add(modifiedIndex, item)
+            }
+            successState.copy(chapters = newChapters)
+        }
+    }
+
+    private fun List<Chapter>.toChapterListItems(manga: Manga): List<ChapterList.Item> {
+        val isLocal = manga.isLocal()
+        return map { chapter ->
+            val activeDownload = if (isLocal) {
+                null
+            } else {
+                downloadManager.getQueuedDownloadOrNull(chapter.id)
+            }
+            val downloaded = if (isLocal) {
+                true
+            } else {
+                downloadManager.isChapterDownloaded(
+                    chapter.name,
+                    chapter.scanlator,
+                    manga.title,
+                    manga.source,
+                )
+            }
+            val downloadState = when {
+                activeDownload != null -> activeDownload.status
+                downloaded -> MangaDownload.State.DOWNLOADED
+                else -> MangaDownload.State.NOT_DOWNLOADED
+            }
+
+            ChapterList.Item(
+                chapter = chapter,
+                downloadState = downloadState,
+                downloadProgress = activeDownload?.progress ?: 0,
+                selected = chapter.id in selectedChapterIds,
+            )
+        }
+    }
+
 
     /**
      * @throws IllegalStateException if the swipe action is [LibraryPreferences.ChapterSwipeAction.Disabled]
