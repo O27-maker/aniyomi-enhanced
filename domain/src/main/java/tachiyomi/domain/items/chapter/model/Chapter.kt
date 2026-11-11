@@ -1,6 +1,7 @@
 package tachiyomi.domain.items.chapter.model
 
 import kotlinx.serialization.json.JsonObject
+
 data class Chapter(
     val id: Long,
     val mangaId: Long,
