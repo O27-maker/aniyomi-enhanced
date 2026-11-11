@@ -245,8 +245,6 @@ dependencies {
 
     // Networking
     implementation(libs.bundles.okhttp)
-    // okhttp-zstd expects the ZSTD-KMP JVM runtime classes at runtime.
-    implementation(libs.zstd.kmp.jvm)
     implementation(libs.okio)
     implementation(libs.conscrypt.android) // TLS 1.3 support for Android < 10
 
