@@ -18,10 +18,10 @@ import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 import tachiyomi.domain.track.manga.model.MangaTrack
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.ZonedDateTime
-import java.util.Date
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.time.ZonedDateTime
+import java.util.Date
 import kotlin.math.max
 
 class MangaRestorer(
