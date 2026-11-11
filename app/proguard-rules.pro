@@ -39,6 +39,9 @@
 -keep,allowoptimization class tachiyomi.**
 -keep,allowoptimization class mihon.**
 
+# OkHttp's Zstd integration discovers the ZSTD-KMP implementation reflectively.
+-keep class com.squareup.zstd.** { *; }
+
 # WorkManager instantiates its generated Room database reflectively.
 -keep class androidx.work.impl.WorkDatabase_Impl {
     public <init>();
