@@ -20,6 +20,8 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.time.ZonedDateTime
 import java.util.Date
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.math.max
 
 class MangaRestorer(
@@ -204,6 +206,7 @@ class MangaRestorer(
                     chapter.dateFetch,
                     chapter.dateUpload,
                     chapter.version,
+                    Json.encodeToString(chapter.memo),
                 )
             }
         }
@@ -227,6 +230,7 @@ class MangaRestorer(
                     chapterId = chapter.id,
                     version = chapter.version,
                     isSyncing = 0,
+                    memo = Json.encodeToString(chapter.memo),
                 )
             }
         }
