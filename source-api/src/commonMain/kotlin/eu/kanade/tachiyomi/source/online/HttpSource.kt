@@ -240,7 +240,9 @@ abstract class HttpSource : CatalogueSource {
      * @param response the response from the site.
      */
     protected open fun mangaDetailsParse(response: Response): SManga =
-        throw UnsupportedOperationException("Default HttpSource.mangaDetailsParse() was called; extension override was not dispatched")
+        throw UnsupportedOperationException(
+            "Default HttpSource.mangaDetailsParse() was called; extension override was not dispatched",
+        )
 
     /**
      * Get all the available chapters for a manga.
@@ -279,7 +281,9 @@ abstract class HttpSource : CatalogueSource {
      * @param response the response from the site.
      */
     protected open fun chapterListParse(response: Response): List<SChapter> =
-        throw UnsupportedOperationException("Default HttpSource.chapterListParse() was called; extension override was not dispatched")
+        throw UnsupportedOperationException(
+            "Default HttpSource.chapterListParse() was called; extension override was not dispatched",
+        )
 
     /**
      * Parses the response from the site and returns a SChapter Object.
