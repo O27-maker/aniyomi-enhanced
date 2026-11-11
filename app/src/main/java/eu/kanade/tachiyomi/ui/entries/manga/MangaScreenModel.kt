@@ -588,7 +588,6 @@ class MangaScreenModel(
         }
     }
 
-
     /**
      * @throws IllegalStateException if the swipe action is [LibraryPreferences.ChapterSwipeAction.Disabled]
      */
