@@ -228,7 +228,11 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_monet">Dynamic</string>
     <string name="theme_greenapple">Green Apple</string>
-    <string name="theme_lavender">Lavender</string>
+    <string name="theme_lavender">Lavender Plum</string>
+    <string name="theme_arcticblue">Arctic Blue</string>
+    <string name="theme_sagegreen">Sage Green</string>
+    <string name="theme_roseberry">Rose Berry</string>
+    <string name="theme_ambergold">Amber Gold</string>
     <string name="theme_midnightdusk">Midnight Dusk</string>
     <string name="theme_monochrome">Monochrome</string>
     <string name="theme_nord">Nord</string>

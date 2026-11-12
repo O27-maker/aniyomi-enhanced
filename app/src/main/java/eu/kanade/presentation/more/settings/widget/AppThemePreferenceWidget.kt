@@ -81,8 +81,19 @@ private fun AppThemesList(
 ) {
     val context = LocalContext.current
     val appThemes = remember {
-        AppTheme.entries
-            .filterNot { it.titleRes == null || (it == AppTheme.MONET && !DeviceUtil.isDynamicColorAvailable) }
+        listOf(
+            AppTheme.LAVENDER,
+            AppTheme.ARCTIC_BLUE,
+            AppTheme.SAGE_GREEN,
+            AppTheme.ROSE_BERRY,
+            AppTheme.AMBER_GOLD,
+            AppTheme.TEALTURQUOISE,
+            AppTheme.TIDAL_WAVE,
+            AppTheme.GREEN_APPLE,
+            AppTheme.STRAWBERRY_DAIQUIRI,
+            AppTheme.NORD,
+            AppTheme.MIDNIGHT_DUSK,
+        )
     }
     LazyRow(
         contentPadding = PaddingValues(horizontal = PrefsHorizontalPadding),
