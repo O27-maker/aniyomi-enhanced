@@ -82,6 +82,7 @@ fun EntryCompactGridItem(
     coverBadgeStart: @Composable (RowScope.() -> Unit)? = null,
     coverBadgeEnd: @Composable (RowScope.() -> Unit)? = null,
     coverShape: Shape = MaterialTheme.shapes.extraSmall,
+    titleOverlayHeight: Float = 0.33f,
 ) {
     GridItemSelectable(
         isSelected = isSelected,
@@ -104,6 +105,7 @@ fun EntryCompactGridItem(
                 if (title != null) {
                     CoverTextOverlay(
                         title = title,
+                        heightFraction = titleOverlayHeight,
                         onClickContinueViewing = onClickContinueViewing,
                     )
                 } else if (onClickContinueViewing != null) {
@@ -127,6 +129,7 @@ fun EntryCompactGridItem(
 @Composable
 private fun BoxScope.CoverTextOverlay(
     title: String,
+    heightFraction: Float,
     onClickContinueViewing: (() -> Unit)? = null,
 ) {
     Box(
@@ -138,7 +141,7 @@ private fun BoxScope.CoverTextOverlay(
                     1f to Color(0xAA000000),
                 ),
             )
-            .fillMaxHeight(0.33f)
+            .fillMaxHeight(heightFraction)
             .fillMaxWidth()
             .align(Alignment.BottomCenter),
     )
