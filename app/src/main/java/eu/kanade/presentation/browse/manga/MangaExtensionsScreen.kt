@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,6 +87,7 @@ fun MangaExtensionScreen(
     onOpenExtension: (MangaExtension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
     onRefresh: () -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val navigator = LocalNavigator.currentOrThrow
 
@@ -126,6 +129,7 @@ fun MangaExtensionScreen(
                     onTrustExtension = onTrustExtension,
                     onOpenExtension = onOpenExtension,
                     onClickUpdateAll = onClickUpdateAll,
+                    accentColor = accentColor,
                 )
             }
         }
@@ -145,6 +149,7 @@ private fun ExtensionContent(
     onTrustExtension: (MangaExtension.Untrusted) -> Unit,
     onOpenExtension: (MangaExtension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
+    accentColor: Color,
 ) {
     val context = LocalContext.current
     var trustState by remember { mutableStateOf<MangaExtension.Untrusted?>(null) }
@@ -174,7 +179,10 @@ private fun ExtensionContent(
                         val action: @Composable RowScope.() -> Unit =
                             if (header.textRes == MR.strings.ext_updates_pending) {
                                 {
-                                    Button(onClick = { onClickUpdateAll() }) {
+                                    Button(
+                                        onClick = { onClickUpdateAll() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                    ) {
                                         Text(
                                             text = stringResource(MR.strings.ext_update_all),
                                             style = LocalTextStyle.current.copy(
@@ -300,6 +308,7 @@ private fun ExtensionItem(
                     CircularProgressIndicator(
                         modifier = Modifier.size(40.dp),
                         strokeWidth = 2.dp,
+                        color = accentColor,
                     )
                 }
 
