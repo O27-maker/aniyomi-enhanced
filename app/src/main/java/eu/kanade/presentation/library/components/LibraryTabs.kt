@@ -21,8 +21,8 @@ internal fun LibraryTabs(
     categories: List<Category>,
     pagerState: PagerState,
     getNumberOfItemsForCategory: (Category) -> Int?,
-    onTabItemClick: (Int) -> Unit,
     minimalStyle: Boolean = false,
+    onTabItemClick: (Int) -> Unit,
 ) {
     val currentPageIndex = pagerState.currentPage.coerceAtMost(categories.lastIndex)
     Column(
