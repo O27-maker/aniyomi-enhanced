@@ -89,25 +89,14 @@ fun MangaLibraryPager(
                     )
                 }
 
-                LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
+                LibraryDisplayMode.CompactGrid,
+                LibraryDisplayMode.CoverOnlyGrid,
+                LibraryDisplayMode.ComfortableGrid,
+                -> {
                     MangaLibraryCompactGrid(
                         items = library,
-                        showTitle = displayMode is LibraryDisplayMode.CompactGrid,
-                        columns = columns,
-                        contentPadding = contentPadding,
-                        selection = selectedManga,
-                        onClick = onClickManga,
-                        onLongClick = onLongClickManga,
-                        onClickContinueReading = onClickContinueReading,
-                        searchQuery = searchQuery,
-                        onGlobalSearchClicked = onGlobalSearchClicked,
-                    )
-                }
-
-                LibraryDisplayMode.ComfortableGrid -> {
-                    MangaLibraryComfortableGrid(
-                        items = library,
-                        columns = columns,
+                        showTitle = true,
+                        columns = 3,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,
