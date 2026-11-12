@@ -18,7 +18,7 @@ android {
         applicationId = "xyz.jmir.tachiyomi.mi"
 
         versionCode = 132
-        versionName = "0.18.2.1"
+        versionName = "0.2.0"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
@@ -43,7 +43,6 @@ android {
     buildTypes {
         val debug by getting {
             applicationIdSuffix = ".dev"
-            versionNameSuffix = "-${getCommitCount()}"
             isPseudoLocalesEnabled = true
         }
         val release by getting {
@@ -65,7 +64,6 @@ android {
 
             applicationIdSuffix = ".debug"
 
-            versionNameSuffix = debug.versionNameSuffix
             signingConfig = debug.signingConfig
 
             matchingFallbacks.addAll(commonMatchingFallbacks)
@@ -77,7 +75,6 @@ android {
 
             isDebuggable = false
             isProfileable = true
-            versionNameSuffix = "-benchmark"
             applicationIdSuffix = ".benchmark"
 
             signingConfig = debug.signingConfig
