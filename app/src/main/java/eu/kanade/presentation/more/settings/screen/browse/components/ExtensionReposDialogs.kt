@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -166,7 +167,17 @@ fun ExtensionRepoConflictDialog(
             }
         },
         title = {
-            Text(text = stringResource(MR.strings.action_replace_repo_title))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(text = stringResource(MR.strings.action_replace_repo_title))
+            }
         },
         text = {
             Text(text = stringResource(MR.strings.action_replace_repo_message, newRepo.name, oldRepo.name))
