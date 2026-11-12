@@ -46,8 +46,6 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.theme.TachiyomiTheme
-import eu.kanade.tachiyomi.util.system.DeviceUtil
-import eu.kanade.tachiyomi.util.system.isDynamicColorAvailable
 import tachiyomi.core.common.preference.InMemoryPreferenceStore
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
