@@ -194,9 +194,11 @@ fun EntryComfortableGridItem(
     coverBadgeStart: (@Composable RowScope.() -> Unit)? = null,
     coverBadgeEnd: (@Composable RowScope.() -> Unit)? = null,
     onClickContinueViewing: (() -> Unit)? = null,
+    selectionColor: Color? = null,
 ) {
     GridItemSelectable(
         isSelected = isSelected,
+        selectionColor = selectionColor,
         onClick = onClick,
         onLongClick = onLongClick,
     ) {
