@@ -243,6 +243,7 @@ fun ExpandableMangaDescription(
     tagsProvider: () -> List<String>?,
     onTagSearch: (String) -> Unit,
     onCopyTagToClipboard: (tag: String) -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -262,8 +263,9 @@ fun ExpandableMangaDescription(
             expandedDescription = desc,
             shrunkDescription = trimmedDescription,
             expanded = expanded,
+            accentColor = accentColor,
             modifier = Modifier
-                .padding(top = 8.dp)
+                .padding(top = 12.dp)
                 .padding(horizontal = 16.dp)
                 .clickableNoIndication { onExpanded(!expanded) },
         )
@@ -600,6 +602,7 @@ private fun MangaSummary(
     expandedDescription: String,
     shrunkDescription: String,
     expanded: Boolean,
+    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     val animProgress by animateFloatAsState(
@@ -644,7 +647,7 @@ private fun MangaSummary(
                         contentDescription = stringResource(
                             if (expanded) MR.strings.manga_info_collapse else MR.strings.manga_info_expand,
                         ),
-                        tint = MaterialTheme.colorScheme.onBackground,
+                        tint = accentColor,
                         modifier = Modifier.background(Brush.radialGradient(colors = colors.asReversed())),
                     )
                 }
