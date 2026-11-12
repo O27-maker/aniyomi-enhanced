@@ -83,9 +83,11 @@ fun EntryCompactGridItem(
     coverBadgeEnd: @Composable (RowScope.() -> Unit)? = null,
     coverShape: Shape = MaterialTheme.shapes.extraSmall,
     titleOverlayHeight: Float = 0.33f,
+    selectionColor: Color? = null,
 ) {
     GridItemSelectable(
         isSelected = isSelected,
+        selectionColor = selectionColor,
         onClick = onClick,
         onLongClick = onLongClick,
     ) {
@@ -301,6 +303,7 @@ private fun GridItemSelectable(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selectionColor: Color? = null,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -310,7 +313,11 @@ private fun GridItemSelectable(
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
-            .selectedOutline(isSelected = isSelected, color = MaterialTheme.colorScheme.secondary)
+            .selectedOutline(
+                isSelected = isSelected,
+                color = selectionColor ?: MaterialTheme.colorScheme.secondary,
+                subtle = selectionColor != null,
+            )
             .padding(4.dp),
     ) {
         val contentColor = if (isSelected) {
@@ -330,7 +337,10 @@ private fun GridItemSelectable(
 private fun Modifier.selectedOutline(
     isSelected: Boolean,
     color: Color,
-) = drawBehind { if (isSelected) drawRect(color = color) }
+    subtle: Boolean,
+) = drawBehind {
+    if (isSelected) drawRect(color = if (subtle) color.copy(alpha = 0.12f) else color)
+}
 
 /**
  * Layout of list item.
