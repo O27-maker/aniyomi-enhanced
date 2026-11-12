@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -101,6 +102,7 @@ private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTIL
 @Composable
 fun MangaInfoBox(
     isTabletUi: Boolean,
+    isFromSource: Boolean,
     appBarPadding: Dp,
     manga: Manga,
     sourceName: String,
@@ -130,8 +132,8 @@ fun MangaInfoBox(
                         brush = Brush.verticalGradient(colors = backdropGradientColors),
                     )
                 }
-                .blur(4.dp)
-                .alpha(0.2f),
+                .blur(if (isFromSource) 18.dp else 4.dp)
+                .alpha(if (isFromSource) 0.32f else 0.2f),
         )
 
         // Manga & source info
@@ -142,6 +144,7 @@ fun MangaInfoBox(
                     manga = manga,
                     sourceName = sourceName,
                     isStubSource = isStubSource,
+                    isFromSource = isFromSource,
                     onCoverClick = onCoverClick,
                     doSearch = doSearch,
                 )
@@ -376,30 +379,29 @@ private fun MangaAndSourceTitlesSmall(
     manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
+    isFromSource: Boolean,
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ItemCover.Book(
-            modifier = Modifier
-                .sizeIn(maxWidth = 100.dp)
-                .align(Alignment.Top),
-            data = ImageRequest.Builder(LocalContext.current)
-                .data(manga)
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(MR.strings.manga_cover),
-            onClick = onCoverClick,
-        )
+    if (isFromSource) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = appBarPadding + 20.dp, end = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            ItemCover.Book(
+                modifier = Modifier
+                    .fillMaxWidth(0.68f)
+                    .widthIn(max = 240.dp),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(manga)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
             MangaContentInfo(
                 title = manga.title,
                 author = manga.author,
@@ -408,7 +410,41 @@ private fun MangaAndSourceTitlesSmall(
                 sourceName = sourceName,
                 isStubSource = isStubSource,
                 doSearch = doSearch,
+                textAlign = TextAlign.Center,
             )
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ItemCover.Book(
+                modifier = Modifier
+                    .sizeIn(maxWidth = 100.dp)
+                    .align(Alignment.Top),
+                data = ImageRequest.Builder(LocalContext.current)
+                    .data(manga)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = stringResource(MR.strings.manga_cover),
+                onClick = onCoverClick,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                MangaContentInfo(
+                    title = manga.title,
+                    author = manga.author,
+                    artist = manga.artist,
+                    status = manga.status,
+                    sourceName = sourceName,
+                    isStubSource = isStubSource,
+                    doSearch = doSearch,
+                )
+            }
         }
     }
 }
