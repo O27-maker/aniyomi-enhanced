@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.components.AppBar
@@ -41,6 +42,7 @@ fun LibraryToolbar(
     onSearchQueryChange: (String?) -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
     navigateUp: (() -> Unit)? = null,
+    searchAccentColor: Color? = null,
 ) = when {
     selectedCount > 0 -> LibrarySelectionToolbar(
         selectedCount = selectedCount,
@@ -59,6 +61,7 @@ fun LibraryToolbar(
         onClickOpenRandomEntry = onClickOpenRandomEntry,
         scrollBehavior = scrollBehavior,
         navigateUp = navigateUp,
+        searchAccentColor = searchAccentColor,
     )
 }
 
@@ -74,6 +77,7 @@ private fun LibraryRegularToolbar(
     onClickOpenRandomEntry: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior?,
     navigateUp: (() -> Unit)?,
+    searchAccentColor: Color?,
 ) {
     val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
     SearchToolbar(
@@ -123,6 +127,7 @@ private fun LibraryRegularToolbar(
         },
         scrollBehavior = scrollBehavior,
         navigateUp = navigateUp,
+        searchAccentColor = searchAccentColor,
     )
 }
 
