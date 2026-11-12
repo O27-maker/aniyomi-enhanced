@@ -45,7 +45,11 @@ fun MangaLibraryPager(
 ) {
     BoxWithConstraints {
         val gridColumns = (maxWidth / 160.dp).toInt().coerceIn(
-            minimumValue = if (maxWidth >= 600.dp) 4 else 3,
+            minimumValue = when {
+                maxWidth >= 600.dp -> 4
+                maxWidth >= 360.dp -> 3
+                else -> 2
+            },
             maximumValue = 6,
         )
         val density = LocalDensity.current
