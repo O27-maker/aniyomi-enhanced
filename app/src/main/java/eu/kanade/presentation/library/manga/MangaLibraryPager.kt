@@ -44,6 +44,10 @@ fun MangaLibraryPager(
     onClickContinueReading: ((LibraryManga) -> Unit)?,
 ) {
     BoxWithConstraints {
+        val gridColumns = (maxWidth / 160.dp).toInt().coerceIn(
+            minimumValue = if (maxWidth >= 600.dp) 4 else 3,
+            maximumValue = 6,
+        )
         val density = LocalDensity.current
         val containerHeightPx = with(density) { this@BoxWithConstraints.maxHeight.roundToPx() }
 
@@ -96,7 +100,7 @@ fun MangaLibraryPager(
                     MangaLibraryCompactGrid(
                         items = library,
                         showTitle = true,
-                        columns = 3,
+                        columns = gridColumns,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,
