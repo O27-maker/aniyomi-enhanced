@@ -6,6 +6,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,6 +21,7 @@ internal fun LibraryTabs(
     pagerState: PagerState,
     getNumberOfItemsForCategory: (Category) -> Int?,
     onTabItemClick: (Int) -> Unit,
+    minimalStyle: Boolean = false,
 ) {
     val currentPageIndex = pagerState.currentPage.coerceAtMost(categories.lastIndex)
     Column(
@@ -30,7 +32,16 @@ internal fun LibraryTabs(
             edgePadding = 0.dp,
             // TODO: use default when width is fixed upstream
             // https://issuetracker.google.com/issues/242879624
-            divider = {},
+            divider = if (minimalStyle) {
+                {}
+            } else {
+                { HorizontalDivider() }
+            },
+            indicator = if (minimalStyle) {
+                {}
+            } else {
+                { tabPositions -> TabRowDefaults.PrimaryIndicator(tabPositions[currentPageIndex]) }
+            },
         ) {
             categories.forEachIndexed { index, category ->
                 Tab(
@@ -42,11 +53,12 @@ internal fun LibraryTabs(
                             badgeCount = getNumberOfItemsForCategory(category),
                         )
                     },
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                    selectedContentColor = if (minimalStyle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    unselectedContentColor = if (minimalStyle) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
 
-        HorizontalDivider()
+        if (!minimalStyle) HorizontalDivider()
     }
 }
