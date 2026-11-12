@@ -91,7 +91,8 @@ fun MangaLibraryPager(
 
                 LibraryDisplayMode.CompactGrid,
                 LibraryDisplayMode.CoverOnlyGrid,
-                LibraryDisplayMode.ComfortableGrid -> {
+                LibraryDisplayMode.ComfortableGrid,
+                -> {
                     MangaLibraryCompactGrid(
                         items = library,
                         showTitle = true,
