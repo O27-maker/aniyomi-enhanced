@@ -54,6 +54,7 @@ internal fun MangaLibraryCompactGrid(
                     lastModified = manga.coverLastModified,
                 ),
                 coverShape = RoundedCornerShape(8.dp),
+                titleOverlayHeight = 0.25f,
                 coverBadgeStart = {
                     DownloadsBadge(count = libraryItem.downloadCount)
                     UnviewedBadge(count = libraryItem.unreadCount)
