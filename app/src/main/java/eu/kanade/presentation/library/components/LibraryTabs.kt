@@ -52,8 +52,16 @@ internal fun LibraryTabs(
                             badgeCount = getNumberOfItemsForCategory(category),
                         )
                     },
-                    selectedContentColor = if (minimalStyle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    unselectedContentColor = if (minimalStyle) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    selectedContentColor = if (minimalStyle) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    unselectedContentColor = if (minimalStyle) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 )
             }
         }
