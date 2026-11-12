@@ -396,6 +396,7 @@ private fun MangaScreenSmallImpl(
                     ) {
                         MangaInfoBox(
                             isTabletUi = false,
+                            isFromSource = state.isFromSource,
                             appBarPadding = topPadding,
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo() },
@@ -639,6 +640,7 @@ fun MangaScreenLargeImpl(
                     ) {
                         MangaInfoBox(
                             isTabletUi = true,
+                            isFromSource = state.isFromSource,
                             appBarPadding = contentPadding.calculateTopPadding(),
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo() },
