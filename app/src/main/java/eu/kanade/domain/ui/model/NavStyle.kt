@@ -25,7 +25,8 @@ enum class NavStyle(
     MOVE_MANGA_TO_MORE(titleRes = AYMR.strings.pref_bottom_nav_no_manga, moreTab = MoreTab),
     MOVE_UPDATES_TO_MORE(titleRes = AYMR.strings.pref_bottom_nav_no_updates, moreTab = MoreTab),
     MOVE_HISTORY_TO_MORE(titleRes = AYMR.strings.pref_bottom_nav_no_history, moreTab = MoreTab),
-    MOVE_BROWSE_TO_MORE(titleRes = AYMR.strings.pref_bottom_nav_no_browse, moreTab = MoreTab);
+    MOVE_BROWSE_TO_MORE(titleRes = AYMR.strings.pref_bottom_nav_no_browse, moreTab = MoreTab),
+    ;
 
     val tabs: List<Tab>
         get() = listOf(AnimeLibraryTab, MangaLibraryTab, BrowseTab, MoreTab)
