@@ -211,6 +211,9 @@ fun AppBarTitle(
     }
 }
 
+/**
+ * @param overflowActionColor Optional tint for overflow menu labels.
+ */
 @Composable
 fun AppBarActions(
     actions: ImmutableList<AppBar.AppBarAction>,
