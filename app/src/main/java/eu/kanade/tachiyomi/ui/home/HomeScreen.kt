@@ -79,7 +79,8 @@ object HomeScreen : Screen() {
 
     private val uiPreferences: UiPreferences by injectLazy()
     private val defaultTab = uiPreferences.startScreen().get().tab
-    private val moreTab = uiPreferences.navStyle().get().moreTab
+    private val navStyle = uiPreferences.navStyle().get()
+    private val moreTab = navStyle.moreTab
 
     @Composable
     override fun Content() {
