@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
@@ -17,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
-import eu.kanade.domain.ui.model.NavStyle
 import eu.kanade.presentation.more.settings.widget.SwitchPreferenceWidget
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.tachiyomi.R
@@ -80,8 +80,8 @@ fun MoreScreen(
 
             item {
                 TextPreferenceWidget(
-                    title = navStyle.moreTab.options.title,
-                    icon = navStyle.moreIcon,
+                    title = stringResource(MR.strings.history),
+                    icon = Icons.Outlined.History,
                     onPreferenceClick = onClickAlt,
                 )
             }
