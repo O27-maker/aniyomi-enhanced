@@ -1,6 +1,7 @@
 package tachiyomi.presentation.core.components
 
 import android.view.MotionEvent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -51,6 +52,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -356,10 +358,19 @@ fun TriStateItem(
     label: String,
     state: TriState,
     enabled: Boolean = true,
+    minimalStyle: Boolean = false,
     onClick: ((TriState) -> Unit)?,
 ) {
     Row(
         modifier = Modifier
+            .background(
+                color = if (minimalStyle && state != TriState.DISABLED) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                } else {
+                    Color.Transparent
+                },
+                shape = RoundedCornerShape(12.dp),
+            )
             .clickable(
                 enabled = enabled && onClick != null,
                 onClick = {
