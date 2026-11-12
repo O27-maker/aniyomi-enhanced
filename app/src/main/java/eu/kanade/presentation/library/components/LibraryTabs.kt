@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -32,15 +33,13 @@ internal fun LibraryTabs(
             edgePadding = 0.dp,
             // TODO: use default when width is fixed upstream
             // https://issuetracker.google.com/issues/242879624
-            divider = if (minimalStyle) {
-                {}
-            } else {
-                { HorizontalDivider() }
-            },
-            indicator = if (minimalStyle) {
-                {}
-            } else {
-                { tabPositions -> TabRowDefaults.PrimaryIndicator(tabPositions[currentPageIndex]) }
+            divider = {},
+            indicator = {
+                if (!minimalStyle) {
+                    TabRowDefaults.PrimaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(currentPageIndex),
+                    )
+                }
             },
         ) {
             categories.forEachIndexed { index, category ->
