@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,8 @@ fun TabbedScreen(
     scrollable: Boolean = false,
     animeSearchQuery: String? = null,
     onChangeAnimeSearchQuery: (String?) -> Unit = {},
+    searchAccentColor: Color? = null,
+    selectedTabContentColor: Color = MaterialTheme.colorScheme.primary,
 
 ) {
     val scope = rememberCoroutineScope()
@@ -77,6 +80,7 @@ fun TabbedScreen(
                     onChangeSearchQuery = actualOnChange,
                     actions = { AppBarActions(tab.actions) },
                     navigateUp = tab.navigateUp,
+                    searchAccentColor = searchAccentColor,
                 )
             }
         },
@@ -103,7 +107,8 @@ fun TabbedScreen(
                                 badgeCount = tab.badgeNumber,
                             )
                         },
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                        selectedContentColor = selectedTabContentColor,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
                     )
                 }
             }
