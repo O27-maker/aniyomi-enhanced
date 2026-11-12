@@ -226,6 +226,7 @@ private fun AnimeExtensionContent(
                 },
             ) { item ->
                 AnimeExtensionItem(
+                    accentColor = accentColor,
                     item = item,
                     modifier = Modifier.animateItemFastScroll(),
                     onClickItem = {
@@ -292,6 +293,7 @@ private fun AnimeExtensionItem(
     onClickItemAction: (AnimeExtension) -> Unit,
     modifier: Modifier = Modifier,
     onClickItemSecondaryAction: (AnimeExtension) -> Unit,
+    accentColor: Color,
 ) {
     val (extension, installStep) = item
     BaseBrowseItem(
