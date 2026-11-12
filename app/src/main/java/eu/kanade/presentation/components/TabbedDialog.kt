@@ -70,7 +70,11 @@ fun TabbedDialog(
                             selected = pagerState.currentPage == index,
                             onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                             text = { TabText(text = tab) },
-                            selectedContentColor = if (minimalStyle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            selectedContentColor = if (minimalStyle) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
                             unselectedContentColor = if (minimalStyle) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                         )
                     }
