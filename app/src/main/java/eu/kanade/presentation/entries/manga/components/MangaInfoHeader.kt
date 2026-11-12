@@ -151,6 +151,7 @@ fun MangaInfoBox(
             } else {
                 MangaAndSourceTitlesLarge(
                     appBarPadding = appBarPadding,
+                    isFromSource = isFromSource,
                     manga = manga,
                     sourceName = sourceName,
                     isStubSource = isStubSource,
@@ -340,6 +341,7 @@ fun ExpandableMangaDescription(
 @Composable
 private fun MangaAndSourceTitlesLarge(
     appBarPadding: Dp,
+    isFromSource: Boolean,
     manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
@@ -371,6 +373,7 @@ private fun MangaAndSourceTitlesLarge(
             isStubSource = isStubSource,
             doSearch = doSearch,
             textAlign = TextAlign.Center,
+            isFromSource = isFromSource,
         )
     }
 }
@@ -413,6 +416,7 @@ private fun MangaAndSourceTitlesSmall(
                 isStubSource = isStubSource,
                 doSearch = doSearch,
                 textAlign = TextAlign.Center,
+                isFromSource = true,
             )
         }
     } else {
@@ -461,11 +465,16 @@ private fun ColumnScope.MangaContentInfo(
     isStubSource: Boolean,
     doSearch: (query: String, global: Boolean) -> Unit,
     textAlign: TextAlign? = LocalTextStyle.current.textAlign,
+    isFromSource: Boolean = false,
 ) {
     val context = LocalContext.current
     Text(
         text = title.ifBlank { stringResource(MR.strings.unknown_title) },
-        style = MaterialTheme.typography.titleLarge,
+        style = if (isFromSource) {
+            MaterialTheme.typography.headlineSmall
+        } else {
+            MaterialTheme.typography.titleLarge
+        },
         modifier = Modifier.clickableNoIndication(
             onLongClick = {
                 if (title.isNotBlank()) {
