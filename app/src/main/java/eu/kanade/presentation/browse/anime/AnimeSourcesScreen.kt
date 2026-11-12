@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import eu.kanade.presentation.browse.anime.components.BaseAnimeSourceItem
@@ -45,6 +46,7 @@ fun AnimeSourcesScreen(
     onClickItem: (AnimeSource, Listing) -> Unit,
     onClickPin: (AnimeSource) -> Unit,
     onLongClickItem: (AnimeSource) -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
@@ -84,6 +86,7 @@ fun AnimeSourcesScreen(
                             onClickItem = onClickItem,
                             onLongClickItem = onLongClickItem,
                             onClickPin = onClickPin,
+                            accentColor = accentColor,
                         )
                     }
                 }
@@ -115,6 +118,7 @@ private fun AnimeSourceItem(
     onClickItem: (AnimeSource, Listing) -> Unit,
     onLongClickItem: (AnimeSource) -> Unit,
     onClickPin: (AnimeSource) -> Unit,
+    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     BaseAnimeSourceItem(
@@ -128,7 +132,7 @@ private fun AnimeSourceItem(
                     Text(
                         text = stringResource(MR.strings.latest),
                         style = LocalTextStyle.current.copy(
-                            color = MaterialTheme.colorScheme.primary,
+                            color = accentColor,
                         ),
                     )
                 }
@@ -136,6 +140,7 @@ private fun AnimeSourceItem(
             AnimeSourcePinButton(
                 isPinned = Pin.Pinned in source.pin,
                 onClick = { onClickPin(source) },
+                accentColor = accentColor,
             )
         },
     )
@@ -145,10 +150,11 @@ private fun AnimeSourceItem(
 private fun AnimeSourcePinButton(
     isPinned: Boolean,
     onClick: () -> Unit,
+    accentColor: Color,
 ) {
     val icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin
     val tint = if (isPinned) {
-        MaterialTheme.colorScheme.primary
+        accentColor
     } else {
         MaterialTheme.colorScheme.onBackground.copy(
             alpha = SECONDARY_ALPHA,
