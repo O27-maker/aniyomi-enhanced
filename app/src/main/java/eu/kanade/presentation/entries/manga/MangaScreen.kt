@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -434,6 +435,7 @@ private fun MangaScreenSmallImpl(
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                        accentColor = if (state.isFromSource) Color(0xFFC4B5FD) else MaterialTheme.colorScheme.primary,
                         )
                     }
 
@@ -666,6 +668,7 @@ fun MangaScreenLargeImpl(
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                        accentColor = if (state.isFromSource) Color(0xFFC4B5FD) else MaterialTheme.colorScheme.primary,
                         )
                     }
                 },
