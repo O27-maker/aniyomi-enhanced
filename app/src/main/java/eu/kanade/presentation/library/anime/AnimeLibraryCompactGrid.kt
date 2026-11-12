@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.util.fastAny
 import eu.kanade.presentation.library.components.DownloadsBadge
 import eu.kanade.presentation.library.components.EntryCompactGridItem
@@ -43,6 +44,7 @@ fun AnimeLibraryCompactGrid(
             val anime = libraryItem.libraryAnime.anime
             EntryCompactGridItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },
+                selectionColor = Color(0xFFB9A4FF),
                 title = anime.title.takeIf { showTitle },
                 coverData = AnimeCover(
                     animeId = anime.id,
