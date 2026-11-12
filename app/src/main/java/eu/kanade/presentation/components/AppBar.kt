@@ -20,6 +20,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -213,6 +214,7 @@ fun AppBarTitle(
 @Composable
 fun AppBarActions(
     actions: ImmutableList<AppBar.AppBarAction>,
+    overflowActionColor: Color? = null,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -272,7 +274,16 @@ fun AppBarActions(
                         it.onClick()
                         showMenu = false
                     },
-                    text = { Text(it.title, fontWeight = FontWeight.Normal) },
+                    text = {
+                        Text(
+                            it.title,
+                            color = overflowActionColor ?: LocalContentColor.current,
+                            fontWeight = FontWeight.Normal,
+                        )
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = overflowActionColor ?: MaterialTheme.colorScheme.onSurface,
+                    ),
                 )
             }
         }
@@ -418,7 +429,9 @@ fun SearchToolbar(
                 }
             }
 
-            key("actions") { actions() }
+            key("actions") {
+                actions()
+            }
         },
         isActionMode = false,
         scrollBehavior = scrollBehavior,
