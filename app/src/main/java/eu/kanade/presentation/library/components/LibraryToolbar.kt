@@ -103,7 +103,7 @@ private fun LibraryRegularToolbar(
         actions = {
             val filterTint = if (hasFilters) MaterialTheme.colorScheme.active else LocalContentColor.current
             AppBarActions(
-                persistentListOf(
+                actions = persistentListOf(
                     AppBar.Action(
                         title = stringResource(MR.strings.action_filter),
                         icon = Icons.Outlined.FilterList,
@@ -123,6 +123,7 @@ private fun LibraryRegularToolbar(
                         onClick = onClickOpenRandomEntry,
                     ),
                 ),
+                overflowActionColor = searchAccentColor,
             )
         },
         scrollBehavior = scrollBehavior,
