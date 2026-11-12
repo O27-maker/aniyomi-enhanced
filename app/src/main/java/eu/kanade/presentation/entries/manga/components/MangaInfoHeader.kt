@@ -468,6 +468,11 @@ private fun ColumnScope.MangaContentInfo(
     isFromSource: Boolean = false,
 ) {
     val context = LocalContext.current
+    val metadataIconTint = if (isFromSource) {
+        Color(0xFFC4B5FD)
+    } else {
+        LocalContentColor.current
+    }
     Text(
         text = title.ifBlank { stringResource(MR.strings.unknown_title) },
         style = if (isFromSource) {
@@ -500,6 +505,7 @@ private fun ColumnScope.MangaContentInfo(
             imageVector = Icons.Filled.PersonOutline,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
+            tint = metadataIconTint,
         )
         Text(
             text = author?.takeIf { it.isNotBlank() }
@@ -531,6 +537,7 @@ private fun ColumnScope.MangaContentInfo(
                 imageVector = Icons.Filled.Brush,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
+                tint = metadataIconTint,
             )
             Text(
                 text = artist,
@@ -565,6 +572,7 @@ private fun ColumnScope.MangaContentInfo(
             modifier = Modifier
                 .padding(end = 4.dp)
                 .size(16.dp),
+            tint = metadataIconTint,
         )
         ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
             Text(
