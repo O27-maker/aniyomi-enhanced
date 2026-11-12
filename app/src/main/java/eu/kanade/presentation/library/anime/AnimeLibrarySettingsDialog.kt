@@ -147,7 +147,6 @@ private fun ColumnScope.FilterPage(
             TriStateItem(
                 label = stringResource(MR.strings.action_filter_tracked),
                 state = filterTracker,
-                    minimalStyle = true,
                 minimalStyle = true,
                 onClick = { screenModel.toggleTracker(service.id.toInt()) },
             )
@@ -161,6 +160,7 @@ private fun ColumnScope.FilterPage(
                 TriStateItem(
                     label = service.name,
                     state = filterTracker,
+                    minimalStyle = true,
                     onClick = { screenModel.toggleTracker(service.id.toInt()) },
                 )
             }
