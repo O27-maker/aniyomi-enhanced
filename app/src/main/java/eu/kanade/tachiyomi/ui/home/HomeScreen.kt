@@ -93,7 +93,7 @@ object HomeScreen : Screen() {
                 Scaffold(
                     startBar = {
                         if (isTabletUi()) {
-                            NavigationRail {
+                            NavigationRail(containerColor = Color.Black) {
                                 navStyle.tabs.fastForEach {
                                     NavigationRailItem(it)
                                 }
@@ -106,7 +106,7 @@ object HomeScreen : Screen() {
                                 showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
                             }
                             AnimatedVisibility(
-                                visible = bottomNavVisible && false,
+                                visible = bottomNavVisible,
                                 enter = expandVertically(),
                                 exit = shrinkVertically(),
                             ) {
