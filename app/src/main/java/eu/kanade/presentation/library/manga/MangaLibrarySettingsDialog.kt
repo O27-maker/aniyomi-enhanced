@@ -92,6 +92,7 @@ private fun ColumnScope.FilterPage(
             filterDownloaded
         },
         enabled = !downloadedOnly,
+        minimalStyle = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterDownloadedManga) },
     )
     val filterUnread by screenModel.libraryPreferences.filterUnread().collectAsState()
