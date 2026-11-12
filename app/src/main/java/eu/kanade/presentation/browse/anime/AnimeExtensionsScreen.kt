@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -90,6 +92,7 @@ fun AnimeExtensionScreen(
     onOpenExtension: (AnimeExtension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
     onRefresh: () -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val navigator = LocalNavigator.currentOrThrow
 
@@ -131,6 +134,7 @@ fun AnimeExtensionScreen(
                     onTrustExtension = onTrustExtension,
                     onOpenExtension = onOpenExtension,
                     onClickUpdateAll = onClickUpdateAll,
+                    accentColor = accentColor,
                 )
             }
         }
@@ -150,6 +154,7 @@ private fun AnimeExtensionContent(
     onTrustExtension: (AnimeExtension.Untrusted) -> Unit,
     onOpenExtension: (AnimeExtension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
+    accentColor: Color,
 ) {
     val context = LocalContext.current
     var trustState by remember { mutableStateOf<AnimeExtension.Untrusted?>(null) }
@@ -179,7 +184,10 @@ private fun AnimeExtensionContent(
                         val action: @Composable RowScope.() -> Unit =
                             if (header.textRes == MR.strings.ext_updates_pending) {
                                 {
-                                    Button(onClick = { onClickUpdateAll() }) {
+                                    Button(
+                                        onClick = { onClickUpdateAll() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                    ) {
                                         Text(
                                             text = stringResource(MR.strings.ext_update_all),
                                             style = LocalTextStyle.current.copy(
@@ -305,6 +313,7 @@ private fun AnimeExtensionItem(
                     CircularProgressIndicator(
                         modifier = Modifier.size(40.dp),
                         strokeWidth = 2.dp,
+                        color = accentColor,
                     )
                 }
 
