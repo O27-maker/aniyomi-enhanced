@@ -435,7 +435,13 @@ private fun MangaScreenSmallImpl(
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
-                            accentColor = if (state.isFromSource) Color(0xFFC4B5FD) else MaterialTheme.colorScheme.primary,
+                            accentColor = if (state.isFromSource) {
+                                Color(
+                                    0xFFC4B5FD,
+                                )
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
                         )
                     }
 
@@ -668,7 +674,13 @@ fun MangaScreenLargeImpl(
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
-                            accentColor = if (state.isFromSource) Color(0xFFC4B5FD) else MaterialTheme.colorScheme.primary,
+                            accentColor = if (state.isFromSource) {
+                                Color(
+                                    0xFFC4B5FD,
+                                )
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
                         )
                     }
                 },
