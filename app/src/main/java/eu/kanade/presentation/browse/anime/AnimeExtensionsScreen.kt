@@ -1,6 +1,7 @@
 package eu.kanade.presentation.browse.anime
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
@@ -338,12 +340,14 @@ private fun AnimeExtensionItem(
                 onClickItemCancel = onClickItemCancel,
                 onClickItemAction = onClickItemAction,
                 onClickItemSecondaryAction = onClickItemSecondaryAction,
+                accentColor = accentColor,
             )
         },
     ) {
         AnimeExtensionItemContent(
             extension = extension,
             installStep = installStep,
+            accentColor = accentColor,
             modifier = Modifier.weight(1f),
         )
     }
@@ -353,6 +357,7 @@ private fun AnimeExtensionItem(
 private fun AnimeExtensionItemContent(
     extension: AnimeExtension,
     installStep: InstallStep,
+    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -390,8 +395,8 @@ private fun AnimeExtensionItemContent(
         )
         // Won't look good but it's not like we can ellipsize overflowing content
         FlowRow(
-            modifier = Modifier.secondaryItemAlpha(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
                 if (extension is AnimeExtension.Installed && extension.lang.isNotEmpty()) {
@@ -400,12 +405,21 @@ private fun AnimeExtensionItemContent(
                             extension.lang,
                             LocalContext.current,
                         ),
+                        modifier = Modifier.secondaryItemAlpha(),
                     )
                 }
 
                 if (extension.versionName.isNotEmpty()) {
                     Text(
                         text = extension.versionName,
+                        modifier = Modifier.secondaryItemAlpha(),
+                    )
+                }
+
+                if (extension is AnimeExtension.Installed && extension.loadError != null) {
+                    ExtensionStatusLabel(
+                        text = "Failed to load",
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
 
@@ -416,28 +430,50 @@ private fun AnimeExtensionItemContent(
                     else -> null
                 }
                 if (warning != null) {
-                    Text(
+                    ExtensionStatusLabel(
                         text = stringResource(warning).uppercase(),
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        color = if (extension is AnimeExtension.Installed && extension.isObsolete) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
                     )
                 }
 
                 if (!installStep.isCompleted()) {
-                    DotSeparatorNoSpaceText()
-                    Text(
+                    ExtensionStatusLabel(
                         text = when (installStep) {
                             InstallStep.Pending -> stringResource(MR.strings.ext_pending)
                             InstallStep.Downloading -> stringResource(MR.strings.ext_downloading)
                             InstallStep.Installing -> stringResource(MR.strings.ext_installing)
                             else -> error("Must not show non-install process text")
                         },
+                        color = accentColor,
                     )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ExtensionStatusLabel(
+    text: String,
+    color: Color,
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .background(
+                color = color.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(50),
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        color = color,
+        style = MaterialTheme.typography.labelSmall,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -448,8 +484,14 @@ private fun AnimeExtensionItemActions(
     onClickItemCancel: (AnimeExtension) -> Unit = {},
     onClickItemAction: (AnimeExtension) -> Unit = {},
     onClickItemSecondaryAction: (AnimeExtension) -> Unit = {},
+    accentColor: Color,
 ) {
     val isIdle = installStep.isCompleted()
+    val actionTint = if (!isIdle || installStep == InstallStep.Error) {
+        MaterialTheme.colorScheme.error
+    } else {
+        accentColor
+    }
 
     Row(
         modifier = modifier,
@@ -461,6 +503,7 @@ private fun AnimeExtensionItemActions(
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(MR.strings.action_cancel),
+                        tint = actionTint,
                     )
                 }
             }
@@ -469,6 +512,7 @@ private fun AnimeExtensionItemActions(
                     Icon(
                         imageVector = Icons.Outlined.Refresh,
                         contentDescription = stringResource(MR.strings.action_retry),
+                        tint = actionTint,
                     )
                 }
             }
@@ -479,6 +523,7 @@ private fun AnimeExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.Settings,
                                 contentDescription = stringResource(MR.strings.action_settings),
+                                tint = actionTint,
                             )
                         }
 
@@ -487,6 +532,7 @@ private fun AnimeExtensionItemActions(
                                 Icon(
                                     imageVector = Icons.Outlined.GetApp,
                                     contentDescription = stringResource(MR.strings.ext_update),
+                                    tint = actionTint,
                                 )
                             }
                         }
@@ -496,6 +542,7 @@ private fun AnimeExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.VerifiedUser,
                                 contentDescription = stringResource(MR.strings.ext_trust),
+                                tint = actionTint,
                             )
                         }
                     }
@@ -507,6 +554,7 @@ private fun AnimeExtensionItemActions(
                                 Icon(
                                     imageVector = Icons.Outlined.Public,
                                     contentDescription = stringResource(MR.strings.action_open_in_web_view),
+                                    tint = actionTint,
                                 )
                             }
                         }
@@ -515,6 +563,7 @@ private fun AnimeExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.GetApp,
                                 contentDescription = stringResource(MR.strings.ext_install),
+                                tint = actionTint,
                             )
                         }
                     }
