@@ -19,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import eu.kanade.domain.source.interactor.SetMigrateSorting
@@ -111,7 +110,7 @@ private fun MigrateAnimeSourceList(
                         )
                         SetMigrateSorting.Mode.TOTAL -> Icon(
                             Icons.Outlined.Numbers,
-                            tint = Color(0xFFC4B5FD),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             contentDescription = stringResource(MR.strings.action_sort_count),
                         )
                     }
@@ -120,12 +119,12 @@ private fun MigrateAnimeSourceList(
                     when (sortingDirection) {
                         SetMigrateSorting.Direction.ASCENDING -> Icon(
                             Icons.Outlined.ArrowUpward,
-                            tint = Color(0xFFC4B5FD),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             contentDescription = stringResource(MR.strings.action_asc),
                         )
                         SetMigrateSorting.Direction.DESCENDING -> Icon(
                             Icons.Outlined.ArrowDownward,
-                            tint = Color(0xFFC4B5FD),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             contentDescription = stringResource(MR.strings.action_desc),
                         )
                     }
