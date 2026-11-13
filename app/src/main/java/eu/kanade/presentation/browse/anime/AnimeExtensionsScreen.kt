@@ -482,7 +482,7 @@ private fun AnimeExtensionItemActions(
     val actionTint = if (!isIdle || installStep == InstallStep.Error) {
         MaterialTheme.colorScheme.error
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+        Color(0xFFAAAAAA)
     }
 
     Row(
