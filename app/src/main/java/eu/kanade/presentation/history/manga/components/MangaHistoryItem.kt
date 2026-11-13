@@ -31,6 +31,7 @@ import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 private val HISTORY_ITEM_HEIGHT = 96.dp
 
@@ -82,8 +83,10 @@ fun MangaHistoryItem(
                 } else {
                     readAt
                 },
-                modifier = Modifier.padding(top = 4.dp),
-                style = textStyle,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .secondaryItemAlpha(),
+                style = MaterialTheme.typography.bodySmall,
             )
         }
 
