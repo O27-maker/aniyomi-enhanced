@@ -1,11 +1,5 @@
 package eu.kanade.presentation.more.settings.widget
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
-import androidx.compose.animation.core.StartOffsetType
-import androidx.compose.animation.core.repeatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -88,34 +82,18 @@ internal fun BasePreferenceWidget(
 
 internal fun Modifier.highlightBackground(highlighted: Boolean): Modifier = composed {
     var highlightFlag by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(highlighted) {
         if (highlighted) {
             highlightFlag = true
             delay(3.seconds)
             highlightFlag = false
         }
     }
-    val highlight by animateColorAsState(
-        targetValue = if (highlightFlag) {
-            MaterialTheme.colorScheme.surfaceTint.copy(alpha = .12f)
-        } else {
-            Color.Transparent
-        },
-        animationSpec = if (highlightFlag) {
-            repeatable(
-                iterations = 5,
-                animation = tween(durationMillis = 200),
-                repeatMode = RepeatMode.Reverse,
-                initialStartOffset = StartOffset(
-                    offsetMillis = 600,
-                    offsetType = StartOffsetType.Delay,
-                ),
-            )
-        } else {
-            tween(200)
-        },
-        label = "highlight",
-    )
+    val highlight = if (highlightFlag) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .55f)
+    } else {
+        Color.Transparent
+    }
     Modifier.background(color = highlight)
 }
 
