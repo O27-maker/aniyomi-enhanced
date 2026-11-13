@@ -415,13 +415,6 @@ private fun AnimeExtensionItemContent(
                     )
                 }
 
-                if (extension is AnimeExtension.Installed && extension.loadError != null) {
-                    ExtensionStatusLabel(
-                        text = "Failed to load",
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-
                 val warning = when {
                     extension is AnimeExtension.Untrusted -> MR.strings.ext_untrusted
                     extension is AnimeExtension.Installed && extension.isObsolete -> MR.strings.ext_obsolete
