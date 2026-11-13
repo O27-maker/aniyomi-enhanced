@@ -175,7 +175,7 @@ fun ReaderAppBars(
         ) {
             Column(
                 modifier = Modifier
-                    .drawBehind { drawRect(backgroundColor) }
+                    .background(backgroundColor)
                     .then(bottomBarInsetsPadding),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             ) {
