@@ -469,7 +469,7 @@ private fun ColumnScope.MangaContentInfo(
 ) {
     val context = LocalContext.current
     val metadataIconTint = if (isFromSource) {
-        Color(0xFFC4B5FD)
+        MaterialTheme.colorScheme.primary
     } else {
         LocalContentColor.current
     }
