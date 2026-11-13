@@ -105,6 +105,11 @@ fun TabbedScreen(
                             TabText(
                                 text = stringResource(tab.titleRes),
                                 badgeCount = tab.badgeNumber,
+                                color = if (state.currentPage == index) {
+                                    selectedTabContentColor
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
+                                },
                             )
                         },
                         selectedContentColor = selectedTabContentColor,
