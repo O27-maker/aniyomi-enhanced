@@ -155,6 +155,10 @@ class ReaderActivity : BaseActivity() {
             overridePendingTransition(R.anim.shared_axis_x_push_enter, R.anim.shared_axis_x_push_exit)
         }
 
+        enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
         super.onCreate(savedInstanceState)
 
         binding = ReaderActivityBinding.inflate(layoutInflater)
@@ -493,17 +497,6 @@ class ReaderActivity : BaseActivity() {
                 }
                 null -> {}
             }
-        }
-
-        val toolbarColor = ColorUtils.setAlphaComponent(
-            SurfaceColors.SURFACE_2.getColor(this),
-            if (isNightMode()) 230 else 242, // 90% dark 95% light
-        )
-        @Suppress("DEPRECATION")
-        window.statusBarColor = toolbarColor
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            @Suppress("DEPRECATION")
-            window.navigationBarColor = toolbarColor
         }
 
         // Set initial visibility
@@ -872,7 +865,6 @@ class ReaderActivity : BaseActivity() {
 
             readerPreferences.fullscreen().changes()
                 .onEach {
-                    WindowCompat.setDecorFitsSystemWindows(window, !it)
                     updateViewerInset(it)
                 }
                 .launchIn(lifecycleScope)
