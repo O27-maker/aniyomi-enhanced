@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -73,16 +72,7 @@ fun ReaderAppBars(
         .surfaceColorAtElevation(3.dp)
         .copy(alpha = if (isSystemInDarkTheme()) 0.9f else 0.95f)
 
-    val topBarInsetsPadding = if (fullscreen) {
-        Modifier.statusBarsPadding()
-    } else {
-        Modifier
-    }
-    val bottomBarInsetsPadding = if (fullscreen) {
-        Modifier.navigationBarsPadding()
-    } else {
-        Modifier
-    }
+    val bottomBarInsetsPadding = Modifier.navigationBarsPadding()
 
     Column(
         modifier = Modifier.fillMaxHeight(),
@@ -102,7 +92,6 @@ fun ReaderAppBars(
             AppBar(
                 modifier = Modifier
                     .background(backgroundColor)
-                    .then(topBarInsetsPadding)
                     .clickable(onClick = onClickTopAppBar),
                 backgroundColor = backgroundColor,
                 title = mangaTitle,
