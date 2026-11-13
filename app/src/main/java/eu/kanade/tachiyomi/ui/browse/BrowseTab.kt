@@ -7,8 +7,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.Navigator
@@ -95,8 +95,8 @@ data object BrowseTab : Tab {
             animeSearchQuery = animeExtensionsState.searchQuery,
             onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
             scrollable = true,
-            searchAccentColor = Color(0xFFC4B5FD),
-            selectedTabContentColor = Color(0xFFC4B5FD),
+            searchAccentColor = MaterialTheme.colorScheme.primary,
+            selectedTabContentColor = MaterialTheme.colorScheme.primary,
         )
         LaunchedEffect(Unit) {
             switchToTabNumberChannel.receiveAsFlow()
