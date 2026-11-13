@@ -80,6 +80,7 @@ object SettingsMainScreen : Screen() {
         val navigator = LocalNavigator.currentOrThrow
         val backPress = LocalBackPress.currentOrThrow
         val containerColor = if (twoPane) getPalerSurface() else MaterialTheme.colorScheme.surface
+        val navigationIconTint = MaterialTheme.colorScheme.onSurfaceVariant
         val topBarState = rememberTopAppBarState()
 
         Scaffold(
@@ -154,6 +155,7 @@ object SettingsMainScreen : Screen() {
                                 title = stringResource(item.titleRes),
                                 subtitle = item.formatSubtitle(),
                                 icon = item.icon,
+                                iconTint = navigationIconTint,
                                 onPreferenceClick = { navigator.navigate(item.screen, twoPane) },
                             )
                         }
