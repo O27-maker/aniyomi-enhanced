@@ -32,6 +32,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
+import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 private val HistoryItemHeight = 96.dp
 
@@ -83,8 +84,10 @@ fun AnimeHistoryItem(
                 } else {
                     seenAt
                 },
-                modifier = Modifier.padding(top = 4.dp),
-                style = textStyle,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .secondaryItemAlpha(),
+                style = MaterialTheme.typography.bodySmall,
             )
         }
 
