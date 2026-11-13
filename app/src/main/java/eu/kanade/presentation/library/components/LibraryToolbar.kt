@@ -123,7 +123,7 @@ private fun LibraryRegularToolbar(
                         onClick = onClickOpenRandomEntry,
                     ),
                 ),
-                overflowActionColor = searchAccentColor,
+                overflowActionColor = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         scrollBehavior = scrollBehavior,
