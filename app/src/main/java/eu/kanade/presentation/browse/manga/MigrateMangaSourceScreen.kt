@@ -106,7 +106,7 @@ private fun MigrateSourceList(
                     when (sortingMode) {
                         SetMigrateSorting.Mode.ALPHABETICAL -> Icon(
                             Icons.Outlined.SortByAlpha,
-                            tint = Color(0xFFC4B5FD),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             contentDescription = stringResource(MR.strings.action_sort_alpha),
                         )
                         SetMigrateSorting.Mode.TOTAL -> Icon(
