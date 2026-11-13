@@ -3,6 +3,8 @@ package eu.kanade.presentation.browse.manga
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,7 +51,6 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.browse.BaseBrowseItem
 import eu.kanade.presentation.browse.manga.components.MangaExtensionIcon
 import eu.kanade.presentation.components.WarningBanner
-import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
 import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
@@ -341,6 +342,7 @@ private fun ExtensionItem(
         ExtensionItemContent(
             extension = extension,
             installStep = installStep,
+            accentColor = accentColor,
             modifier = Modifier.weight(1f),
         )
     }
@@ -350,6 +352,7 @@ private fun ExtensionItem(
 private fun ExtensionItemContent(
     extension: MangaExtension,
     installStep: InstallStep,
+    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -361,10 +364,9 @@ private fun ExtensionItemContent(
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
         )
-        // Won't look good but it's not like we can ellipsize overflowing content
         FlowRow(
-            modifier = Modifier.secondaryItemAlpha(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
                 if (extension is MangaExtension.Installed && extension.lang.isNotEmpty()) {
@@ -373,21 +375,21 @@ private fun ExtensionItemContent(
                             extension.lang,
                             LocalContext.current,
                         ),
+                        modifier = Modifier.secondaryItemAlpha(),
                     )
                 }
 
                 if (extension.versionName.isNotEmpty()) {
                     Text(
                         text = extension.versionName,
+                        modifier = Modifier.secondaryItemAlpha(),
                     )
                 }
 
                 if (extension is MangaExtension.Installed && extension.loadError != null) {
-                    Text(
+                    ExtensionStatusLabel(
                         text = "Failed to load",
                         color = MaterialTheme.colorScheme.error,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
@@ -398,28 +400,50 @@ private fun ExtensionItemContent(
                     else -> null
                 }
                 if (warning != null) {
-                    Text(
+                    ExtensionStatusLabel(
                         text = stringResource(warning).uppercase(),
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        color = if (extension is MangaExtension.Installed && extension.isObsolete) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
                     )
                 }
 
                 if (!installStep.isCompleted()) {
-                    DotSeparatorNoSpaceText()
-                    Text(
+                    ExtensionStatusLabel(
                         text = when (installStep) {
                             InstallStep.Pending -> stringResource(MR.strings.ext_pending)
                             InstallStep.Downloading -> stringResource(MR.strings.ext_downloading)
                             InstallStep.Installing -> stringResource(MR.strings.ext_installing)
                             else -> error("Must not show non-install process text")
                         },
+                        color = accentColor,
                     )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ExtensionStatusLabel(
+    text: String,
+    color: Color,
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .background(
+                color = color.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(50),
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        color = color,
+        style = MaterialTheme.typography.labelSmall,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
