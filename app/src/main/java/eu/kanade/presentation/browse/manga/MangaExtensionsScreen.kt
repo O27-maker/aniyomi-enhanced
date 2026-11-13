@@ -334,6 +334,7 @@ private fun ExtensionItem(
                 onClickItemCancel = onClickItemCancel,
                 onClickItemAction = onClickItemAction,
                 onClickItemSecondaryAction = onClickItemSecondaryAction,
+                accentColor = accentColor,
             )
         },
     ) {
@@ -429,8 +430,14 @@ private fun ExtensionItemActions(
     onClickItemCancel: (MangaExtension) -> Unit = {},
     onClickItemAction: (MangaExtension) -> Unit = {},
     onClickItemSecondaryAction: (MangaExtension) -> Unit = {},
+    accentColor: Color,
 ) {
     val isIdle = installStep.isCompleted()
+    val actionTint = if (!isIdle || installStep == InstallStep.Error) {
+        MaterialTheme.colorScheme.error
+    } else {
+        accentColor
+    }
 
     Row(
         modifier = modifier,
@@ -442,6 +449,7 @@ private fun ExtensionItemActions(
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(MR.strings.action_cancel),
+                        tint = actionTint,
                     )
                 }
             }
@@ -450,6 +458,7 @@ private fun ExtensionItemActions(
                     Icon(
                         imageVector = Icons.Outlined.Refresh,
                         contentDescription = stringResource(MR.strings.action_retry),
+                        tint = actionTint,
                     )
                 }
             }
@@ -460,6 +469,7 @@ private fun ExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.Settings,
                                 contentDescription = stringResource(MR.strings.action_settings),
+                                tint = actionTint,
                             )
                         }
 
@@ -468,6 +478,7 @@ private fun ExtensionItemActions(
                                 Icon(
                                     imageVector = Icons.Outlined.GetApp,
                                     contentDescription = stringResource(MR.strings.ext_update),
+                                    tint = actionTint,
                                 )
                             }
                         }
@@ -477,6 +488,7 @@ private fun ExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.VerifiedUser,
                                 contentDescription = stringResource(MR.strings.ext_trust),
+                                tint = actionTint,
                             )
                         }
                     }
@@ -488,6 +500,7 @@ private fun ExtensionItemActions(
                                 Icon(
                                     imageVector = Icons.Outlined.Public,
                                     contentDescription = stringResource(MR.strings.action_open_in_web_view),
+                                    tint = actionTint,
                                 )
                             }
                         }
@@ -496,6 +509,7 @@ private fun ExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.GetApp,
                                 contentDescription = stringResource(MR.strings.ext_install),
+                                tint = actionTint,
                             )
                         }
                     }
