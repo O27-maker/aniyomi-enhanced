@@ -38,8 +38,6 @@ private val animationSpec = tween<IntOffset>(200)
 @Composable
 fun ReaderAppBars(
     visible: Boolean,
-    fullscreen: Boolean,
-
     mangaTitle: String?,
     chapterTitle: String?,
     navigateUp: () -> Unit,
