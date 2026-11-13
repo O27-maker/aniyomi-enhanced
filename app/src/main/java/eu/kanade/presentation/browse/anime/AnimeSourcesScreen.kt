@@ -132,7 +132,7 @@ private fun AnimeSourceItem(
                     Text(
                         text = stringResource(MR.strings.latest),
                         style = LocalTextStyle.current.copy(
-                            color = accentColor,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
                     )
                 }
