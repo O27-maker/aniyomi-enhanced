@@ -1,6 +1,5 @@
 package eu.kanade.presentation.reader.appbars
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,7 +34,6 @@ fun BottomReaderBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(backgroundColor)
             .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
