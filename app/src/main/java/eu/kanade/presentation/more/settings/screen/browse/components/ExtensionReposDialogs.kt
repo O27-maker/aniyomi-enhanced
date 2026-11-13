@@ -66,7 +66,17 @@ fun ExtensionRepoCreateDialog(
             }
         },
         title = {
-            Text(text = stringResource(MR.strings.action_add_repo))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(text = stringResource(MR.strings.action_add_repo))
+            }
         },
         text = {
             Column {
