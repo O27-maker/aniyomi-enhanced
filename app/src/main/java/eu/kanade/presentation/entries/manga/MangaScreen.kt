@@ -365,6 +365,8 @@ private fun MangaScreenSmallImpl(
                     icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
                     onClick = onContinueReading,
                     expanded = chapterListState.shouldExpandFAB(),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         },
@@ -436,13 +438,7 @@ private fun MangaScreenSmallImpl(
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
-                            accentColor = if (state.isFromSource) {
-                                Color(
-                                    0xFFC4B5FD,
-                                )
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            },
+                            accentColor = MaterialTheme.colorScheme.primary,
                         )
                     }
 
