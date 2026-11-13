@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Preview
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
@@ -18,6 +20,7 @@ fun SwitchPreferenceWidget(
     title: String,
     subtitle: String? = null,
     icon: ImageVector? = null,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
     checked: Boolean = false,
     onCheckedChanged: (Boolean) -> Unit,
 ) {
@@ -26,6 +29,7 @@ fun SwitchPreferenceWidget(
         title = title,
         subtitle = subtitle,
         icon = icon,
+        iconTint = iconTint,
         widget = {
             Switch(
                 checked = checked,
