@@ -167,7 +167,15 @@ fun AnimeExtensionStoreConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
-            Text(text = stringResource(MR.strings.extensionStoresScreen_addStore_title))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(text = stringResource(MR.strings.extensionStoresScreen_addStore_title))
+            }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
