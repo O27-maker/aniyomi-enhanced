@@ -20,7 +20,7 @@ fun SwitchPreferenceWidget(
     title: String,
     subtitle: String? = null,
     icon: ImageVector? = null,
-    iconTint: Color = MaterialTheme.colorScheme.primary,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     checked: Boolean = false,
     onCheckedChanged: (Boolean) -> Unit,
 ) {
