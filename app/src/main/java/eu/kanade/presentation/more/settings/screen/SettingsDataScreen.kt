@@ -99,6 +99,7 @@ object SettingsDataScreen : SearchableSettings {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                 contentDescription = stringResource(MR.strings.tracking_guide),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
