@@ -460,7 +460,7 @@ private fun ExtensionItemActions(
     val actionTint = if (!isIdle || installStep == InstallStep.Error) {
         MaterialTheme.colorScheme.error
     } else {
-        accentColor
+        MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Row(
