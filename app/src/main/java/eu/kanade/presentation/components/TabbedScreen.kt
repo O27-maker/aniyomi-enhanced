@@ -149,6 +149,7 @@ private fun FlexibleTabRow(
             selectedTabIndex = selectedTabIndex,
             edgePadding = 13.dp,
             modifier = Modifier.zIndex(1f),
+            indicator = {},
         ) {
             block()
         }
@@ -156,6 +157,7 @@ private fun FlexibleTabRow(
         PrimaryTabRow(
             selectedTabIndex = selectedTabIndex,
             modifier = Modifier.zIndex(1f),
+            indicator = {},
         ) {
             block()
         }
