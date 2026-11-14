@@ -525,7 +525,6 @@ internal object AnimeExtensionLoader {
     )
 }
 
-
 /**
  * Mihon-compatible parent-last loader for anime extension APKs.
  *
