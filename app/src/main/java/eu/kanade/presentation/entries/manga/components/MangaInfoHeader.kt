@@ -537,7 +537,12 @@ private fun ColumnScope.MangaContentInfo(
             modifier = Modifier
                 .padding(end = 4.dp)
                 .size(16.dp),
-            tint = if (status == SManga.COMPLETED.toLong() || status == SManga.PUBLISHING_FINISHED.toLong()) {
+            tint = if (
+                status == SManga.ONGOING.toLong() ||
+                status == SManga.COMPLETED.toLong() ||
+                status == SManga.PUBLISHING_FINISHED.toLong() ||
+                status == SManga.CANCELLED.toLong()
+            ) {
                 LocalContentColor.current
             } else {
                 metadataIconTint
