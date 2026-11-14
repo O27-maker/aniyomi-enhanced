@@ -17,7 +17,6 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
-import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -26,6 +25,9 @@ import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.io.File
+import java.net.URL
+import java.util.Collections
+import java.util.Enumeration
 
 /**
  * Class that handles the loading of the extensions installed in the system.
@@ -373,7 +375,7 @@ internal object AnimeExtensionLoader {
         val isTorrent = appInfo.metaData?.getBoolean(METADATA_IS_TORRENT, false) == true ||
             appInfo.metaData?.getInt(METADATA_TORRENT, 0) == 1
         val classLoader = try {
-            ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
+            AnimeDelegateLastPathClassLoader(appInfo.sourceDir, null, context.classLoader)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($pkgName)" }
             return notLoaded(e.message ?: "Unable to create extension class loader", libVersion, isNsfw, isTorrent)
@@ -521,4 +523,58 @@ internal object AnimeExtensionLoader {
         val packageInfo: PackageInfo,
         val isShared: Boolean,
     )
+}
+
+
+/**
+ * Mihon-compatible parent-last loader for anime extension APKs.
+ *
+ * The boot class loader is checked first, then the extension APK, then the app.
+ * This prevents app classes from shadowing classes bundled by an extension.
+ */
+private class AnimeDelegateLastPathClassLoader(
+    dexPath: String,
+    librarySearchPath: String?,
+    parent: ClassLoader,
+) : PathClassLoader(dexPath, librarySearchPath, parent) {
+
+    private val bootClassLoader: ClassLoader? = Any::class.java.classLoader
+
+    override fun loadClass(name: String?, resolve: Boolean): Class<*> {
+        findLoadedClass(name)?.let { return it }
+
+        if (bootClassLoader != null) {
+            try {
+                return bootClassLoader.loadClass(name)
+            } catch (_: ClassNotFoundException) {
+            }
+        }
+
+        val fromExtension = try {
+            return findClass(name)
+        } catch (e: ClassNotFoundException) {
+            e
+        }
+
+        return try {
+            parent.loadClass(name)
+        } catch (_: ClassNotFoundException) {
+            throw fromExtension
+        }
+    }
+
+    override fun getResource(name: String?): URL? {
+        return bootClassLoader?.getResource(name)
+            ?: findResource(name)
+            ?: parent?.getResource(name)
+    }
+
+    override fun getResources(name: String?): Enumeration<URL> {
+        val resources = buildList {
+            bootClassLoader?.getResources(name)?.let { addAll(it.toList()) }
+            findResources(name)?.let { addAll(it.toList()) }
+            parent?.getResources(name)?.let { addAll(it.toList()) }
+        }
+        return Collections.enumeration(resources)
+    }
 }
