@@ -13,8 +13,11 @@ import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionInstallReceiver
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionInstaller
 import eu.kanade.tachiyomi.extension.anime.util.AnimeExtensionLoader
 import eu.kanade.tachiyomi.util.system.toast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +26,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
@@ -48,7 +53,8 @@ class AnimeExtensionManager(
     private val trustExtension: TrustAnimeExtension = Injekt.get(),
 ) {
 
-    val scope = CoroutineScope(SupervisorJob())
+    // APK inspection and class loading must not block the UI thread.
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _isInitialized = MutableStateFlow(false)
     val isInitialized: StateFlow<Boolean> = _isInitialized.asStateFlow()
@@ -74,9 +80,17 @@ class AnimeExtensionManager(
     private val untrustedExtensionsMapFlow = MutableStateFlow(emptyMap<String, AnimeExtension.Untrusted>())
     val untrustedExtensionsFlow = untrustedExtensionsMapFlow.mapExtensions(scope)
 
+    // Serialize package scans with install/remove broadcasts to prevent stale scans overwriting newer state.
+    private val loadMutex = Mutex()
+    private val installReceiver = AnimeExtensionInstallReceiver(AnimeInstallationListener(), scope)
+
     init {
-        initAnimeExtensions()
-        AnimeExtensionInstallReceiver(AnimeInstallationListener()).register(context)
+        scope.launch {
+            loadMutex.withLock {
+                installReceiver.register(context)
+                loadAnimeExtensionsLocked()
+            }
+        }
     }
 
     private var subLanguagesEnabledOnFirstRun = preferences.enabledLanguages().isSet()
@@ -127,18 +141,31 @@ class AnimeExtensionManager(
     /**
      * Loads and registers the installed animeextensions.
      */
-    private fun initAnimeExtensions() {
-        val animeextensions = AnimeExtensionLoader.loadExtensions(context)
+    private fun loadAnimeExtensionsLocked() {
+        val animeExtensions = AnimeExtensionLoader.loadExtensions(context)
 
-        installedExtensionsMapFlow.value = animeextensions
+        installedExtensionsMapFlow.value = animeExtensions
             .filterIsInstance<AnimeLoadResult.Success>()
             .associate { it.extension.pkgName to it.extension }
 
-        untrustedExtensionsMapFlow.value = animeextensions
+        untrustedExtensionsMapFlow.value = animeExtensions
             .filterIsInstance<AnimeLoadResult.Untrusted>()
             .associate { it.extension.pkgName to it.extension }
 
         _isInitialized.value = true
+        updatePendingUpdatesCount()
+    }
+
+    /**
+     * Re-scans Android's installed packages after installation succeeds. This also recovers
+     * when the package-added broadcast is delayed or not delivered.
+     */
+    fun refreshInstalledExtensions() {
+        scope.launch {
+            loadMutex.withLock {
+                loadAnimeExtensionsLocked()
+            }
+        }
     }
 
     /**
@@ -147,10 +174,12 @@ class AnimeExtensionManager(
     suspend fun findAvailableExtensions() {
         val extensions: List<AnimeExtension.Available> = try {
             api.findExtensions()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)
             withUIContext { context.toast(MR.strings.extension_api_error) }
-            emptyList()
+            return
         }
 
         enableAdditionalSubLanguages(extensions)
@@ -271,6 +300,9 @@ class AnimeExtensionManager(
 
     fun updateInstallStep(downloadId: Long, step: InstallStep) {
         installer.updateInstallStep(downloadId, step)
+        if (step == InstallStep.Installed) {
+            refreshInstalledExtensions()
+        }
     }
 
     /**
@@ -293,11 +325,23 @@ class AnimeExtensionManager(
 
         trustExtension.trust(extension.pkgName, extension.versionCode, extension.signatureHash)
 
-        untrustedExtensionsMapFlow.value -= extension.pkgName
-
-        AnimeExtensionLoader.loadExtensionFromPkgName(context, extension.pkgName)
-            .let { it as? AnimeLoadResult.Success }
-            ?.let { registerNewExtension(it.extension) }
+        val result = AnimeExtensionLoader.loadExtensionFromPkgName(context, extension.pkgName)
+        loadMutex.withLock {
+            when (result) {
+                is AnimeLoadResult.Success -> {
+                    untrustedExtensionsMapFlow.value -= extension.pkgName
+                    registerNewExtension(result.extension.withUpdateCheck())
+                }
+                is AnimeLoadResult.Untrusted -> {
+                    untrustedExtensionsMapFlow.value += result.extension
+                }
+                AnimeLoadResult.Error -> {
+                    // Keep the extension visible instead of silently dropping it if loading fails.
+                    logcat(LogPriority.ERROR) { "Trusted anime extension could not be loaded: ${extension.pkgName}" }
+                }
+            }
+            updatePendingUpdatesCount()
+        }
     }
 
     /**
@@ -335,23 +379,25 @@ class AnimeExtensionManager(
      */
     private inner class AnimeInstallationListener : AnimeExtensionInstallReceiver.Listener {
 
-        override fun onExtensionInstalled(extension: AnimeExtension.Installed) {
+        override suspend fun onExtensionInstalled(extension: AnimeExtension.Installed) = loadMutex.withLock {
+            untrustedExtensionsMapFlow.value -= extension.pkgName
             registerNewExtension(extension.withUpdateCheck())
             updatePendingUpdatesCount()
         }
 
-        override fun onExtensionUpdated(extension: AnimeExtension.Installed) {
+        override suspend fun onExtensionUpdated(extension: AnimeExtension.Installed) = loadMutex.withLock {
+            untrustedExtensionsMapFlow.value -= extension.pkgName
             registerUpdatedExtension(extension.withUpdateCheck())
             updatePendingUpdatesCount()
         }
 
-        override fun onExtensionUntrusted(extension: AnimeExtension.Untrusted) {
+        override suspend fun onExtensionUntrusted(extension: AnimeExtension.Untrusted) = loadMutex.withLock {
             installedExtensionsMapFlow.value -= extension.pkgName
             untrustedExtensionsMapFlow.value += extension
             updatePendingUpdatesCount()
         }
 
-        override fun onPackageUninstalled(pkgName: String) {
+        override suspend fun onPackageUninstalled(pkgName: String) = loadMutex.withLock {
             AnimeExtensionLoader.uninstallPrivateExtension(context, pkgName)
             unregisterAnimeExtension(pkgName)
             updatePendingUpdatesCount()
