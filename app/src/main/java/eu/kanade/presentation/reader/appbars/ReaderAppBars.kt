@@ -161,9 +161,7 @@ fun ReaderAppBars(
             ),
         ) {
             Column(
-                modifier = Modifier
-                    .background(backgroundColor)
-                    .then(bottomBarInsetsPadding),
+                modifier = bottomBarInsetsPadding,
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             ) {
                 ChapterNavigator(
@@ -176,16 +174,18 @@ fun ReaderAppBars(
                     totalPages = totalPages,
                     onPageIndexChange = onPageIndexChange,
                 )
-                BottomReaderBar(
-                    backgroundColor = backgroundColor,
-                    readingMode = readingMode,
-                    onClickReadingMode = onClickReadingMode,
-                    orientation = orientation,
-                    onClickOrientation = onClickOrientation,
-                    cropEnabled = cropEnabled,
-                    onClickCropBorder = onClickCropBorder,
-                    onClickSettings = onClickSettings,
-                )
+                Column(modifier = Modifier.background(backgroundColor)) {
+                    BottomReaderBar(
+                        backgroundColor = backgroundColor,
+                        readingMode = readingMode,
+                        onClickReadingMode = onClickReadingMode,
+                        orientation = orientation,
+                        onClickOrientation = onClickOrientation,
+                        cropEnabled = cropEnabled,
+                        onClickCropBorder = onClickCropBorder,
+                        onClickSettings = onClickSettings,
+                    )
+                }
             }
         }
     }
