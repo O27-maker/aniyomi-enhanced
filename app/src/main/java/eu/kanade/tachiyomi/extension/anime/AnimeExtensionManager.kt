@@ -187,6 +187,9 @@ class AnimeExtensionManager(
         availableExtensionsMapFlow.value = extensions.associateBy { it.pkgName }
         updatedInstalledAnimeExtensionsStatuses(extensions)
         setupAvailableAnimeExtensionsSourcesDataMap(extensions)
+
+        // Repository signing keys may have become available since the initial package scan.
+        refreshInstalledExtensions()
     }
 
     /**
