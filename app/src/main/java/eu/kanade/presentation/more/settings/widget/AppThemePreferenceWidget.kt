@@ -80,11 +80,11 @@ private fun AppThemesList(
     val context = LocalContext.current
     val appThemes = remember {
         listOf(
+            AppTheme.AMBER_GOLD,
             AppTheme.LAVENDER,
             AppTheme.ARCTIC_BLUE,
             AppTheme.SAGE_GREEN,
             AppTheme.ROSE_BERRY,
-            AppTheme.AMBER_GOLD,
             AppTheme.TEALTURQUOISE,
             AppTheme.TIDAL_WAVE,
             AppTheme.GREEN_APPLE,
