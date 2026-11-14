@@ -32,6 +32,11 @@
     public long getId();
     public eu.kanade.tachiyomi.source.model.FilterList getFilterList();
 }
+# Anime extension APKs also override AnimeHttpSource.getId().
+# Keep the getter virtual; R8 cannot see subclasses loaded from external APKs.
+-keepclassmembers class eu.kanade.tachiyomi.animesource.online.AnimeHttpSource {
+    public long getId();
+}
 # Extensions reflectively access HttpSource's delegated headers property.
 -keepclassmembers class eu.kanade.tachiyomi.source.online.HttpSource {
     private kotlin.Lazy headers$delegate;
