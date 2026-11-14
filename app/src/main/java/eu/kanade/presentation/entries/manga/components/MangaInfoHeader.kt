@@ -388,70 +388,35 @@ private fun MangaAndSourceTitlesSmall(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
-    if (isFromSource) {
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, top = appBarPadding + 20.dp, end = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        ItemCover.Book(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = appBarPadding + 20.dp, end = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            ItemCover.Book(
-                modifier = Modifier
-                    .fillMaxWidth(0.68f)
-                    .widthIn(max = 240.dp),
-                data = ImageRequest.Builder(LocalContext.current)
-                    .data(manga)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = stringResource(MR.strings.manga_cover),
-                onClick = onCoverClick,
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-            MangaContentInfo(
-                title = manga.title,
-                author = manga.author,
-                artist = manga.artist,
-                status = manga.status,
-                sourceName = sourceName,
-                isStubSource = isStubSource,
-                doSearch = doSearch,
-                textAlign = TextAlign.Center,
-                isFromSource = true,
-            )
-        }
-    } else {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ItemCover.Book(
-                modifier = Modifier
-                    .sizeIn(maxWidth = 100.dp)
-                    .align(Alignment.Top),
-                data = ImageRequest.Builder(LocalContext.current)
-                    .data(manga)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = stringResource(MR.strings.manga_cover),
-                onClick = onCoverClick,
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                MangaContentInfo(
-                    title = manga.title,
-                    author = manga.author,
-                    artist = manga.artist,
-                    status = manga.status,
-                    sourceName = sourceName,
-                    isStubSource = isStubSource,
-                    doSearch = doSearch,
-                )
-            }
-        }
+                .fillMaxWidth(0.68f)
+                .widthIn(max = 240.dp),
+            data = ImageRequest.Builder(LocalContext.current)
+                .data(manga)
+                .crossfade(true)
+                .build(),
+            contentDescription = stringResource(MR.strings.manga_cover),
+            onClick = onCoverClick,
+        )
+        Spacer(modifier = Modifier.height(18.dp))
+        MangaContentInfo(
+            title = manga.title,
+            author = manga.author,
+            artist = manga.artist,
+            status = manga.status,
+            sourceName = sourceName,
+            isStubSource = isStubSource,
+            doSearch = doSearch,
+            textAlign = TextAlign.Center,
+            isFromSource = isFromSource,
+        )
     }
 }
 
@@ -505,7 +470,7 @@ private fun ColumnScope.MangaContentInfo(
             imageVector = Icons.Filled.PersonOutline,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = metadataIconTint,
+            tint = LocalContentColor.current,
         )
         Text(
             text = author?.takeIf { it.isNotBlank() }
@@ -537,7 +502,7 @@ private fun ColumnScope.MangaContentInfo(
                 imageVector = Icons.Filled.Brush,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = metadataIconTint,
+                tint = LocalContentColor.current,
             )
             Text(
                 text = artist,
@@ -572,7 +537,11 @@ private fun ColumnScope.MangaContentInfo(
             modifier = Modifier
                 .padding(end = 4.dp)
                 .size(16.dp),
-            tint = metadataIconTint,
+            tint = if (status == SManga.COMPLETED.toLong() || status == SManga.PUBLISHING_FINISHED.toLong()) {
+                LocalContentColor.current
+            } else {
+                metadataIconTint
+            },
         )
         ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
             Text(
@@ -664,7 +633,7 @@ private fun MangaSummary(
                         contentDescription = stringResource(
                             if (expanded) MR.strings.manga_info_collapse else MR.strings.manga_info_expand,
                         ),
-                        tint = accentColor,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.background(Brush.radialGradient(colors = colors.asReversed())),
                     )
                 }
