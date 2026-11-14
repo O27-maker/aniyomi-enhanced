@@ -10,4 +10,4 @@
     <path android:fillColor="#00000000" android:strokeColor="#E6E7F1" android:strokeWidth="1.2" android:pathData="M54,54m-29,0a29,29 0,1 1,58 0a29,29 0,1 1,-58 0"/>
     <path android:fillColor="#F5F5FA" android:pathData="M54,25A29,29 0,1 1,54 83A29,29 0,1 1,54 25Z"/>
     <path android:fillColor="#000000" android:pathData="M45,38.5C45,35.8 47.9,34.2 50.2,35.6L74.5,50.1C77.2,51.7 77.2,55.6 74.5,57.2L50.2,71.7C47.9,73.1 45,71.5 45,68.8V38.5Z"/>
-</vector>
+    </vector>
