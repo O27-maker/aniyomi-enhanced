@@ -83,8 +83,11 @@ internal class AnimeExtensionInstallReceiver(
             is Event.Installed -> {
                 when (val result = AnimeExtensionLoader.loadExtensionFromPkgName(event.context, event.pkgName)) {
                     is AnimeLoadResult.Success -> {
-                        if (event.isUpdate) listener.onExtensionUpdated(result.extension)
-                        else listener.onExtensionInstalled(result.extension)
+                        if (event.isUpdate) {
+                            listener.onExtensionUpdated(result.extension)
+                        } else {
+                            listener.onExtensionInstalled(result.extension)
+                        }
                     }
                     is AnimeLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
                     AnimeLoadResult.Error -> logcat(LogPriority.WARN) {
