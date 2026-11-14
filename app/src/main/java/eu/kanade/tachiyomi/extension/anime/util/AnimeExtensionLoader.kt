@@ -5,8 +5,8 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.util.Log
 import android.os.Build
+import android.util.Log
 import androidx.core.content.pm.PackageInfoCompat
 import dalvik.system.PathClassLoader
 import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
@@ -199,7 +199,9 @@ internal object AnimeExtensionLoader {
             val pkgName = pkgInfo.packageName
             val name = appInfo?.metaData?.getString(METADATA_NAME)
                 ?: appInfo?.let {
-                    runCatching { pkgManager.getApplicationLabel(it).toString().substringAfter("Aniyomi: ") }.getOrNull()
+                    runCatching {
+                        pkgManager.getApplicationLabel(it).toString().substringAfter("Aniyomi: ")
+                    }.getOrNull()
                 }
                 ?: pkgName
             val versionName = pkgInfo.versionName?.takeIf { it.isNotBlank() } ?: "Unknown"
