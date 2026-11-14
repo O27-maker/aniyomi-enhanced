@@ -118,7 +118,6 @@ private fun AnimeSourceItem(
     onClickItem: (AnimeSource, Listing) -> Unit,
     onLongClickItem: (AnimeSource) -> Unit,
     onClickPin: (AnimeSource) -> Unit,
-    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     BaseAnimeSourceItem(
