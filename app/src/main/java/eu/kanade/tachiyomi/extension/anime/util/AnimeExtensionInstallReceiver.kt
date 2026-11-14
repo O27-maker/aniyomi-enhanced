@@ -106,21 +106,6 @@ internal class AnimeExtensionInstallReceiver(
     }
 
     /**
-     * Returns the extension triggered by the given intent.
-     *
-     * @param context The application context.
-     * @param intent The intent containing the package name of the extension.
-     */
-    private suspend fun getExtensionFromIntent(context: Context, intent: Intent?): AnimeLoadResult {
-        val pkgName = getPackageNameFromIntent(intent)
-        if (pkgName == null) {
-            logcat(LogPriority.WARN) { "Package name not found" }
-            return AnimeLoadResult.Error
-        }
-        return AnimeExtensionLoader.loadExtensionFromPkgName(context, pkgName)
-    }
-
-    /**
      * Returns the package name of the installed, updated or removed application.
      */
     private fun getPackageNameFromIntent(intent: Intent?): String? {
