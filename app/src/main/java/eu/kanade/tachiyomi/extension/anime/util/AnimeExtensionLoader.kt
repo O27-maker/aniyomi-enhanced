@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.util.Log
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import dalvik.system.PathClassLoader
@@ -17,6 +18,7 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
@@ -172,9 +174,63 @@ internal object AnimeExtensionLoader {
         // Load each extension concurrently and wait for completion
         return runBlocking {
             val deferred = extPkgs.map {
-                async { loadExtension(context, it) }
+                async { loadExtensionSafely(context, it) }
             }
             deferred.awaitAll()
+        }
+    }
+
+    /**
+     * A broken installed APK must not abort discovery of every other anime extension.
+     * Preserve its package metadata so it remains visible in the Installed tab.
+     */
+    private suspend fun loadExtensionSafely(
+        context: Context,
+        extensionInfo: AnimeExtensionInfo,
+    ): AnimeLoadResult {
+        return try {
+            loadExtension(context, extensionInfo)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            val pkgInfo = extensionInfo.packageInfo
+            val appInfo = pkgInfo.applicationInfo
+            val pkgManager = context.packageManager
+            val pkgName = pkgInfo.packageName
+            val name = appInfo?.metaData?.getString(METADATA_NAME)
+                ?: appInfo?.let {
+                    runCatching { pkgManager.getApplicationLabel(it).toString().substringAfter("Aniyomi: ") }.getOrNull()
+                }
+                ?: pkgName
+            val versionName = pkgInfo.versionName?.takeIf { it.isNotBlank() } ?: "Unknown"
+            val libVersion = appInfo?.metaData?.getInt(METADATA_EXTENSION_LIB, 0)
+                ?.takeIf { it > 0 }?.toDouble()
+                ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+                ?: 0.0
+            val isNsfw = (appInfo?.metaData?.getInt(METADATA_CONTENT_WARNING, 0) ?: 0) > 0 ||
+                (appInfo?.metaData?.getInt(METADATA_NSFW, 0) ?: 0) == 1
+            val isTorrent = appInfo?.metaData?.getBoolean(METADATA_IS_TORRENT, false) == true ||
+                appInfo?.metaData?.getInt(METADATA_TORRENT, 0) == 1
+
+            logcat(LogPriority.ERROR, e) { "Anime extension load error: $name ($pkgName)" }
+            Log.e("AnimeExtensionLoader", "Anime extension load error: $name ($pkgName)", e)
+            AnimeLoadResult.NotLoaded(
+                AnimeExtension.Installed(
+                    name = name,
+                    pkgName = pkgName,
+                    versionName = versionName,
+                    versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo),
+                    libVersion = libVersion,
+                    lang = "",
+                    isNsfw = isNsfw,
+                    isTorrent = isTorrent,
+                    pkgFactory = appInfo?.metaData?.getString(METADATA_SOURCE_FACTORY),
+                    sources = emptyList(),
+                    icon = appInfo?.let { runCatching { it.loadIcon(pkgManager) }.getOrNull() },
+                    isShared = extensionInfo.isShared,
+                    loadError = e.message ?: e::class.java.simpleName,
+                ),
+            )
         }
     }
 
@@ -188,7 +244,7 @@ internal object AnimeExtensionLoader {
             logcat(LogPriority.ERROR) { "Extension package is not found ($pkgName)" }
             return AnimeLoadResult.Error
         }
-        return loadExtension(context, extensionPackage)
+        return loadExtensionSafely(context, extensionPackage)
     }
 
     fun getAnimeExtensionPackageInfoFromPkgName(context: Context, pkgName: String): PackageInfo? {
@@ -246,18 +302,37 @@ internal object AnimeExtensionLoader {
         val appInfo = pkgInfo.applicationInfo!!
         val pkgName = pkgInfo.packageName
 
-        val extName = appInfo.metaData.getString(METADATA_NAME)
+        val extName = appInfo.metaData?.getString(METADATA_NAME)
             ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Aniyomi: ")
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
+        fun notLoaded(reason: String, libVersion: Double? = null, isNsfw: Boolean = false, isTorrent: Boolean = false) =
+            AnimeLoadResult.NotLoaded(
+                AnimeExtension.Installed(
+                    name = extName,
+                    pkgName = pkgName,
+                    versionName = versionName?.takeIf { it.isNotBlank() } ?: "Unknown",
+                    versionCode = versionCode,
+                    libVersion = libVersion ?: 0.0,
+                    lang = "",
+                    isNsfw = isNsfw,
+                    isTorrent = isTorrent,
+                    pkgFactory = appInfo.metaData?.getString(METADATA_SOURCE_FACTORY),
+                    sources = emptyList(),
+                    icon = runCatching { appInfo.loadIcon(pkgManager) }.getOrNull(),
+                    isShared = extensionInfo.isShared,
+                    loadError = reason,
+                ),
+            )
+
         if (versionName.isNullOrEmpty()) {
             logcat(LogPriority.WARN) { "Missing versionName for extension $extName" }
-            return AnimeLoadResult.Error
+            return notLoaded("Missing version name")
         }
 
         // Validate lib version
-        val libVersion = appInfo.metaData.getInt(METADATA_EXTENSION_LIB)
+        val libVersion = appInfo.metaData?.getInt(METADATA_EXTENSION_LIB, 0)
             .takeUnless { it == 0 }
             ?.toString()
             ?.toDouble()
@@ -266,13 +341,13 @@ internal object AnimeExtensionLoader {
             logcat(LogPriority.WARN) {
                 "Lib version is $libVersion, while only version(s) ${SUPPORTED_LIB_VERSIONS.joinToString()} are supported"
             }
-            return AnimeLoadResult.Error
+            return notLoaded("Unsupported extension library version: $libVersion", libVersion)
         }
 
         val signatures = getSignatures(pkgInfo)
         if (signatures.isNullOrEmpty()) {
             logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
-            return AnimeLoadResult.Error
+            return notLoaded("Extension package is not signed", libVersion)
         } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
             val extension = AnimeExtension.Untrusted(
                 extName,
@@ -286,24 +361,29 @@ internal object AnimeExtensionLoader {
             return AnimeLoadResult.Untrusted(extension)
         }
 
-        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
-            appInfo.metaData.getInt(METADATA_NSFW) == 1
+        val isNsfw = (appInfo.metaData?.getInt(METADATA_CONTENT_WARNING, 0) ?: 0) > 0 ||
+            (appInfo.metaData?.getInt(METADATA_NSFW, 0) ?: 0) == 1
         if (!loadNsfwSource && isNsfw) {
             logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
-            return AnimeLoadResult.Error
+            return notLoaded("NSFW extension is disabled in source settings", libVersion, isNsfw)
         }
 
-        val isTorrent = appInfo.metaData.getBoolean(METADATA_IS_TORRENT) ||
-            appInfo.metaData.getInt(METADATA_TORRENT) == 1
+        val isTorrent = appInfo.metaData?.getBoolean(METADATA_IS_TORRENT, false) == true ||
+            appInfo.metaData?.getInt(METADATA_TORRENT, 0) == 1
         val classLoader = try {
             ChildFirstPathClassLoader(appInfo.sourceDir, null, context.classLoader)
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($pkgName)" }
-            return AnimeLoadResult.Error
+            return notLoaded(e.message ?: "Unable to create extension class loader", libVersion, isNsfw, isTorrent)
         }
 
-        val sources = appInfo.metaData.getString(METADATA_SOURCE_CLASS)!!
-            .split(";")
+        val sourceClasses = appInfo.metaData?.getString(METADATA_SOURCE_CLASS)
+        if (sourceClasses.isNullOrBlank()) {
+            logcat(LogPriority.ERROR) { "Missing anime source class metadata for $pkgName" }
+            return notLoaded("Missing source class metadata", libVersion, isNsfw, isTorrent)
+        }
+
+        val sources = sourceClasses.split(";")
             .map {
                 val sourceClass = it.trim()
                 if (sourceClass.startsWith(".")) {
@@ -337,11 +417,11 @@ internal object AnimeExtensionLoader {
                         }
                     } catch (e: Throwable) {
                         logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
-                        return AnimeLoadResult.Error
+                        return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw, isTorrent)
                     }
                 } catch (e: Throwable) {
                     logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
-                    return AnimeLoadResult.Error
+                    return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw, isTorrent)
                 }
             }
 
