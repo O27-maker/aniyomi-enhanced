@@ -90,6 +90,13 @@ internal class AnimeExtensionInstallReceiver(
                         }
                     }
                     is AnimeLoadResult.Untrusted -> listener.onExtensionUntrusted(result.extension)
+                    is AnimeLoadResult.NotLoaded -> {
+                        if (event.isUpdate) {
+                            listener.onExtensionUpdated(result.extension)
+                        } else {
+                            listener.onExtensionInstalled(result.extension)
+                        }
+                    }
                     AnimeLoadResult.Error -> logcat(LogPriority.WARN) {
                         "Installed package is not a loadable anime extension: ${event.pkgName}"
                     }
