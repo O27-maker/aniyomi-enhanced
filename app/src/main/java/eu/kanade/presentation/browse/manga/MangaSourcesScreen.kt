@@ -88,7 +88,6 @@ fun MangaSourcesScreen(
                             onClickItem = onClickItem,
                             onLongClickItem = onLongClickItem,
                             onClickPin = onClickPin,
-                            accentColor = accentColor,
                         )
                     }
                 }
@@ -147,7 +146,6 @@ private fun SourceItem(
             SourcePinButton(
                 isPinned = Pin.Pinned in source.pin,
                 onClick = { onClickPin(source) },
-                accentColor = accentColor,
             )
         },
     )
@@ -157,11 +155,10 @@ private fun SourceItem(
 private fun SourcePinButton(
     isPinned: Boolean,
     onClick: () -> Unit,
-    accentColor: Color,
 ) {
     val icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin
     val tint = if (isPinned) {
-        accentColor
+        MaterialTheme.colorScheme.onSurfaceVariant
     } else {
         MaterialTheme.colorScheme.onBackground.copy(
             alpha = SECONDARY_ALPHA,
