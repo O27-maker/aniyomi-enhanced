@@ -144,9 +144,10 @@ class AnimeExtensionManager(
     private fun loadAnimeExtensionsLocked() {
         val animeExtensions = AnimeExtensionLoader.loadExtensions(context)
 
-        installedExtensionsMapFlow.value = animeExtensions
-            .filterIsInstance<AnimeLoadResult.Success>()
-            .associate { it.extension.pkgName to it.extension }
+        installedExtensionsMapFlow.value = buildList {
+            animeExtensions.filterIsInstance<AnimeLoadResult.Success>().forEach { add(it.extension) }
+            animeExtensions.filterIsInstance<AnimeLoadResult.NotLoaded>().forEach { add(it.extension) }
+        }.associateBy { it.pkgName }
 
         untrustedExtensionsMapFlow.value = animeExtensions
             .filterIsInstance<AnimeLoadResult.Untrusted>()
@@ -332,6 +333,10 @@ class AnimeExtensionManager(
         loadMutex.withLock {
             when (result) {
                 is AnimeLoadResult.Success -> {
+                    untrustedExtensionsMapFlow.value -= extension.pkgName
+                    registerNewExtension(result.extension.withUpdateCheck())
+                }
+                is AnimeLoadResult.NotLoaded -> {
                     untrustedExtensionsMapFlow.value -= extension.pkgName
                     registerNewExtension(result.extension.withUpdateCheck())
                 }
