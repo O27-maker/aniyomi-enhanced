@@ -87,7 +87,6 @@ fun AnimeSourcesScreen(
                             onClickItem = onClickItem,
                             onLongClickItem = onLongClickItem,
                             onClickPin = onClickPin,
-                            accentColor = accentColor,
                         )
                     }
                 }
@@ -146,7 +145,6 @@ private fun AnimeSourceItem(
             AnimeSourcePinButton(
                 isPinned = Pin.Pinned in source.pin,
                 onClick = { onClickPin(source) },
-                accentColor = accentColor,
             )
         },
     )
@@ -156,11 +154,10 @@ private fun AnimeSourceItem(
 private fun AnimeSourcePinButton(
     isPinned: Boolean,
     onClick: () -> Unit,
-    accentColor: Color,
 ) {
     val icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin
     val tint = if (isPinned) {
-        accentColor
+        MaterialTheme.colorScheme.onSurfaceVariant
     } else {
         MaterialTheme.colorScheme.onBackground.copy(
             alpha = SECONDARY_ALPHA,
