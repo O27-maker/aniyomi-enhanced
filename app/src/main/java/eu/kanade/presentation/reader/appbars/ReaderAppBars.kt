@@ -70,8 +70,6 @@ fun ReaderAppBars(
         .surfaceColorAtElevation(3.dp)
         .copy(alpha = if (isSystemInDarkTheme()) 0.9f else 0.95f)
 
-    val bottomBarInsetsPadding = Modifier.navigationBarsPadding()
-
     Column(
         modifier = Modifier.fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween,
@@ -161,7 +159,7 @@ fun ReaderAppBars(
             ),
         ) {
             Column(
-                modifier = bottomBarInsetsPadding,
+                modifier = Modifier,
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
             ) {
                 ChapterNavigator(
@@ -174,7 +172,7 @@ fun ReaderAppBars(
                     totalPages = totalPages,
                     onPageIndexChange = onPageIndexChange,
                 )
-                Column(modifier = Modifier.background(backgroundColor)) {
+                Column(modifier = Modifier.background(backgroundColor).navigationBarsPadding()) {
                     BottomReaderBar(
                         backgroundColor = backgroundColor,
                         readingMode = readingMode,
