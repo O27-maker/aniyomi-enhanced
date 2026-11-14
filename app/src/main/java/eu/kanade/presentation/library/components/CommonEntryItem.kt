@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,9 +81,13 @@ fun EntryCompactGridItem(
     coverAlpha: Float = 1f,
     coverBadgeStart: @Composable (RowScope.() -> Unit)? = null,
     coverBadgeEnd: @Composable (RowScope.() -> Unit)? = null,
+    coverShape: Shape = MaterialTheme.shapes.extraSmall,
+    titleOverlayHeight: Float = 0.33f,
+    selectionColor: Color? = null,
 ) {
     GridItemSelectable(
         isSelected = isSelected,
+        selectionColor = selectionColor,
         onClick = onClick,
         onLongClick = onLongClick,
     ) {
@@ -93,6 +98,7 @@ fun EntryCompactGridItem(
                         .fillMaxWidth()
                         .alpha(if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha),
                     data = coverData,
+                    shape = coverShape,
                 )
             },
             badgesStart = coverBadgeStart,
@@ -101,6 +107,7 @@ fun EntryCompactGridItem(
                 if (title != null) {
                     CoverTextOverlay(
                         title = title,
+                        heightFraction = titleOverlayHeight,
                         onClickContinueViewing = onClickContinueViewing,
                     )
                 } else if (onClickContinueViewing != null) {
@@ -124,6 +131,7 @@ fun EntryCompactGridItem(
 @Composable
 private fun BoxScope.CoverTextOverlay(
     title: String,
+    heightFraction: Float,
     onClickContinueViewing: (() -> Unit)? = null,
 ) {
     Box(
@@ -135,7 +143,7 @@ private fun BoxScope.CoverTextOverlay(
                     1f to Color(0xAA000000),
                 ),
             )
-            .fillMaxHeight(0.33f)
+            .fillMaxHeight(heightFraction)
             .fillMaxWidth()
             .align(Alignment.BottomCenter),
     )
@@ -186,9 +194,11 @@ fun EntryComfortableGridItem(
     coverBadgeStart: (@Composable RowScope.() -> Unit)? = null,
     coverBadgeEnd: (@Composable RowScope.() -> Unit)? = null,
     onClickContinueViewing: (() -> Unit)? = null,
+    selectionColor: Color? = null,
 ) {
     GridItemSelectable(
         isSelected = isSelected,
+        selectionColor = selectionColor,
         onClick = onClick,
         onLongClick = onLongClick,
     ) {
@@ -295,6 +305,7 @@ private fun GridItemSelectable(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selectionColor: Color? = null,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -304,7 +315,11 @@ private fun GridItemSelectable(
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
-            .selectedOutline(isSelected = isSelected, color = MaterialTheme.colorScheme.secondary)
+            .selectedOutline(
+                isSelected = isSelected,
+                color = selectionColor ?: MaterialTheme.colorScheme.secondary,
+                subtle = selectionColor != null,
+            )
             .padding(4.dp),
     ) {
         val contentColor = if (isSelected) {
@@ -324,7 +339,10 @@ private fun GridItemSelectable(
 private fun Modifier.selectedOutline(
     isSelected: Boolean,
     color: Color,
-) = drawBehind { if (isSelected) drawRect(color = color) }
+    subtle: Boolean,
+) = drawBehind {
+    if (isSelected) drawRect(color = if (subtle) color.copy(alpha = 0.12f) else color)
+}
 
 /**
  * Layout of list item.

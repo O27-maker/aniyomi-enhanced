@@ -6,9 +6,6 @@ import eu.kanade.tachiyomi.data.backup.models.BackupAnimeHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupAnimeTracking
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
-import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
-import tachiyomi.data.FetchTypeColumnAdapter
-import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
@@ -128,7 +125,7 @@ class AnimeRestorer(
                 artist = anime.artist,
                 author = anime.author,
                 description = anime.description,
-                genre = anime.genre?.joinToString(separator = ", "),
+                genre = anime.genre,
                 title = anime.title,
                 status = anime.status,
                 thumbnailUrl = anime.thumbnailUrl,
@@ -142,17 +139,17 @@ class AnimeRestorer(
                 coverLastModified = anime.coverLastModified,
                 dateAdded = anime.dateAdded,
                 animeId = anime.id,
-                updateStrategy = anime.updateStrategy.let(AnimeUpdateStrategyColumnAdapter::encode),
+                updateStrategy = anime.updateStrategy,
                 version = anime.version,
                 isSyncing = 1,
-                fetchType = anime.fetchType.let(FetchTypeColumnAdapter::encode),
+                fetchType = anime.fetchType,
                 parentId = anime.parentId,
                 seasonFlags = anime.seasonFlags,
                 seasonNumber = anime.seasonNumber,
                 seasonSourceOrder = anime.seasonSourceOrder,
                 backgroundUrl = anime.backgroundUrl,
                 backgroundLastModified = anime.backgroundLastModified,
-                memo = anime.memo.let(MemoColumnAdapter::encode),
+                memo = anime.memo,
             )
         }
         return anime
@@ -262,7 +259,7 @@ class AnimeRestorer(
                     episodeId = episode.id,
                     version = episode.version,
                     isSyncing = 0,
-                    memo = episode.memo.let(MemoColumnAdapter::encode),
+                    memo = episode.memo,
                 )
             }
         }

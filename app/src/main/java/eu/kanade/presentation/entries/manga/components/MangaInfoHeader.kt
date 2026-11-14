@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -101,6 +102,7 @@ private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTIL
 @Composable
 fun MangaInfoBox(
     isTabletUi: Boolean,
+    isFromSource: Boolean,
     appBarPadding: Dp,
     manga: Manga,
     sourceName: String,
@@ -130,8 +132,8 @@ fun MangaInfoBox(
                         brush = Brush.verticalGradient(colors = backdropGradientColors),
                     )
                 }
-                .blur(4.dp)
-                .alpha(0.2f),
+                .blur(if (isFromSource) 18.dp else 4.dp)
+                .alpha(if (isFromSource) 0.32f else 0.2f),
         )
 
         // Manga & source info
@@ -142,12 +144,14 @@ fun MangaInfoBox(
                     manga = manga,
                     sourceName = sourceName,
                     isStubSource = isStubSource,
+                    isFromSource = isFromSource,
                     onCoverClick = onCoverClick,
                     doSearch = doSearch,
                 )
             } else {
                 MangaAndSourceTitlesLarge(
                     appBarPadding = appBarPadding,
+                    isFromSource = isFromSource,
                     manga = manga,
                     sourceName = sourceName,
                     isStubSource = isStubSource,
@@ -240,6 +244,7 @@ fun ExpandableMangaDescription(
     tagsProvider: () -> List<String>?,
     onTagSearch: (String) -> Unit,
     onCopyTagToClipboard: (tag: String) -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -259,8 +264,9 @@ fun ExpandableMangaDescription(
             expandedDescription = desc,
             shrunkDescription = trimmedDescription,
             expanded = expanded,
+            accentColor = accentColor,
             modifier = Modifier
-                .padding(top = 8.dp)
+                .padding(top = 12.dp)
                 .padding(horizontal = 16.dp)
                 .clickableNoIndication { onExpanded(!expanded) },
         )
@@ -335,6 +341,7 @@ fun ExpandableMangaDescription(
 @Composable
 private fun MangaAndSourceTitlesLarge(
     appBarPadding: Dp,
+    isFromSource: Boolean,
     manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
@@ -366,6 +373,7 @@ private fun MangaAndSourceTitlesLarge(
             isStubSource = isStubSource,
             doSearch = doSearch,
             textAlign = TextAlign.Center,
+            isFromSource = isFromSource,
         )
     }
 }
@@ -376,20 +384,20 @@ private fun MangaAndSourceTitlesSmall(
     manga: Manga,
     sourceName: String,
     isStubSource: Boolean,
+    isFromSource: Boolean,
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(start = 16.dp, top = appBarPadding + 20.dp, end = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         ItemCover.Book(
             modifier = Modifier
-                .sizeIn(maxWidth = 100.dp)
-                .align(Alignment.Top),
+                .fillMaxWidth(0.68f)
+                .widthIn(max = 240.dp),
             data = ImageRequest.Builder(LocalContext.current)
                 .data(manga)
                 .crossfade(true)
@@ -397,19 +405,18 @@ private fun MangaAndSourceTitlesSmall(
             contentDescription = stringResource(MR.strings.manga_cover),
             onClick = onCoverClick,
         )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            MangaContentInfo(
-                title = manga.title,
-                author = manga.author,
-                artist = manga.artist,
-                status = manga.status,
-                sourceName = sourceName,
-                isStubSource = isStubSource,
-                doSearch = doSearch,
-            )
-        }
+        Spacer(modifier = Modifier.height(18.dp))
+        MangaContentInfo(
+            title = manga.title,
+            author = manga.author,
+            artist = manga.artist,
+            status = manga.status,
+            sourceName = sourceName,
+            isStubSource = isStubSource,
+            doSearch = doSearch,
+            textAlign = TextAlign.Center,
+            isFromSource = isFromSource,
+        )
     }
 }
 
@@ -423,11 +430,21 @@ private fun ColumnScope.MangaContentInfo(
     isStubSource: Boolean,
     doSearch: (query: String, global: Boolean) -> Unit,
     textAlign: TextAlign? = LocalTextStyle.current.textAlign,
+    isFromSource: Boolean = false,
 ) {
     val context = LocalContext.current
+    val metadataIconTint = if (isFromSource) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        LocalContentColor.current
+    }
     Text(
         text = title.ifBlank { stringResource(MR.strings.unknown_title) },
-        style = MaterialTheme.typography.titleLarge,
+        style = if (isFromSource) {
+            MaterialTheme.typography.headlineSmall
+        } else {
+            MaterialTheme.typography.titleLarge
+        },
         modifier = Modifier.clickableNoIndication(
             onLongClick = {
                 if (title.isNotBlank()) {
@@ -453,6 +470,7 @@ private fun ColumnScope.MangaContentInfo(
             imageVector = Icons.Filled.PersonOutline,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
+            tint = LocalContentColor.current,
         )
         Text(
             text = author?.takeIf { it.isNotBlank() }
@@ -484,6 +502,7 @@ private fun ColumnScope.MangaContentInfo(
                 imageVector = Icons.Filled.Brush,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
+                tint = LocalContentColor.current,
             )
             Text(
                 text = artist,
@@ -518,6 +537,16 @@ private fun ColumnScope.MangaContentInfo(
             modifier = Modifier
                 .padding(end = 4.dp)
                 .size(16.dp),
+            tint = if (
+                status == SManga.ONGOING.toLong() ||
+                status == SManga.COMPLETED.toLong() ||
+                status == SManga.PUBLISHING_FINISHED.toLong() ||
+                status == SManga.CANCELLED.toLong()
+            ) {
+                LocalContentColor.current
+            } else {
+                metadataIconTint
+            },
         )
         ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
             Text(
@@ -564,6 +593,7 @@ private fun MangaSummary(
     expandedDescription: String,
     shrunkDescription: String,
     expanded: Boolean,
+    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     val animProgress by animateFloatAsState(
@@ -608,7 +638,7 @@ private fun MangaSummary(
                         contentDescription = stringResource(
                             if (expanded) MR.strings.manga_info_collapse else MR.strings.manga_info_expand,
                         ),
-                        tint = MaterialTheme.colorScheme.onBackground,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.background(Brush.radialGradient(colors = colors.asReversed())),
                     )
                 }

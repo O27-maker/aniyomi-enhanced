@@ -46,8 +46,6 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.presentation.theme.TachiyomiTheme
-import eu.kanade.tachiyomi.util.system.DeviceUtil
-import eu.kanade.tachiyomi.util.system.isDynamicColorAvailable
 import tachiyomi.core.common.preference.InMemoryPreferenceStore
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.padding
@@ -81,8 +79,19 @@ private fun AppThemesList(
 ) {
     val context = LocalContext.current
     val appThemes = remember {
-        AppTheme.entries
-            .filterNot { it.titleRes == null || (it == AppTheme.MONET && !DeviceUtil.isDynamicColorAvailable) }
+        listOf(
+            AppTheme.AMBER_GOLD,
+            AppTheme.LAVENDER,
+            AppTheme.ARCTIC_BLUE,
+            AppTheme.SAGE_GREEN,
+            AppTheme.ROSE_BERRY,
+            AppTheme.TEALTURQUOISE,
+            AppTheme.TIDAL_WAVE,
+            AppTheme.GREEN_APPLE,
+            AppTheme.STRAWBERRY_DAIQUIRI,
+            AppTheme.NORD,
+            AppTheme.MIDNIGHT_DUSK,
+        )
     }
     LazyRow(
         contentPadding = PaddingValues(horizontal = PrefsHorizontalPadding),

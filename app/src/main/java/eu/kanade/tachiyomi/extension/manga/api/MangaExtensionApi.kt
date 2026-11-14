@@ -3,27 +3,32 @@ package eu.kanade.tachiyomi.extension.manga.api
 import android.content.Context
 import eu.kanade.tachiyomi.extension.ExtensionUpdateNotifier
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
+import eu.kanade.tachiyomi.extension.manga.api.NetworkMangaExtensionStore
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.extension.manga.model.MangaLoadResult
 import eu.kanade.tachiyomi.extension.manga.util.MangaExtensionLoader
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.network.awaitSuccess
-import eu.kanade.tachiyomi.network.parseAs
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.protobuf.ProtoBuf
 import logcat.LogPriority
 import mihon.domain.extensionrepo.manga.interactor.GetMangaExtensionRepo
 import mihon.domain.extensionrepo.manga.interactor.UpdateMangaExtensionRepo
 import mihon.domain.extensionrepo.model.ExtensionRepo
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okio.BufferedSource
+import okio.buffer
+import okio.gzip
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.time.Instant
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.days
 
 internal class MangaExtensionApi {
@@ -33,7 +38,7 @@ internal class MangaExtensionApi {
     private val getExtensionRepo: GetMangaExtensionRepo by injectLazy()
     private val updateExtensionRepo: UpdateMangaExtensionRepo by injectLazy()
     private val extensionManager: MangaExtensionManager by injectLazy()
-    private val json: Json by injectLazy()
+    private val protoBuf: ProtoBuf = ProtoBuf {}
 
     private val lastExtCheck: Preference<Long> by lazy {
         preferenceStore.getLong("last_ext_check", 0)
@@ -44,25 +49,40 @@ internal class MangaExtensionApi {
             getExtensionRepo.getAll()
                 .map { async { getExtensions(it) } }
                 .awaitAll()
+                .map { result ->
+                    result ?: throw IllegalStateException("Failed to refresh one or more manga extension repositories")
+                }
                 .flatten()
         }
     }
 
-    private suspend fun getExtensions(extRepo: ExtensionRepo): List<MangaExtension.Available> {
+    private suspend fun getExtensions(extRepo: ExtensionRepo): List<MangaExtension.Available>? {
         val repoBaseUrl = extRepo.baseUrl
         return try {
             val response = networkService.client
-                .newCall(GET("$repoBaseUrl/index.min.json"))
+                .newCall(GET("$repoBaseUrl/index.pb"))
                 .awaitSuccess()
 
-            with(json) {
-                response
-                    .parseAs<List<ExtensionJsonObject>>()
-                    .toExtensions(repoBaseUrl)
+            response.body.source().decompressIfGzipped().use { source ->
+                val index = protoBuf.decodeFromByteArray<NetworkMangaExtensionStore>(source.readByteArray())
+                val extensionList = index.extensionList ?: index.extensionListUrl?.let { url ->
+                    val listUrl = (repoBaseUrl.trimEnd('/') + "/").toHttpUrl().resolve(url)?.toString()
+                        ?: throw IllegalArgumentException("Invalid extension list URL: $url")
+                    val listResponse = networkService.client.newCall(GET(listUrl)).awaitSuccess()
+                    listResponse.body.source().decompressIfGzipped().use { listSource ->
+                        protoBuf.decodeFromByteArray<NetworkMangaExtensionStore.ExtensionList>(
+                            listSource.readByteArray(),
+                        )
+                    }
+                } ?: throw IllegalArgumentException("Repository index has no extension list")
+
+                extensionList.toMangaExtensions(repoBaseUrl)
             }
-        } catch (e: Throwable) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to get extensions from $repoBaseUrl" }
-            emptyList()
+            null
         }
     }
 
@@ -70,16 +90,13 @@ internal class MangaExtensionApi {
         context: Context,
         fromAvailableExtensionList: Boolean = false,
     ): List<MangaExtension.Installed>? {
-        // Limit checks to once a day at most
         if (fromAvailableExtensionList &&
             Instant.now().toEpochMilli() < lastExtCheck.get() + 1.days.inWholeMilliseconds
         ) {
             return null
         }
 
-        // Update extension repo details
         updateExtensionRepo.awaitAll()
-
         val extensions = if (fromAvailableExtensionList) {
             extensionManager.availableExtensionsFlow.value
         } else {
@@ -89,15 +106,12 @@ internal class MangaExtensionApi {
         val installedExtensions = MangaExtensionLoader.loadMangaExtensions(context)
             .filterIsInstance<MangaLoadResult.Success>()
             .map { it.extension }
-
         val extensionsWithUpdate = mutableListOf<MangaExtension.Installed>()
         for (installedExt in installedExtensions) {
-            val pkgName = installedExt.pkgName
-            val availableExt = extensions.find { it.pkgName == pkgName } ?: continue
-            val hasUpdatedVer = availableExt.versionCode > installedExt.versionCode
-            val hasUpdatedLib = availableExt.libVersion > installedExt.libVersion
-            val hasUpdate = hasUpdatedVer || hasUpdatedLib
-            if (hasUpdate) {
+            val availableExt = extensions.find { it.pkgName == installedExt.pkgName } ?: continue
+            if (availableExt.versionCode > installedExt.versionCode ||
+                availableExt.libVersion > installedExt.libVersion
+            ) {
                 extensionsWithUpdate.add(installedExt)
             }
         }
@@ -105,67 +119,61 @@ internal class MangaExtensionApi {
         if (extensionsWithUpdate.isNotEmpty()) {
             ExtensionUpdateNotifier(context).promptUpdates(extensionsWithUpdate.map { it.name })
         }
-
         return extensionsWithUpdate
     }
 
-    private fun List<ExtensionJsonObject>.toExtensions(repoUrl: String): List<MangaExtension.Available> {
-        return this
-            .filter {
-                val libVersion = it.extractLibVersion()
-                libVersion >= MangaExtensionLoader.LIB_VERSION_MIN && libVersion <= MangaExtensionLoader.LIB_VERSION_MAX
+    private fun NetworkMangaExtensionStore.ExtensionList.toMangaExtensions(
+        repoUrl: String,
+    ): List<MangaExtension.Available> {
+        return extensions.mapNotNull { extension ->
+            val libVersion = extension.extensionLib.toDoubleOrNull() ?: return@mapNotNull null
+            if (libVersion < MangaExtensionLoader.LIB_VERSION_MIN ||
+                libVersion > MangaExtensionLoader.LIB_VERSION_MAX
+            ) {
+                return@mapNotNull null
             }
-            .map {
-                MangaExtension.Available(
-                    name = it.name.substringAfter("Tachiyomi: "),
-                    pkgName = it.pkg,
-                    versionName = it.version,
-                    versionCode = it.code,
-                    libVersion = it.extractLibVersion(),
-                    lang = it.lang,
-                    isNsfw = it.nsfw == 1,
-                    sources = it.sources?.map(extensionSourceMapper).orEmpty(),
-                    apkName = it.apk,
-                    iconUrl = "$repoUrl/icon/${it.pkg}.png",
-                    repoUrl = repoUrl,
-                )
-            }
+
+            val languages = extension.sources.map { it.language }.toSet()
+            MangaExtension.Available(
+                name = extension.name,
+                pkgName = extension.packageName,
+                versionName = extension.versionName,
+                versionCode = extension.versionCode,
+                libVersion = libVersion,
+                lang = if (languages.size == 1) languages.first() else "all",
+                isNsfw = extension.contentWarning >= NetworkMangaExtensionStore.ContentWarning.MIXED,
+                sources = extension.sources.map { source ->
+                    MangaExtension.Available.MangaSource(
+                        id = source.id,
+                        lang = source.language,
+                        name = source.name,
+                        baseUrl = source.homeUrl,
+                    )
+                },
+                // The protobuf format supplies absolute resource URLs.
+                apkName = extension.resources.apkUrl,
+                iconUrl = extension.resources.iconUrl,
+                repoUrl = repoUrl,
+            )
+        }
     }
 
     fun getApkUrl(extension: MangaExtension.Available): String {
-        return "${extension.repoUrl}/apk/${extension.apkName}"
+        return if (extension.apkName.startsWith("https://") || extension.apkName.startsWith("http://")) {
+            extension.apkName
+        } else {
+            "${extension.repoUrl}/apk/${extension.apkName}"
+        }
     }
 
-    private fun ExtensionJsonObject.extractLibVersion(): Double {
-        return version.substringBeforeLast('.').toDouble()
+    private fun BufferedSource.decompressIfGzipped(): BufferedSource {
+        val isGzip = peek().use { peeked ->
+            try {
+                peeked.readShort().toInt() == 0x1f8b
+            } catch (_: Exception) {
+                false
+            }
+        }
+        return if (isGzip) gzip().buffer() else this
     }
-}
-
-@Serializable
-private data class ExtensionJsonObject(
-    val name: String,
-    val pkg: String,
-    val apk: String,
-    val lang: String,
-    val code: Long,
-    val version: String,
-    val nsfw: Int,
-    val sources: List<ExtensionSourceJsonObject>?,
-)
-
-@Serializable
-private data class ExtensionSourceJsonObject(
-    val id: Long,
-    val lang: String,
-    val name: String,
-    val baseUrl: String,
-)
-
-private val extensionSourceMapper: (ExtensionSourceJsonObject) -> MangaExtension.Available.MangaSource = {
-    MangaExtension.Available.MangaSource(
-        id = it.id,
-        lang = it.lang,
-        name = it.name,
-        baseUrl = it.baseUrl,
-    )
 }

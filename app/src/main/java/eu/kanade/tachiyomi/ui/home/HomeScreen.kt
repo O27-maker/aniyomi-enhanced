@@ -17,7 +17,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -26,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,11 +79,11 @@ object HomeScreen : Screen() {
 
     private val uiPreferences: UiPreferences by injectLazy()
     private val defaultTab = uiPreferences.startScreen().get().tab
-    private val moreTab = uiPreferences.navStyle().get().moreTab
+    private val navStyle = uiPreferences.navStyle().get()
+    private val moreTab = navStyle.moreTab
 
     @Composable
     override fun Content() {
-        val navStyle by uiPreferences.navStyle().collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         TabNavigator(
             tab = defaultTab,
@@ -91,7 +94,7 @@ object HomeScreen : Screen() {
                 Scaffold(
                     startBar = {
                         if (isTabletUi()) {
-                            NavigationRail {
+                            NavigationRail(containerColor = Color.Black) {
                                 navStyle.tabs.fastForEach {
                                     NavigationRailItem(it)
                                 }
@@ -104,11 +107,11 @@ object HomeScreen : Screen() {
                                 showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
                             }
                             AnimatedVisibility(
-                                visible = bottomNavVisible && tabNavigator.current != navStyle.moreTab,
+                                visible = bottomNavVisible,
                                 enter = expandVertically(),
                                 exit = shrinkVertically(),
                             ) {
-                                NavigationBar {
+                                NavigationBar(containerColor = Color.Black) {
                                     navStyle.tabs.fastForEach {
                                         NavigationBarItem(it)
                                     }
@@ -217,15 +220,13 @@ object HomeScreen : Screen() {
                 }
             },
             icon = { NavigationIconItem(tab) },
-            label = {
-                Text(
-                    text = tab.options.title,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-            alwaysShowLabel = true,
+            label = null,
+            alwaysShowLabel = false,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = Color(0xFF888888),
+                indicatorColor = Color.Black,
+            ),
         )
     }
 
@@ -245,15 +246,13 @@ object HomeScreen : Screen() {
                 }
             },
             icon = { NavigationIconItem(tab) },
-            label = {
-                Text(
-                    text = tab.options.title,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-            alwaysShowLabel = true,
+            label = null,
+            alwaysShowLabel = false,
+            colors = NavigationRailItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = Color(0xFF888888),
+                indicatorColor = Color.Black,
+            ),
         )
     }
 

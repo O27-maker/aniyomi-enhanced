@@ -1,6 +1,7 @@
 package tachiyomi.presentation.core.components
 
 import android.view.MotionEvent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
@@ -356,10 +358,19 @@ fun TriStateItem(
     label: String,
     state: TriState,
     enabled: Boolean = true,
+    minimalStyle: Boolean = false,
     onClick: ((TriState) -> Unit)?,
 ) {
     Row(
         modifier = Modifier
+            .background(
+                color = if (minimalStyle && state != TriState.DISABLED) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                } else {
+                    Color.Transparent
+                },
+                shape = RoundedCornerShape(12.dp),
+            )
             .clickable(
                 enabled = enabled && onClick != null,
                 onClick = {

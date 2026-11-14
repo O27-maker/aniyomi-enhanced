@@ -48,6 +48,7 @@ fun MangaLibrarySettingsDialog(
 ) {
     TabbedDialog(
         onDismissRequest = onDismissRequest,
+        minimalStyle = true,
         tabTitles = persistentListOf(
             stringResource(MR.strings.action_filter),
             stringResource(MR.strings.action_sort),
@@ -91,6 +92,7 @@ private fun ColumnScope.FilterPage(
             filterDownloaded
         },
         enabled = !downloadedOnly,
+        minimalStyle = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterDownloadedManga) },
     )
     val filterUnread by screenModel.libraryPreferences.filterUnread().collectAsState()

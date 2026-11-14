@@ -48,6 +48,7 @@ fun AnimeLibrarySettingsDialog(
 ) {
     TabbedDialog(
         onDismissRequest = onDismissRequest,
+        minimalStyle = true,
         tabTitles = persistentListOf(
             stringResource(MR.strings.action_filter),
             stringResource(MR.strings.action_sort),
@@ -91,30 +92,35 @@ private fun ColumnScope.FilterPage(
             filterDownloaded
         },
         enabled = !downloadedOnly,
+        minimalStyle = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterDownloadedAnime) },
     )
     val filterUnseen by screenModel.libraryPreferences.filterUnseen().collectAsState()
     TriStateItem(
         label = stringResource(AYMR.strings.action_filter_unseen),
         state = filterUnseen,
+        minimalStyle = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterUnseen) },
     )
     val filterStarted by screenModel.libraryPreferences.filterStartedAnime().collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.label_started),
         state = filterStarted,
+        minimalStyle = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterStartedAnime) },
     )
     val filterBookmarked by screenModel.libraryPreferences.filterBookmarkedAnime().collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.action_filter_bookmarked),
         state = filterBookmarked,
+        minimalStyle = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterBookmarkedAnime) },
     )
     val filterCompleted by screenModel.libraryPreferences.filterCompletedAnime().collectAsState()
     TriStateItem(
         label = stringResource(MR.strings.completed),
         state = filterCompleted,
+        minimalStyle = true,
         onClick = { screenModel.toggleFilter(LibraryPreferences::filterCompletedAnime) },
     )
     // TODO: re-enable when custom intervals are ready for stable
@@ -123,6 +129,7 @@ private fun ColumnScope.FilterPage(
         TriStateItem(
             label = stringResource(MR.strings.action_filter_interval_custom),
             state = filterIntervalCustom,
+            minimalStyle = true,
             onClick = { screenModel.toggleFilter(LibraryPreferences::filterIntervalCustom) },
         )
     }
@@ -140,6 +147,7 @@ private fun ColumnScope.FilterPage(
             TriStateItem(
                 label = stringResource(MR.strings.action_filter_tracked),
                 state = filterTracker,
+                minimalStyle = true,
                 onClick = { screenModel.toggleTracker(service.id.toInt()) },
             )
         }
@@ -152,6 +160,7 @@ private fun ColumnScope.FilterPage(
                 TriStateItem(
                     label = service.name,
                     state = filterTracker,
+                    minimalStyle = true,
                     onClick = { screenModel.toggleTracker(service.id.toInt()) },
                 )
             }

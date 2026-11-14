@@ -527,4 +527,4 @@
     <string name="pref_download_fillermarked_items">Izinkan pengunduhan episode fillermarked</string>
     <string name="show_episode_previews">Thumbnail Episode</string>
     <string name="show_episode_summaries">Episode ringkasan</string>
-</resources>
+    <string name="action_add_manga_repo_message">Tambahkan repo ekstensi manga ke %s. Gunakan URL repo yang diakhiri dengan \"index.pb\".</string>\n</resources>

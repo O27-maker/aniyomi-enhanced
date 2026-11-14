@@ -1,4 +1,5 @@
 import mihon.buildlogic.Config
+import mihon.buildlogic.PrepareShortcutTask
 import mihon.buildlogic.getBuildTime
 import mihon.buildlogic.getCommitCount
 import mihon.buildlogic.getGitSha
@@ -6,12 +7,9 @@ import mihon.buildlogic.getGitSha
 plugins {
     id("mihon.android.application")
     id("mihon.android.application.compose")
-    id("com.github.zellius.shortcut-helper")
     kotlin("plugin.serialization")
     alias(libs.plugins.aboutLibraries)
 }
-
-shortcutHelper.setFilePath("./shortcuts.xml")
 
 android {
     namespace = "eu.kanade.tachiyomi"
@@ -20,7 +18,7 @@ android {
         applicationId = "xyz.jmir.tachiyomi.mi"
 
         versionCode = 132
-        versionName = "0.18.2.1"
+        versionName = "0.2.0"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
@@ -45,7 +43,6 @@ android {
     buildTypes {
         val debug by getting {
             applicationIdSuffix = ".dev"
-            versionNameSuffix = "-${getCommitCount()}"
             isPseudoLocalesEnabled = true
         }
         val release by getting {
@@ -53,6 +50,9 @@ android {
             isShrinkResources = Config.enableCodeShrink
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
+
+            // Use the Android debug keystore for installable community test builds.
+            signingConfig = signingConfigs.getByName("debug")
 
             buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = true)}\"")
         }
@@ -64,7 +64,6 @@ android {
 
             applicationIdSuffix = ".debug"
 
-            versionNameSuffix = debug.versionNameSuffix
             signingConfig = debug.signingConfig
 
             matchingFallbacks.addAll(commonMatchingFallbacks)
@@ -76,7 +75,6 @@ android {
 
             isDebuggable = false
             isProfileable = true
-            versionNameSuffix = "-benchmark"
             applicationIdSuffix = ".benchmark"
 
             signingConfig = debug.signingConfig
@@ -318,6 +316,20 @@ dependencies {
 }
 
 androidComponents {
+    onVariants(selector().all()) { variant ->
+        val prepareShortcuts = tasks.register<PrepareShortcutTask>(
+            "prepare${variant.name.replaceFirstChar { it.uppercase() }}Shortcuts",
+        ) {
+            shortcutFile.set(layout.projectDirectory.file("shortcuts.xml"))
+            applicationId.set(variant.applicationId)
+            outputDirectory.set(layout.buildDirectory.dir("generated/res/shortcuts/${variant.name}"))
+        }
+        variant.sources.res?.addGeneratedSourceDirectory(
+            prepareShortcuts,
+            PrepareShortcutTask::outputDirectory,
+        )
+    }
+
     beforeVariants { variantBuilder ->
         // Disables standardBenchmark
         if (variantBuilder.buildType == "benchmark") {

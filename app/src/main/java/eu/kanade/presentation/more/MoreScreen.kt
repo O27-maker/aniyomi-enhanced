@@ -6,12 +6,14 @@ import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.GetApp
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.QueryStats
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.VideoSettings
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,19 +51,18 @@ fun MoreScreen(
     onClickAbout: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val navigationIconTint = MaterialTheme.colorScheme.onSurfaceVariant
 
     Scaffold { contentPadding ->
         ScrollbarLazyColumn(
             modifier = Modifier.padding(contentPadding),
         ) {
             item {
-                LogoHeader()
-            }
-            item {
                 SwitchPreferenceWidget(
                     title = stringResource(MR.strings.label_downloaded_only),
                     subtitle = stringResource(MR.strings.downloaded_only_summary),
                     icon = Icons.Outlined.CloudOff,
+                    iconTint = navigationIconTint,
                     checked = downloadedOnly,
                     onCheckedChanged = onDownloadedOnlyChange,
                 )
@@ -71,6 +72,7 @@ fun MoreScreen(
                     title = stringResource(MR.strings.pref_incognito_mode),
                     subtitle = stringResource(AYMR.strings.pref_incognito_mode_summary),
                     icon = ImageVector.vectorResource(R.drawable.ic_glasses_24dp),
+                    iconTint = navigationIconTint,
                     checked = incognitoMode,
                     onCheckedChanged = onIncognitoModeChange,
                 )
@@ -80,8 +82,9 @@ fun MoreScreen(
 
             item {
                 TextPreferenceWidget(
-                    title = navStyle.moreTab.options.title,
-                    icon = navStyle.moreIcon,
+                    title = stringResource(MR.strings.history),
+                    icon = Icons.Outlined.History,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickAlt,
                 )
             }
@@ -117,6 +120,7 @@ fun MoreScreen(
                         }
                     },
                     icon = Icons.Outlined.GetApp,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickDownloadQueue,
                 )
             }
@@ -124,6 +128,7 @@ fun MoreScreen(
                 TextPreferenceWidget(
                     title = stringResource(AYMR.strings.general_categories),
                     icon = Icons.AutoMirrored.Outlined.Label,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickCategories,
                 )
             }
@@ -131,6 +136,7 @@ fun MoreScreen(
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_stats),
                     icon = Icons.Outlined.QueryStats,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickStats,
                 )
             }
@@ -138,6 +144,7 @@ fun MoreScreen(
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_data_storage),
                     icon = Icons.Outlined.Storage,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickDataAndStorage,
                 )
             }
@@ -148,6 +155,7 @@ fun MoreScreen(
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_settings),
                     icon = Icons.Outlined.Settings,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickSettings,
                 )
             }
@@ -155,6 +163,7 @@ fun MoreScreen(
                 TextPreferenceWidget(
                     title = stringResource(AYMR.strings.label_player_settings),
                     icon = Icons.Outlined.VideoSettings,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickPlayerSettings,
                 )
             }
@@ -162,6 +171,7 @@ fun MoreScreen(
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.pref_category_about),
                     icon = Icons.Outlined.Info,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = onClickAbout,
                 )
             }
@@ -169,6 +179,7 @@ fun MoreScreen(
                 TextPreferenceWidget(
                     title = stringResource(MR.strings.label_help),
                     icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                    iconTint = navigationIconTint,
                     onPreferenceClick = { uriHandler.openUri(Constants.URL_HELP) },
                 )
             }

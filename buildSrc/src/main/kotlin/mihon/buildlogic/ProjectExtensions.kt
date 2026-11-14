@@ -1,6 +1,11 @@
 package mihon.buildlogic
 
+import com.android.build.api.dsl.BuildFeatures
 import com.android.build.api.dsl.CommonExtension
+import com.android.build.api.dsl.CompileOptions
+import com.android.build.api.dsl.CompileSdkSpec
+import com.android.build.api.dsl.CompileSdkVersion
+import com.android.build.api.dsl.DefaultConfig
 import org.gradle.accessors.dm.LibrariesForAndroidx
 import org.gradle.accessors.dm.LibrariesForCompose
 import org.gradle.accessors.dm.LibrariesForKotlinx
@@ -23,10 +28,11 @@ val Project.compose get() = the<LibrariesForCompose>()
 val Project.kotlinx get() = the<LibrariesForKotlinx>()
 val Project.libs get() = the<LibrariesForLibs>()
 
-internal fun Project.configureAndroid(commonExtension: CommonExtension<*, *, *, *, *, *>) {
+internal fun Project.configureAndroid(commonExtension: CommonExtension) {
     commonExtension.apply {
-        compileSdk = AndroidConfig.COMPILE_SDK
-        buildToolsVersion = AndroidConfig.BUILD_TOOLS
+        compileSdk {
+            version = release("37.2")
+        }
 
         defaultConfig {
             minSdk = AndroidConfig.MIN_SDK
@@ -62,7 +68,7 @@ internal fun Project.configureAndroid(commonExtension: CommonExtension<*, *, *, 
     }
 }
 
-internal fun Project.configureCompose(commonExtension: CommonExtension<*, *, *, *, *, *>) {
+internal fun Project.configureCompose(commonExtension: CommonExtension) {
     pluginManager.apply(kotlinx.plugins.compose.compiler.get().pluginId)
 
     commonExtension.apply {
@@ -95,6 +101,10 @@ internal fun Project.configureCompose(commonExtension: CommonExtension<*, *, *, 
 }
 
 internal fun Project.configureTest() {
+    configurations.matching { it.name == "testRuntimeOnly" }.configureEach {
+        this@configureTest.dependencies.add(name, this@configureTest.libs.junit.platform.launcher)
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
         testLogging {
@@ -104,3 +114,23 @@ internal fun Project.configureTest() {
 }
 
 val Project.generatedBuildDir: File get() = project.layout.buildDirectory.asFile.get().resolve("generated/mihon")
+
+
+private fun CommonExtension.defaultConfig(block: DefaultConfig.() -> Unit) {
+    defaultConfig.apply(block)
+}
+
+private fun CommonExtension.compileOptions(block: CompileOptions.() -> Unit) {
+    compileOptions.apply(block)
+}
+
+private fun CommonExtension.buildFeatures(block: BuildFeatures.() -> Unit) {
+    buildFeatures.apply(block)
+}
+
+private fun CompileSdkSpec.release(version: String): CompileSdkVersion {
+    val (major, minor) = version.split(".", limit = 2).let {
+        it[0].toInt() to it.getOrNull(1)?.toInt()
+    }
+    return release(major) { minorApiLevel = minor }
+}

@@ -47,6 +47,7 @@ fun TabbedDialog(
     tabOverflowMenuContent: (@Composable ColumnScope.(() -> Unit) -> Unit)? = null,
     onOverflowMenuClicked: (() -> Unit)? = null,
     overflowIcon: ImageVector? = null,
+    minimalStyle: Boolean = false,
     pagerState: PagerState = rememberPagerState { tabTitles.size },
     content: @Composable (Int) -> Unit,
 ) {
@@ -61,7 +62,11 @@ fun TabbedDialog(
                 PrimaryTabRow(
                     modifier = Modifier.weight(1f),
                     selectedTabIndex = pagerState.currentPage,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    containerColor = if (minimalStyle) {
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    },
                     divider = {},
                 ) {
                     tabTitles.fastForEachIndexed { index, tab ->
@@ -69,14 +74,23 @@ fun TabbedDialog(
                             selected = pagerState.currentPage == index,
                             onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                             text = { TabText(text = tab) },
-                            unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                            selectedContentColor = if (minimalStyle) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            unselectedContentColor = if (minimalStyle) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
                         )
                     }
                 }
 
                 MoreMenu(onOverflowMenuClicked, tabOverflowMenuContent, overflowIcon)
             }
-            HorizontalDivider()
+            if (!minimalStyle) HorizontalDivider()
 
             HorizontalPager(
                 modifier = Modifier.animateContentSize(),

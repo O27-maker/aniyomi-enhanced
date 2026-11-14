@@ -27,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -38,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -363,6 +365,8 @@ private fun MangaScreenSmallImpl(
                     icon = { Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = null) },
                     onClick = onContinueReading,
                     expanded = chapterListState.shouldExpandFAB(),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         },
@@ -396,6 +400,7 @@ private fun MangaScreenSmallImpl(
                     ) {
                         MangaInfoBox(
                             isTabletUi = false,
+                            isFromSource = state.isFromSource,
                             appBarPadding = topPadding,
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo() },
@@ -433,6 +438,7 @@ private fun MangaScreenSmallImpl(
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            accentColor = MaterialTheme.colorScheme.primary,
                         )
                     }
 
@@ -639,6 +645,7 @@ fun MangaScreenLargeImpl(
                     ) {
                         MangaInfoBox(
                             isTabletUi = true,
+                            isFromSource = state.isFromSource,
                             appBarPadding = contentPadding.calculateTopPadding(),
                             manga = state.manga,
                             sourceName = remember { state.source.getNameForMangaInfo() },
@@ -664,6 +671,7 @@ fun MangaScreenLargeImpl(
                             tagsProvider = { state.manga.genre },
                             onTagSearch = onTagSearch,
                             onCopyTagToClipboard = onCopyTagToClipboard,
+                            accentColor = MaterialTheme.colorScheme.primary,
                         )
                     }
                 },

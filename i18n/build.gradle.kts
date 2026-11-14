@@ -1,18 +1,12 @@
-import mihon.buildlogic.generatedBuildDir
-import mihon.buildlogic.tasks.getLocalesConfigTask
+import mihon.buildlogic.tasks.GenerateLocalesConfigTask
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
-    id("mihon.library")
-    kotlin("multiplatform")
+    id("mihon.kotlin.multiplatform")
     alias(libs.plugins.moko)
 }
 
 kotlin {
-    androidTarget()
-
-    applyDefaultHierarchyTemplate()
-
     sourceSets {
         commonMain {
             dependencies {
@@ -25,33 +19,27 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
+
+    android {
+        namespace = "tachiyomi.i18n"
+    }
 }
 
-val generatedAndroidResourceDir = generatedBuildDir.resolve("android/res")
-
-android {
-    namespace = "tachiyomi.i18n"
-
-    sourceSets {
-        val main by getting
-        main.res.srcDirs(
-            "src/commonMain/resources",
-            generatedAndroidResourceDir,
-        )
-    }
-
-    lint {
-        disable.addAll(listOf("MissingTranslation", "ExtraTranslation"))
+androidComponents {
+    onVariants { variant ->
+        val resSource = variant.sources.res ?: return@onVariants
+        val variantName = variant.name.replaceFirstChar { it.uppercase() }
+        val task = tasks.register<GenerateLocalesConfigTask>("generate${variantName}LocalesConfig") {
+            localeFiles.from(
+                layout.projectDirectory.dir("src/commonMain/moko-resources").asFileTree.matching {
+                    include("**/strings.xml", "**/plurals.xml")
+                },
+            )
+        }
+        resSource.addGeneratedSourceDirectory(task) { it.outputDirectory }
     }
 }
 
 multiplatformResources {
     resourcesPackage.set("tachiyomi.i18n")
-}
-
-tasks {
-    val localesConfigTask = project.getLocalesConfigTask(generatedAndroidResourceDir)
-    preBuild {
-        dependsOn(localesConfigTask)
-    }
 }

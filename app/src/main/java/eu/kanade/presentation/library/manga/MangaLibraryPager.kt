@@ -44,6 +44,14 @@ fun MangaLibraryPager(
     onClickContinueReading: ((LibraryManga) -> Unit)?,
 ) {
     BoxWithConstraints {
+        val gridColumns = (maxWidth / 160.dp).toInt().coerceIn(
+            minimumValue = when {
+                maxWidth >= 600.dp -> 4
+                maxWidth >= 360.dp -> 3
+                else -> 2
+            },
+            maximumValue = 6,
+        )
         val density = LocalDensity.current
         val containerHeightPx = with(density) { this@BoxWithConstraints.maxHeight.roundToPx() }
 
@@ -89,25 +97,14 @@ fun MangaLibraryPager(
                     )
                 }
 
-                LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
+                LibraryDisplayMode.CompactGrid,
+                LibraryDisplayMode.CoverOnlyGrid,
+                LibraryDisplayMode.ComfortableGrid,
+                -> {
                     MangaLibraryCompactGrid(
                         items = library,
-                        showTitle = displayMode is LibraryDisplayMode.CompactGrid,
-                        columns = columns,
-                        contentPadding = contentPadding,
-                        selection = selectedManga,
-                        onClick = onClickManga,
-                        onLongClick = onLongClickManga,
-                        onClickContinueReading = onClickContinueReading,
-                        searchQuery = searchQuery,
-                        onGlobalSearchClicked = onGlobalSearchClicked,
-                    )
-                }
-
-                LibraryDisplayMode.ComfortableGrid -> {
-                    MangaLibraryComfortableGrid(
-                        items = library,
-                        columns = columns,
+                        showTitle = true,
+                        columns = gridColumns,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,

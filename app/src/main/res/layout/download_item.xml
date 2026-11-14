@@ -51,7 +51,8 @@
             android:layout_toEndOf="@id/reorder"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?android:textColorSecondary"
             android:textSize="12sp"
             app:layout_constraintEnd_toStartOf="@+id/menu"
             app:layout_constraintStart_toStartOf="@+id/manga_full_title"
@@ -97,7 +98,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_overflow_24dp"
-            app:tint="?attr/colorOnBackground" />
+            app:tint="?android:attr/textColorSecondary" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

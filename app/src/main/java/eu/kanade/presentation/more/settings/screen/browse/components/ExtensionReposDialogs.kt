@@ -1,8 +1,16 @@
 package eu.kanade.presentation.more.settings.screen.browse.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -12,10 +20,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import dev.icerock.moko.resources.StringResource
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.coroutines.delay
 import mihon.domain.extensionrepo.model.ExtensionRepo
@@ -29,6 +40,7 @@ fun ExtensionRepoCreateDialog(
     onDismissRequest: () -> Unit,
     onCreate: (String) -> Unit,
     repoUrls: ImmutableSet<String>,
+    message: StringResource = MR.strings.action_add_repo_message,
 ) {
     var name by remember { mutableStateOf("") }
 
@@ -54,11 +66,21 @@ fun ExtensionRepoCreateDialog(
             }
         },
         title = {
-            Text(text = stringResource(MR.strings.action_add_repo))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(text = stringResource(MR.strings.action_add_repo))
+            }
         },
         text = {
             Column {
-                Text(text = stringResource(AYMR.strings.action_add_repo_message))
+                Text(text = stringResource(message))
 
                 OutlinedTextField(
                     modifier = Modifier
@@ -113,7 +135,17 @@ fun ExtensionRepoDeleteDialog(
             }
         },
         title = {
-            Text(text = stringResource(MR.strings.action_delete_repo))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(text = stringResource(MR.strings.action_delete_repo))
+            }
         },
         text = {
             Text(text = stringResource(MR.strings.delete_repo_confirmation, repo))
@@ -146,7 +178,17 @@ fun ExtensionRepoConflictDialog(
             }
         },
         title = {
-            Text(text = stringResource(MR.strings.action_replace_repo_title))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(text = stringResource(MR.strings.action_replace_repo_title))
+            }
         },
         text = {
             Text(text = stringResource(MR.strings.action_replace_repo_message, newRepo.name, oldRepo.name))
@@ -163,7 +205,17 @@ fun ExtensionRepoConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
-            Text(text = stringResource(MR.strings.action_add_repo))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(text = stringResource(MR.strings.action_add_repo))
+            }
         },
         text = {
             Text(text = stringResource(MR.strings.add_repo_confirmation, repo))

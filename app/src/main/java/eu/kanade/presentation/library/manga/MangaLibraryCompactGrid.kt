@@ -3,8 +3,11 @@ package eu.kanade.presentation.library.manga
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import eu.kanade.presentation.library.components.DownloadsBadge
 import eu.kanade.presentation.library.components.EntryCompactGridItem
@@ -43,7 +46,7 @@ internal fun MangaLibraryCompactGrid(
             val manga = libraryItem.libraryManga.manga
             EntryCompactGridItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },
-                title = manga.title.takeIf { showTitle },
+                title = manga.title,
                 coverData = MangaCover(
                     mangaId = manga.id,
                     sourceId = manga.source,
@@ -51,6 +54,9 @@ internal fun MangaLibraryCompactGrid(
                     url = manga.thumbnailUrl,
                     lastModified = manga.coverLastModified,
                 ),
+                coverShape = RoundedCornerShape(8.dp),
+                titleOverlayHeight = 0.25f,
+                selectionColor = Color(0xFFB9A4FF),
                 coverBadgeStart = {
                     DownloadsBadge(count = libraryItem.downloadCount)
                     UnviewedBadge(count = libraryItem.unreadCount)

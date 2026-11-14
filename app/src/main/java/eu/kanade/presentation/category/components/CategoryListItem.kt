@@ -48,6 +48,7 @@ fun ReorderableCollectionItemScope.CategoryListItem(
             Icon(
                 imageVector = Icons.Outlined.DragHandle,
                 contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .padding(MaterialTheme.padding.medium)
                     .draggableHandle(),
@@ -60,6 +61,7 @@ fun ReorderableCollectionItemScope.CategoryListItem(
                 Icon(
                     imageVector = Icons.Outlined.Edit,
                     contentDescription = stringResource(MR.strings.action_rename_category),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             IconButton(
@@ -72,6 +74,7 @@ fun ReorderableCollectionItemScope.CategoryListItem(
                             Icons.Outlined.VisibilityOff
                         },
                         contentDescription = stringResource(AYMR.strings.action_hide),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
             )
@@ -79,6 +82,7 @@ fun ReorderableCollectionItemScope.CategoryListItem(
                 Icon(
                     imageVector = Icons.Outlined.Delete,
                     contentDescription = stringResource(MR.strings.action_delete),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

@@ -1,8 +1,51 @@
 -dontobfuscate
 
+# Keep the extension-facing source API ABI intact for dynamically loaded extensions.
+# These types are extended, constructed, or invoked from separately compiled extension APKs.
+-keep class eu.kanade.tachiyomi.source.Source { public protected *; }
+-keep class eu.kanade.tachiyomi.source.Source$DefaultImpls { public protected *; }
+-keep class eu.kanade.tachiyomi.source.CatalogueSource { public protected *; }
+-keep class eu.kanade.tachiyomi.source.CatalogueSource$DefaultImpls { public protected *; }
+-keep class eu.kanade.tachiyomi.source.ConfigurableSource { public protected *; }
+-keep class eu.kanade.tachiyomi.source.SourceFactory { public protected *; }
+-keep class eu.kanade.tachiyomi.source.UnmeteredSource { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.Filter { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.Filter$* { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.FilterList { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.MangasPage { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.Page { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.SChapter { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.SChapter$Companion { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.SManga { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.SManga$Companion { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.SMangaUpdate { public protected *; }
+-keep class eu.kanade.tachiyomi.source.model.UpdateStrategy { public protected *; }
+-keep class eu.kanade.tachiyomi.source.online.HttpSource { public protected *; }
+-keep class eu.kanade.tachiyomi.source.online.ParsedHttpSource { public protected *; }
+
+
 -keep,allowoptimization class eu.kanade.**
+
+# Extension APKs subclass HttpSource and override this API method.
+# Prevent R8 from devirtualizing it into a final method in release builds.
+-keepclassmembers class eu.kanade.tachiyomi.source.online.HttpSource {
+    public long getId();
+    public eu.kanade.tachiyomi.source.model.FilterList getFilterList();
+}
+# Extensions reflectively access HttpSource's delegated headers property.
+-keepclassmembers class eu.kanade.tachiyomi.source.online.HttpSource {
+    private kotlin.Lazy headers$delegate;
+}
 -keep,allowoptimization class tachiyomi.**
 -keep,allowoptimization class mihon.**
+
+# OkHttp's Zstd integration discovers the ZSTD-KMP implementation reflectively.
+-keep class com.squareup.zstd.** { *; }
+
+# WorkManager instantiates its generated Room database reflectively.
+-keep class androidx.work.impl.WorkDatabase_Impl {
+    public <init>();
+}
 
 # Keep common dependencies used in extensions
 -keep,allowoptimization class androidx.preference.** { public protected *; }
@@ -57,11 +100,11 @@
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.** # core serialization annotations
 
-# kotlinx-serialization-json specific. Add this if you have java.lang.NoClassDefFoundError kotlinx.serialization.json.JsonObjectSerializer
+# kotlinx-serialization-json specific. Add this if there is java.lang.NoClassDefFoundError kotlinx.serialization.json.JsonObjectSerializer
 -keepclassmembers class kotlinx.serialization.json.** {
     *** Companion;
 }
--keepclasseswithmembers class kotlinx.serialization.json.** {
+-keepclassmembers class kotlinx.serialization.json.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
@@ -69,7 +112,7 @@
 -keepclassmembers class eu.kanade.** {
     *** Companion;
 }
--keepclasseswithmembers class eu.kanade.** {
+-keepclassmembers class eu.kanade.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 
