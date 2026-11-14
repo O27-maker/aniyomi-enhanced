@@ -119,7 +119,6 @@ private fun SourceItem(
     onClickItem: (Source, Listing) -> Unit,
     onLongClickItem: (Source) -> Unit,
     onClickPin: (Source) -> Unit,
-    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     BaseMangaSourceItem(
