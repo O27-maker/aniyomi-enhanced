@@ -7,6 +7,7 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -60,11 +62,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
@@ -132,7 +135,6 @@ fun MangaInfoBox(
                         brush = Brush.verticalGradient(colors = backdropGradientColors),
                     )
                 }
-                .blur(if (isFromSource) 18.dp else 4.dp)
                 .alpha(if (isFromSource) 0.32f else 0.2f),
         )
 
@@ -354,7 +356,7 @@ private fun MangaAndSourceTitlesLarge(
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ItemCover.Book(
+        MangaCoverWithOutline(
             modifier = Modifier.fillMaxWidth(0.65f),
             data = ImageRequest.Builder(LocalContext.current)
                 .data(manga)
@@ -394,7 +396,7 @@ private fun MangaAndSourceTitlesSmall(
             .padding(start = 16.dp, top = appBarPadding + 20.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ItemCover.Book(
+        MangaCoverWithOutline(
             modifier = Modifier
                 .fillMaxWidth(0.68f)
                 .widthIn(max = 240.dp),
@@ -416,6 +418,32 @@ private fun MangaAndSourceTitlesSmall(
             doSearch = doSearch,
             textAlign = TextAlign.Center,
             isFromSource = isFromSource,
+        )
+    }
+}
+
+@Composable
+private fun MangaCoverWithOutline(
+    data: Any?,
+    modifier: Modifier = Modifier,
+    contentDescription: String = "",
+    onClick: (() -> Unit)? = null,
+) {
+    val coverShape = MaterialTheme.shapes.extraSmall
+
+    Box(
+        modifier = modifier
+            .aspectRatio(ItemCover.Book.ratio)
+            .clip(coverShape)
+            .border(1.dp, Color.White, coverShape),
+    ) {
+        ItemCover.Book(
+            data = data,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(2.dp),
+            contentDescription = contentDescription,
+            onClick = onClick,
         )
     }
 }
