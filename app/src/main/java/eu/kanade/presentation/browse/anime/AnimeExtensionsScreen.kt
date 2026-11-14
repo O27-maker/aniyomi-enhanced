@@ -415,6 +415,16 @@ private fun AnimeExtensionItemContent(
                     )
                 }
 
+                if (extension is AnimeExtension.Installed && !extension.loadError.isNullOrBlank()) {
+                    Text(
+                        text = "Source load failed: ${extension.loadError}",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
                 val warning = when {
                     extension is AnimeExtension.Untrusted -> MR.strings.ext_untrusted
                     extension is AnimeExtension.Installed && extension.isObsolete -> MR.strings.ext_obsolete
