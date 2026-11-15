@@ -7,7 +7,6 @@ import androidx.compose.material.icons.outlined.FlipToBack
 import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,7 +64,7 @@ fun EntryToolbar(
             if (isManga) {
                 MaterialTheme.colorScheme.background
             } else {
-                MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+                MaterialTheme.colorScheme.background
             }
             ).copy(alpha = if (isActionMode) 1f else backgroundAlphaProvider()),
         navigateUp = navigateUp,
