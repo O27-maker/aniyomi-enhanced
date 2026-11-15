@@ -7,6 +7,10 @@
 -keep class eu.kanade.tachiyomi.animesource.AnimeCatalogueSource { public protected *; }
 -keep class eu.kanade.tachiyomi.animesource.AnimeSourceFactory { public protected *; }
 -keep class eu.kanade.tachiyomi.animesource.online.AnimeHttpSource { public protected *; }
+# Preserve ParsedAnimeHttpSource overrides implemented by external anime APKs.
+-keep class eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource { *; }
+# Preserve Kotlin default-argument bridges called directly by compiled extensions.
+-keep class eu.kanade.tachiyomi.util.JsoupExtensionsKt { *; }
 -keep class eu.kanade.tachiyomi.animesource.model.** { public protected *; }
 -keep class eu.kanade.tachiyomi.source.Source$DefaultImpls { public protected *; }
 -keep class eu.kanade.tachiyomi.source.CatalogueSource { public protected *; }
