@@ -11,6 +11,9 @@
 -keep class eu.kanade.tachiyomi.source.UnmeteredSource { public protected *; }
 -keep class eu.kanade.tachiyomi.source.model.Filter { public protected *; }
 -keep class eu.kanade.tachiyomi.source.model.Filter$* { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.model.AnimeFilter { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.model.AnimeFilter$* { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.model.AnimeFilterList { public protected *; }
 -keep class eu.kanade.tachiyomi.source.model.FilterList { public protected *; }
 -keep class eu.kanade.tachiyomi.source.model.MangasPage { public protected *; }
 -keep class eu.kanade.tachiyomi.source.model.Page { public protected *; }
