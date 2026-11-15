@@ -60,13 +60,9 @@ fun EntryToolbar(
             }
         },
         modifier = modifier,
-        backgroundColor = (
-            if (isManga) {
-                MaterialTheme.colorScheme.background
-            } else {
-                MaterialTheme.colorScheme.background
-            }
-            ).copy(alpha = if (isActionMode) 1f else backgroundAlphaProvider()),
+        backgroundColor = MaterialTheme.colorScheme.background.copy(
+            alpha = if (isActionMode) 1f else backgroundAlphaProvider(),
+        ),
         navigateUp = navigateUp,
         actions = {
             var downloadExpanded by remember { mutableStateOf(false) }
