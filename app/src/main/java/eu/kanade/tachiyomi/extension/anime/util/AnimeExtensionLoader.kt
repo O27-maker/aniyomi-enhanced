@@ -404,8 +404,8 @@ internal object AnimeExtensionLoader {
                         else -> throw Exception("Unknown source class type: ${obj.javaClass}")
                     }
                 } catch (e: LinkageError) {
+                    val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, context.classLoader)
                     try {
-                        val fallBackClassLoader = PathClassLoader(appInfo.sourceDir, null, context.classLoader)
                         when (
                             val obj = Class.forName(
                                 it,
@@ -421,10 +421,20 @@ internal object AnimeExtensionLoader {
                         }
                     } catch (e: Throwable) {
                         logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
+                        Log.e(
+                            "AnimeExtensionLoader",
+                            "Extension source class load failed: $extName ($pkgName), class=$it, loader=${fallBackClassLoader.javaClass.name}",
+                            e,
+                        )
                         return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw, isTorrent)
                     }
                 } catch (e: Throwable) {
                     logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
+                    Log.e(
+                        "AnimeExtensionLoader",
+                        "Extension source class load failed: $extName ($pkgName), class=$it, loader=${classLoader.javaClass.name}",
+                        e,
+                    )
                     return notLoaded(e.message ?: "Unable to load source class $it", libVersion, isNsfw, isTorrent)
                 }
             }
