@@ -3,6 +3,11 @@
 # Keep the extension-facing source API ABI intact for dynamically loaded extensions.
 # These types are extended, constructed, or invoked from separately compiled extension APKs.
 -keep class eu.kanade.tachiyomi.source.Source { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.AnimeSource { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.AnimeCatalogueSource { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.AnimeSourceFactory { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.online.AnimeHttpSource { public protected *; }
+-keep class eu.kanade.tachiyomi.animesource.model.** { public protected *; }
 -keep class eu.kanade.tachiyomi.source.Source$DefaultImpls { public protected *; }
 -keep class eu.kanade.tachiyomi.source.CatalogueSource { public protected *; }
 -keep class eu.kanade.tachiyomi.source.CatalogueSource$DefaultImpls { public protected *; }
