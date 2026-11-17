@@ -44,14 +44,6 @@ fun MangaLibraryPager(
     onClickContinueReading: ((LibraryManga) -> Unit)?,
 ) {
     BoxWithConstraints {
-        val gridColumns = (maxWidth / 160.dp).toInt().coerceIn(
-            minimumValue = when {
-                maxWidth >= 600.dp -> 4
-                maxWidth >= 360.dp -> 3
-                else -> 2
-            },
-            maximumValue = 6,
-        )
         val density = LocalDensity.current
         val containerHeightPx = with(density) { this@BoxWithConstraints.maxHeight.roundToPx() }
 
@@ -80,12 +72,16 @@ fun MangaLibraryPager(
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val columns by remember(isLandscape) { getColumnsForOrientation(isLandscape) }
+            // Auto keeps the Aniyomi+ default at three covers per row.
+            val displayColumns = columns.takeIf { it > 0 } ?: 3
+            // In List mode, Auto fits four covers in the available library height.
+            val listEntries = columns.takeIf { it > 0 } ?: 4
 
             when (displayMode) {
                 LibraryDisplayMode.List -> {
                     MangaLibraryList(
                         items = library,
-                        entries = columns,
+                        entries = listEntries,
                         containerHeight = containerHeightPx,
                         contentPadding = contentPadding,
                         selection = selectedManga,
@@ -99,12 +95,25 @@ fun MangaLibraryPager(
 
                 LibraryDisplayMode.CompactGrid,
                 LibraryDisplayMode.CoverOnlyGrid,
-                LibraryDisplayMode.ComfortableGrid,
                 -> {
                     MangaLibraryCompactGrid(
                         items = library,
-                        showTitle = true,
-                        columns = gridColumns,
+                        showTitle = displayMode == LibraryDisplayMode.CompactGrid,
+                        columns = displayColumns,
+                        contentPadding = contentPadding,
+                        selection = selectedManga,
+                        onClick = onClickManga,
+                        onLongClick = onLongClickManga,
+                        onClickContinueReading = onClickContinueReading,
+                        searchQuery = searchQuery,
+                        onGlobalSearchClicked = onGlobalSearchClicked,
+                    )
+                }
+
+                LibraryDisplayMode.ComfortableGrid -> {
+                    MangaLibraryComfortableGrid(
+                        items = library,
+                        columns = displayColumns,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,
