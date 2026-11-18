@@ -249,7 +249,7 @@ object HomeScreen : Screen() {
             label = null,
             alwaysShowLabel = false,
             colors = NavigationRailItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.primary,
+                selectedIconColor = Color.White,
                 unselectedIconColor = Color(0xFF888888),
                 indicatorColor = Color.Black,
             ),
