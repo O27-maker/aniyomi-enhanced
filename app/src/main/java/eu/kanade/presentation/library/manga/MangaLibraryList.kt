@@ -54,6 +54,8 @@ internal fun MangaLibraryList(
             EntryListItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },
                 title = manga.title,
+                author = manga.author ?: manga.artist,
+                description = manga.description,
                 coverData = MangaCover(
                     mangaId = manga.id,
                     sourceId = manga.source,
