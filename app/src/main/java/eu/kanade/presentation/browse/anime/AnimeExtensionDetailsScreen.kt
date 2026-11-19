@@ -175,6 +175,20 @@ private fun AnimeExtensionDetails(
             }
         }
 
+        if (extension.loadError != null) {
+            item {
+                Text(
+                    text = "Failed to load extension sources:\\n\\n${extension.loadError}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = MaterialTheme.padding.medium)
+                        .padding(vertical = MaterialTheme.padding.small),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+
         item {
             DetailsHeader(
                 extension = extension,
@@ -252,6 +266,7 @@ private fun DetailsHeader(
                                 Update available: ${extension.hasUpdate}
                                 Orphaned: ${extension.isObsolete}
                                 Shared: ${extension.isShared}
+                                Load error: ${extension.loadError ?: "None"}
                                 """.trimIndent(),
                             )
                             val store = extension.store

@@ -24,7 +24,7 @@ fun LinkIcon(
     ) {
         Icon(
             imageVector = icon,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             contentDescription = label,
         )
     }

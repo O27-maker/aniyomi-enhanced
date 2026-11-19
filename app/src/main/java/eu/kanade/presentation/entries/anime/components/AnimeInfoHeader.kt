@@ -7,6 +7,7 @@ import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +17,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -59,7 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
@@ -83,7 +86,6 @@ import eu.kanade.presentation.entries.components.DotSeparatorText
 import eu.kanade.presentation.entries.components.ItemCover
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.animesource.model.SAnime
-import eu.kanade.tachiyomi.data.coil.useBackground
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.model.AnimeRelationGroup
@@ -106,6 +108,7 @@ private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTIL
 @Composable
 fun AnimeInfoBox(
     isTabletUi: Boolean,
+    isFromSource: Boolean,
     appBarPadding: Dp,
     anime: Anime,
     sourceName: String,
@@ -123,7 +126,6 @@ fun AnimeInfoBox(
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(anime)
-                .useBackground(true)
                 .crossfade(true)
                 .build(),
             contentDescription = null,
@@ -136,8 +138,7 @@ fun AnimeInfoBox(
                         brush = Brush.verticalGradient(colors = backdropGradientColors),
                     )
                 }
-                .blur(4.dp)
-                .alpha(0.2f),
+                .alpha(if (isFromSource) 0.32f else 0.2f),
         )
 
         // Anime & source info
@@ -364,7 +365,7 @@ private fun AnimeAndSourceTitlesLarge(
             .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ItemCover.Book(
+        AnimeCoverWithOutline(
             modifier = Modifier.fillMaxWidth(0.65f),
             data = ImageRequest.Builder(LocalContext.current)
                 .data(anime)
@@ -396,17 +397,16 @@ private fun AnimeAndSourceTitlesSmall(
     onCoverClick: () -> Unit,
     doSearch: (query: String, global: Boolean) -> Unit,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, top = appBarPadding + 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(start = 16.dp, top = appBarPadding + 20.dp, end = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ItemCover.Book(
+        AnimeCoverWithOutline(
             modifier = Modifier
-                .sizeIn(maxWidth = 100.dp)
-                .align(Alignment.Top),
+                .fillMaxWidth(0.68f)
+                .widthIn(max = 240.dp),
             data = ImageRequest.Builder(LocalContext.current)
                 .data(anime)
                 .crossfade(true)
@@ -414,19 +414,43 @@ private fun AnimeAndSourceTitlesSmall(
             contentDescription = stringResource(MR.strings.manga_cover),
             onClick = onCoverClick,
         )
-        Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            AnimeContentInfo(
-                title = anime.title,
-                author = anime.author,
-                artist = anime.artist,
-                status = anime.status,
-                sourceName = sourceName,
-                isStubSource = isStubSource,
-                doSearch = doSearch,
-            )
-        }
+        Spacer(modifier = Modifier.height(18.dp))
+        AnimeContentInfo(
+            title = anime.title,
+            author = anime.author,
+            artist = anime.artist,
+            status = anime.status,
+            sourceName = sourceName,
+            isStubSource = isStubSource,
+            doSearch = doSearch,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun AnimeCoverWithOutline(
+    data: Any?,
+    modifier: Modifier = Modifier,
+    contentDescription: String = "",
+    onClick: (() -> Unit)? = null,
+) {
+    val coverShape = MaterialTheme.shapes.extraSmall
+
+    Box(
+        modifier = modifier
+            .aspectRatio(ItemCover.Book.ratio)
+            .clip(coverShape)
+            .border(1.dp, Color.White, coverShape),
+    ) {
+        ItemCover.Book(
+            data = data,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(2.dp),
+            contentDescription = contentDescription,
+            onClick = onClick,
+        )
     }
 }
 

@@ -15,19 +15,18 @@ internal abstract class BaseColorScheme {
     private val surfaceContainerHighest = Color(0xFF1B1B1B)
 
     fun getColorScheme(isDark: Boolean, isAmoled: Boolean): ColorScheme {
-        if (!isDark) return lightScheme
-
-        if (!isAmoled) return darkScheme
-
+        // Aniyomi+ keeps a consistent dark canvas; the selected theme supplies the accent palette.
         return darkScheme.copy(
             background = Color.Black,
             onBackground = Color.White,
             surface = Color.Black,
             onSurface = Color.White,
-            surfaceVariant = surfaceContainer, // Navigation bar background (ThemePrefWidget)
-            surfaceContainerLowest = surfaceContainer,
-            surfaceContainerLow = surfaceContainer,
-            surfaceContainer = surfaceContainer, // Navigation bar background
+            surfaceVariant = surfaceContainer,
+            onSurfaceVariant = Color(0xFFAAAAAA),
+            surfaceTint = darkScheme.primary,
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color(0xFF080808),
+            surfaceContainer = surfaceContainer,
             surfaceContainerHigh = surfaceContainerHigh,
             surfaceContainerHighest = surfaceContainerHighest,
         )

@@ -70,6 +70,7 @@ fun MangaLibraryContent(
                 categories = categories,
                 pagerState = pagerState,
                 getNumberOfItemsForCategory = getNumberOfMangaForCategory,
+                minimalStyle = true,
             ) { scope.launch { pagerState.animateScrollToPage(it) } }
         }
 

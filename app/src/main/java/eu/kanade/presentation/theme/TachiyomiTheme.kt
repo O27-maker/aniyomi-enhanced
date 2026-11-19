@@ -11,24 +11,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
+import eu.kanade.presentation.theme.colorscheme.AniyomiAccentColorScheme
 import eu.kanade.presentation.theme.colorscheme.BaseColorScheme
 import eu.kanade.presentation.theme.colorscheme.CloudflareColorScheme
 import eu.kanade.presentation.theme.colorscheme.CottoncandyColorScheme
 import eu.kanade.presentation.theme.colorscheme.DoomColorScheme
-import eu.kanade.presentation.theme.colorscheme.GreenAppleColorScheme
-import eu.kanade.presentation.theme.colorscheme.LavenderColorScheme
 import eu.kanade.presentation.theme.colorscheme.MatrixColorScheme
-import eu.kanade.presentation.theme.colorscheme.MidnightDuskColorScheme
 import eu.kanade.presentation.theme.colorscheme.MochaColorScheme
 import eu.kanade.presentation.theme.colorscheme.MonetColorScheme
 import eu.kanade.presentation.theme.colorscheme.MonochromeColorScheme
-import eu.kanade.presentation.theme.colorscheme.NordColorScheme
 import eu.kanade.presentation.theme.colorscheme.SapphireColorScheme
-import eu.kanade.presentation.theme.colorscheme.StrawberryColorScheme
 import eu.kanade.presentation.theme.colorscheme.TachiyomiColorScheme
 import eu.kanade.presentation.theme.colorscheme.TakoColorScheme
-import eu.kanade.presentation.theme.colorscheme.TealTurqoiseColorScheme
-import eu.kanade.presentation.theme.colorscheme.TidalWaveColorScheme
 import eu.kanade.presentation.theme.colorscheme.YinYangColorScheme
 import eu.kanade.presentation.theme.colorscheme.YotsubaColorScheme
 import uy.kohesive.injekt.Injekt
@@ -106,18 +100,22 @@ private val colorSchemes: Map<AppTheme, BaseColorScheme> = mapOf(
     AppTheme.CLOUDFLARE to CloudflareColorScheme,
     AppTheme.COTTONCANDY to CottoncandyColorScheme,
     AppTheme.DOOM to DoomColorScheme,
-    AppTheme.GREEN_APPLE to GreenAppleColorScheme,
-    AppTheme.LAVENDER to LavenderColorScheme,
+    AppTheme.GREEN_APPLE to AniyomiAccentColorScheme(Color(0xFFB9D77D)),
+    AppTheme.LAVENDER to AniyomiAccentColorScheme(Color(0xFFC4B5FD)),
+    AppTheme.ARCTIC_BLUE to AniyomiAccentColorScheme(Color(0xFF8BB8FF)),
+    AppTheme.SAGE_GREEN to AniyomiAccentColorScheme(Color(0xFF91C9A8)),
+    AppTheme.ROSE_BERRY to AniyomiAccentColorScheme(Color(0xFFF0A6C2)),
+    AppTheme.AMBER_GOLD to AniyomiAccentColorScheme(Color(0xFFE8BD78)),
     AppTheme.MATRIX to MatrixColorScheme,
-    AppTheme.MIDNIGHT_DUSK to MidnightDuskColorScheme,
+    AppTheme.MIDNIGHT_DUSK to AniyomiAccentColorScheme(Color(0xFFD69BEA)),
     AppTheme.MONOCHROME to MonochromeColorScheme,
     AppTheme.MOCHA to MochaColorScheme,
     AppTheme.SAPPHIRE to SapphireColorScheme,
-    AppTheme.NORD to NordColorScheme,
-    AppTheme.STRAWBERRY_DAIQUIRI to StrawberryColorScheme,
+    AppTheme.NORD to AniyomiAccentColorScheme(Color(0xFFA5B9E8)),
+    AppTheme.STRAWBERRY_DAIQUIRI to AniyomiAccentColorScheme(Color(0xFFFF9B9B)),
     AppTheme.TAKO to TakoColorScheme,
-    AppTheme.TEALTURQUOISE to TealTurqoiseColorScheme,
-    AppTheme.TIDAL_WAVE to TidalWaveColorScheme,
+    AppTheme.TEALTURQUOISE to AniyomiAccentColorScheme(Color(0xFF65D6CF)),
+    AppTheme.TIDAL_WAVE to AniyomiAccentColorScheme(Color(0xFF55C8E8)),
     AppTheme.YINYANG to YinYangColorScheme,
     AppTheme.YOTSUBA to YotsubaColorScheme,
 )

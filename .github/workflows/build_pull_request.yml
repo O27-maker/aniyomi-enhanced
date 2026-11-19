@@ -13,7 +13,6 @@ on:
       - 'i18n/src/commonMain/moko-resources/base/plurals-aniyomi.xml'
       - 'i18n/src/commonMain/moko-resources/base/plurals.xml'
 
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -39,6 +38,23 @@ jobs:
           java-version: 17
           distribution: temurin
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK and NDK
+        run: |
+          sdkmanager "platforms;android-37.0" "ndk;29.0.14206865"
+          sdkmanager --list_installed | grep -E "platforms;android-37.0|ndk;29.0.14206865"
+          test -d "$ANDROID_HOME/platforms/android-37.0"
+          test -d "$ANDROID_HOME/ndk/29.0.14206865"
+
+      - name: Provide legacy Android annotations jar for L8
+        run: |
+          mkdir -p "$ANDROID_HOME/tools/support" /tmp/empty-android-annotations
+          jar --create --file "$ANDROID_HOME/tools/support/annotations.jar" -C /tmp/empty-android-annotations .
+
       - name: Set up gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b # v4.3.0
 
@@ -49,13 +65,14 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Run unit tests
-        run: ./gradlew testReleaseUnitTest
+        run: ./gradlew testDebugUnitTest
 
-      - name: Upload APK
+      - name: Upload installable APKs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: arm64-v8a-${{ github.sha }}
-          path: app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk
+          name: installable-apks-${{ github.sha }}
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
 
       - name: Upload mapping
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

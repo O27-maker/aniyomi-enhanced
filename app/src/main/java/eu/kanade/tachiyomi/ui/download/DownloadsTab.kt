@@ -239,6 +239,7 @@ data object DownloadsTab : Tab {
                 PrimaryTabRow(
                     selectedTabIndex = state.currentPage,
                     modifier = Modifier.zIndex(1f),
+                    indicator = {},
                 ) {
                     listOf(
                         Tab(

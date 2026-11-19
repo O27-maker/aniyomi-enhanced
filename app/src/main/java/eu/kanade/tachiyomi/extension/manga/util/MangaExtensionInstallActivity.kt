@@ -73,6 +73,11 @@ class MangaExtensionInstallActivity : Activity() {
             else -> InstallStep.Error
         }
         extensionManager.updateInstallStep(downloadId, newStep)
+        // Some OEM package installers report cancellation even when the APK was installed.
+        // Reconcile against PackageManager after every installer result instead of trusting it alone.
+        if (newStep != InstallStep.Installed) {
+            extensionManager.refreshInstalledExtensions()
+        }
     }
 }
 

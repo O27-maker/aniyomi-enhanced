@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import eu.kanade.domain.ui.UiPreferences
-import eu.kanade.domain.ui.model.setAppCompatDelegateThemeMode
-import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
 import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
 import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
@@ -19,9 +17,6 @@ internal class ThemeStep : OnboardingStep {
 
     @Composable
     override fun Content() {
-        val themeModePref = uiPreferences.themeMode()
-        val themeMode by themeModePref.collectAsState()
-
         val appThemePref = uiPreferences.appTheme()
         val appTheme by appThemePref.collectAsState()
 
@@ -29,14 +24,6 @@ internal class ThemeStep : OnboardingStep {
         val amoled by amoledPref.collectAsState()
 
         Column {
-            AppThemeModePreferenceWidget(
-                value = themeMode,
-                onItemClick = {
-                    themeModePref.set(it)
-                    setAppCompatDelegateThemeMode(it)
-                },
-            )
-
             AppThemePreferenceWidget(
                 value = appTheme,
                 amoled = amoled,

@@ -100,6 +100,7 @@ class AnimeExtensionStoresScreenModel(
         if (status is AnimeExtensionStoreScreenState.Success) {
             screenModelScope.launchIO {
                 updateExtensionStores()
+                extensionManager.findAvailableExtensions()
             }
         }
     }

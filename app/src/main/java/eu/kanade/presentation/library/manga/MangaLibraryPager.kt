@@ -72,12 +72,16 @@ fun MangaLibraryPager(
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val columns by remember(isLandscape) { getColumnsForOrientation(isLandscape) }
+            // Auto keeps the Aniyomi+ default at three covers per row.
+            val displayColumns = columns.takeIf { it > 0 } ?: 3
+            // In List mode, Auto fits four covers in the available library height.
+            val listEntries = columns.takeIf { it > 0 } ?: 4
 
             when (displayMode) {
                 LibraryDisplayMode.List -> {
                     MangaLibraryList(
                         items = library,
-                        entries = columns,
+                        entries = listEntries,
                         containerHeight = containerHeightPx,
                         contentPadding = contentPadding,
                         selection = selectedManga,
@@ -89,11 +93,13 @@ fun MangaLibraryPager(
                     )
                 }
 
-                LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
+                LibraryDisplayMode.CompactGrid,
+                LibraryDisplayMode.CoverOnlyGrid,
+                -> {
                     MangaLibraryCompactGrid(
                         items = library,
-                        showTitle = displayMode is LibraryDisplayMode.CompactGrid,
-                        columns = columns,
+                        showTitle = displayMode == LibraryDisplayMode.CompactGrid,
+                        columns = displayColumns,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,
@@ -107,7 +113,7 @@ fun MangaLibraryPager(
                 LibraryDisplayMode.ComfortableGrid -> {
                     MangaLibraryComfortableGrid(
                         items = library,
-                        columns = columns,
+                        columns = displayColumns,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,

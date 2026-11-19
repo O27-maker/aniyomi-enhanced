@@ -2,6 +2,7 @@ package eu.kanade.presentation.library.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -33,8 +34,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -80,9 +83,13 @@ fun EntryCompactGridItem(
     coverAlpha: Float = 1f,
     coverBadgeStart: @Composable (RowScope.() -> Unit)? = null,
     coverBadgeEnd: @Composable (RowScope.() -> Unit)? = null,
+    coverShape: Shape = MaterialTheme.shapes.extraSmall,
+    titleOverlayHeight: Float = 0.33f,
+    selectionColor: Color? = null,
 ) {
     GridItemSelectable(
         isSelected = isSelected,
+        selectionColor = selectionColor,
         onClick = onClick,
         onLongClick = onLongClick,
     ) {
@@ -93,6 +100,7 @@ fun EntryCompactGridItem(
                         .fillMaxWidth()
                         .alpha(if (isSelected) GRID_SELECTED_COVER_ALPHA else coverAlpha),
                     data = coverData,
+                    shape = coverShape,
                 )
             },
             badgesStart = coverBadgeStart,
@@ -101,6 +109,7 @@ fun EntryCompactGridItem(
                 if (title != null) {
                     CoverTextOverlay(
                         title = title,
+                        heightFraction = titleOverlayHeight,
                         onClickContinueViewing = onClickContinueViewing,
                     )
                 } else if (onClickContinueViewing != null) {
@@ -124,6 +133,7 @@ fun EntryCompactGridItem(
 @Composable
 private fun BoxScope.CoverTextOverlay(
     title: String,
+    heightFraction: Float,
     onClickContinueViewing: (() -> Unit)? = null,
 ) {
     Box(
@@ -135,7 +145,7 @@ private fun BoxScope.CoverTextOverlay(
                     1f to Color(0xAA000000),
                 ),
             )
-            .fillMaxHeight(0.33f)
+            .fillMaxHeight(heightFraction)
             .fillMaxWidth()
             .align(Alignment.BottomCenter),
     )
@@ -186,9 +196,11 @@ fun EntryComfortableGridItem(
     coverBadgeStart: (@Composable RowScope.() -> Unit)? = null,
     coverBadgeEnd: (@Composable RowScope.() -> Unit)? = null,
     onClickContinueViewing: (() -> Unit)? = null,
+    selectionColor: Color? = null,
 ) {
     GridItemSelectable(
         isSelected = isSelected,
+        selectionColor = selectionColor,
         onClick = onClick,
         onLongClick = onLongClick,
     ) {
@@ -295,6 +307,7 @@ private fun GridItemSelectable(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selectionColor: Color? = null,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -304,7 +317,11 @@ private fun GridItemSelectable(
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
-            .selectedOutline(isSelected = isSelected, color = MaterialTheme.colorScheme.secondary)
+            .selectedOutline(
+                isSelected = isSelected,
+                color = selectionColor ?: MaterialTheme.colorScheme.secondary,
+                subtle = selectionColor != null,
+            )
             .padding(4.dp),
     ) {
         val contentColor = if (isSelected) {
@@ -324,7 +341,10 @@ private fun GridItemSelectable(
 private fun Modifier.selectedOutline(
     isSelected: Boolean,
     color: Color,
-) = drawBehind { if (isSelected) drawRect(color = color) }
+    subtle: Boolean,
+) = drawBehind {
+    if (isSelected) drawRect(color = if (subtle) color.copy(alpha = 0.12f) else color)
+}
 
 /**
  * Layout of list item.
@@ -333,6 +353,8 @@ private fun Modifier.selectedOutline(
 fun EntryListItem(
     isSelected: Boolean = false,
     title: String,
+    author: String? = null,
+    description: String? = null,
     coverData: EntryCoverModel,
     coverAlpha: Float = 1f,
     onLongClick: () -> Unit,
@@ -368,14 +390,41 @@ fun EntryListItem(
                 .alpha(coverAlpha),
             data = coverData,
         )
-        Text(
-            text = title,
+        Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
-                .weight(1f),
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+                .weight(1f)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column {
+                Text(
+                    text = title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+                author?.takeIf { it.isNotBlank() }?.let {
+                    Text(
+                        text = it,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            description?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    text = it,
+                    modifier = Modifier.padding(top = 6.dp),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
         BadgeGroup(content = badge)
         if (onClickContinueViewing != null) {
             ContinueViewingButton(

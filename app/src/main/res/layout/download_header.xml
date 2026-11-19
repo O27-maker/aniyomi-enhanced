@@ -23,6 +23,7 @@
             android:paddingVertical="8dp"
             android:layout_weight="1"
             android:layout_gravity="center_vertical"
+            android:textColor="?android:attr/textColorSecondary"
             tools:text="Title" />
 
         <ImageView

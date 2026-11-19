@@ -6,6 +6,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -19,6 +21,7 @@ internal fun LibraryTabs(
     categories: List<Category>,
     pagerState: PagerState,
     getNumberOfItemsForCategory: (Category) -> Int?,
+    minimalStyle: Boolean = false,
     onTabItemClick: (Int) -> Unit,
 ) {
     val currentPageIndex = pagerState.currentPage.coerceAtMost(categories.lastIndex)
@@ -31,6 +34,13 @@ internal fun LibraryTabs(
             // TODO: use default when width is fixed upstream
             // https://issuetracker.google.com/issues/242879624
             divider = {},
+            indicator = {
+                if (!minimalStyle) {
+                    TabRowDefaults.PrimaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(currentPageIndex),
+                    )
+                }
+            },
         ) {
             categories.forEachIndexed { index, category ->
                 Tab(
@@ -42,11 +52,20 @@ internal fun LibraryTabs(
                             badgeCount = getNumberOfItemsForCategory(category),
                         )
                     },
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                    selectedContentColor = if (minimalStyle) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    unselectedContentColor = if (minimalStyle) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 )
             }
         }
 
-        HorizontalDivider()
+        if (!minimalStyle) HorizontalDivider()
     }
 }

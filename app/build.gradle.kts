@@ -1,4 +1,5 @@
 import mihon.buildlogic.Config
+import mihon.buildlogic.PrepareShortcutTask
 import mihon.buildlogic.getBuildTime
 import mihon.buildlogic.getCommitCount
 import mihon.buildlogic.getGitSha
@@ -6,21 +7,49 @@ import mihon.buildlogic.getGitSha
 plugins {
     id("mihon.android.application")
     id("mihon.android.application.compose")
-    id("com.github.zellius.shortcut-helper")
     kotlin("plugin.serialization")
     alias(libs.plugins.aboutLibraries)
 }
 
-shortcutHelper.setFilePath("./shortcuts.xml")
-
 android {
     namespace = "eu.kanade.tachiyomi"
+
+    val releaseKeystorePath = System.getenv("ANDROID_SIGNING_KEY_PATH")
+    val releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    val releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+    val releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+    val usePermanentReleaseSigning =
+        !releaseKeystorePath.isNullOrBlank() &&
+            !releaseKeystorePassword.isNullOrBlank() &&
+            !releaseKeyAlias.isNullOrBlank() &&
+            !releaseKeyPassword.isNullOrBlank() &&
+            file(releaseKeystorePath).exists()
+
+    signingConfigs {
+        if (usePermanentReleaseSigning) {
+            create("aniyomiPlusRelease") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                storeType = "JKS"
+            }
+        }
+    }
+
+    println(
+        if (usePermanentReleaseSigning) {
+            "Aniyomi+ release APKs will use the permanent signing key."
+        } else {
+            "Aniyomi+ release APKs will use the debug signing fallback."
+        },
+    )
 
     defaultConfig {
         applicationId = "xyz.jmir.tachiyomi.mi"
 
-        versionCode = 132
-        versionName = "0.18.2.1"
+        versionCode = 133
+        versionName = "0.2.1"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
@@ -45,7 +74,6 @@ android {
     buildTypes {
         val debug by getting {
             applicationIdSuffix = ".dev"
-            versionNameSuffix = "-${getCommitCount()}"
             isPseudoLocalesEnabled = true
         }
         val release by getting {
@@ -53,6 +81,13 @@ android {
             isShrinkResources = Config.enableCodeShrink
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
+
+            // Use the permanent Aniyomi+ key when supplied by CI; otherwise retain the debug fallback.
+            signingConfig = if (usePermanentReleaseSigning) {
+                signingConfigs.getByName("aniyomiPlusRelease")
+            } else {
+                signingConfigs.getByName("debug")
+            }
 
             buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = true)}\"")
         }
@@ -64,7 +99,6 @@ android {
 
             applicationIdSuffix = ".debug"
 
-            versionNameSuffix = debug.versionNameSuffix
             signingConfig = debug.signingConfig
 
             matchingFallbacks.addAll(commonMatchingFallbacks)
@@ -76,7 +110,6 @@ android {
 
             isDebuggable = false
             isProfileable = true
-            versionNameSuffix = "-benchmark"
             applicationIdSuffix = ".benchmark"
 
             signingConfig = debug.signingConfig
@@ -318,6 +351,20 @@ dependencies {
 }
 
 androidComponents {
+    onVariants(selector().all()) { variant ->
+        val prepareShortcuts = tasks.register<PrepareShortcutTask>(
+            "prepare${variant.name.replaceFirstChar { it.uppercase() }}Shortcuts",
+        ) {
+            shortcutFile.set(layout.projectDirectory.file("shortcuts.xml"))
+            applicationId.set(variant.applicationId)
+            outputDirectory.set(layout.buildDirectory.dir("generated/res/shortcuts/${variant.name}"))
+        }
+        variant.sources.res?.addGeneratedSourceDirectory(
+            prepareShortcuts,
+            PrepareShortcutTask::outputDirectory,
+        )
+    }
+
     beforeVariants { variantBuilder ->
         // Disables standardBenchmark
         if (variantBuilder.buildType == "benchmark") {

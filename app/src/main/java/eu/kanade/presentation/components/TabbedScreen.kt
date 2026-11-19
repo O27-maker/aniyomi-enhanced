@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -42,6 +43,8 @@ fun TabbedScreen(
     scrollable: Boolean = false,
     animeSearchQuery: String? = null,
     onChangeAnimeSearchQuery: (String?) -> Unit = {},
+    searchAccentColor: Color? = null,
+    selectedTabContentColor: Color = MaterialTheme.colorScheme.primary,
 
 ) {
     val scope = rememberCoroutineScope()
@@ -77,6 +80,7 @@ fun TabbedScreen(
                     onChangeSearchQuery = actualOnChange,
                     actions = { AppBarActions(tab.actions) },
                     navigateUp = tab.navigateUp,
+                    searchAccentColor = searchAccentColor,
                 )
             }
         },
@@ -101,9 +105,15 @@ fun TabbedScreen(
                             TabText(
                                 text = stringResource(tab.titleRes),
                                 badgeCount = tab.badgeNumber,
+                                color = if (state.currentPage == index) {
+                                    selectedTabContentColor
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
+                                },
                             )
                         },
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurface,
+                        selectedContentColor = selectedTabContentColor,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f),
                     )
                 }
             }
@@ -144,6 +154,7 @@ private fun FlexibleTabRow(
             selectedTabIndex = selectedTabIndex,
             edgePadding = 13.dp,
             modifier = Modifier.zIndex(1f),
+            indicator = {},
         ) {
             block()
         }
@@ -151,6 +162,7 @@ private fun FlexibleTabRow(
         PrimaryTabRow(
             selectedTabIndex = selectedTabIndex,
             modifier = Modifier.zIndex(1f),
+            indicator = {},
         ) {
             block()
         }
