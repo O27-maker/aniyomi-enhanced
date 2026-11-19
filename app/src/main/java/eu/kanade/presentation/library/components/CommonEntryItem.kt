@@ -405,11 +405,11 @@ fun EntryListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleSmall.copy(
-                        fontSize = MaterialTheme.typography.titleSmall.fontSize * 2,
+                        fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.5,
                         fontWeight = FontWeight.Bold,
                     ),
                 )
-                author?.let {
+                (author?.takeIf { it.isNotBlank() } ?: "Unknown").let {
                     Text(
                         text = it,
                         maxLines = 1,
