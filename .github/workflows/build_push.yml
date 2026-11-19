@@ -46,11 +46,14 @@ jobs:
         run: ./gradlew spotlessCheck
 
       - name: Decode release keystore
-        if: ${{ secrets.ANDROID_SIGNING_KEY != '' }}
         env:
           ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
         run: |
-          echo "$ANDROID_SIGNING_KEY" | base64 --decode > "$RUNNER_TEMP/aniyomi-plus-release.jks"
+          if [ -n "$ANDROID_SIGNING_KEY" ]; then
+            echo "$ANDROID_SIGNING_KEY" | base64 --decode > "$RUNNER_TEMP/aniyomi-plus-release.jks"
+          else
+            echo "No permanent signing key supplied; Gradle will use debug signing."
+          fi
 
       - name: Build app
         env:
