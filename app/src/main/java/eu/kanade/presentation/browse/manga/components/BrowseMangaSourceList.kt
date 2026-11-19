@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
@@ -18,11 +18,11 @@ import eu.kanade.presentation.browse.BrowseSourceLoadingItem
 import eu.kanade.presentation.browse.InLibraryBadge
 import eu.kanade.presentation.library.components.CommonEntryItemDefaults
 import eu.kanade.presentation.library.components.EntryListItem
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.StateFlow
 import eu.kanade.domain.entries.manga.model.copyFrom
 import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.tachiyomi.source.CatalogueSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.StateFlow
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.presentation.core.util.plus
@@ -56,7 +56,7 @@ fun BrowseMangaSourceList(
                 val manga by mangaList[index]?.collectAsState() ?: return@items
                 BrowseMangaSourceListItem(
                     manga = manga,
-                source = source,
+                    source = source,
                     onClick = { onMangaClick(manga) },
                     onLongClick = { onMangaLongClick(manga) },
                     entries = entries,
