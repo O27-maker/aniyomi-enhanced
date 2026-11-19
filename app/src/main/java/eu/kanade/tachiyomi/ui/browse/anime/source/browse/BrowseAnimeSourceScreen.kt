@@ -62,8 +62,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import mihon.presentation.core.util.collectAsLazyPagingItems
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.domain.library.model.LibraryDisplayMode
+import tachiyomi.domain.source.anime.model.StubAnimeSource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
@@ -237,7 +237,11 @@ data class BrowseAnimeSourceScreen(
                 source = screenModel.source,
                 animeList = screenModel.animePagerFlowFlow.collectAsLazyPagingItems(),
                 columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
-                entries = if (screenModel.displayMode == LibraryDisplayMode.List) 4 else screenModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation),
+                entries = if (screenModel.displayMode == LibraryDisplayMode.List) {
+                    4
+                } else {
+                    screenModel.getColumnsPreferenceForCurrentOrientation(LocalConfiguration.current.orientation)
+                },
                 topBarHeight = topBarHeight,
                 displayMode = screenModel.displayMode,
                 snackbarHostState = snackbarHostState,
