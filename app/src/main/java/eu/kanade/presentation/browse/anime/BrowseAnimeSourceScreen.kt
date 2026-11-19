@@ -136,6 +136,7 @@ fun BrowseAnimeSourceContent(
                 contentPadding = contentPadding,
                 onAnimeClick = onAnimeClick,
                 onAnimeLongClick = onAnimeLongClick,
+                source = source,
             )
         }
         LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
