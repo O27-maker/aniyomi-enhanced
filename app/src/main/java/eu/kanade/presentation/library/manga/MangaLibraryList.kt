@@ -56,6 +56,7 @@ internal fun MangaLibraryList(
                 title = manga.title,
                 author = manga.author ?: manga.artist,
                 description = manga.description,
+                status = manga.status,
                 coverData = MangaCover(
                     mangaId = manga.id,
                     sourceId = manga.source,
