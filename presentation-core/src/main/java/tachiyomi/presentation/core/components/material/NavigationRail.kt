@@ -38,7 +38,7 @@ fun NavigationRail(
         color = containerColor,
         contentColor = contentColor,
         modifier = modifier,
-        tonalElevation = 3.dp,
+        tonalElevation = 0.dp,
     ) {
         Column(
             Modifier
