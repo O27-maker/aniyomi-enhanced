@@ -47,6 +47,7 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.BadgeGroup
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
+import eu.kanade.tachiyomi.animesource.model.SAnime
 import tachiyomi.domain.entries.EntryCover as EntryCoverModel
 
 object CommonEntryItemDefaults {
@@ -355,6 +356,7 @@ fun EntryListItem(
     title: String,
     author: String? = null,
     description: String? = null,
+    status: Long = 0L,
     coverData: EntryCoverModel,
     coverAlpha: Float = 1f,
     onLongClick: () -> Unit,
@@ -370,7 +372,7 @@ fun EntryListItem(
             .selectedBackground(isSelected)
             .height(
                 when (entries) {
-                    0 -> 76.dp
+                    0 -> 148.dp
                     else -> {
                         val density = LocalDensity.current
                         with(density) { (containerHeight / entries).toDp() } - (3 / entries).dp
@@ -403,10 +405,25 @@ fun EntryListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleSmall.copy(
+                        fontSize = MaterialTheme.typography.titleSmall.fontSize * 2,
                         fontWeight = FontWeight.Bold,
                     ),
                 )
-                author?.takeIf { it.isNotBlank() }?.let {
+                author?.let {
+                    Text(
+                        text = it,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                val statusLabel = when (status.toInt()) {
+                    SAnime.ONGOING -> stringResource(MR.strings.ongoing)
+                    SAnime.COMPLETED -> stringResource(MR.strings.completed)
+                    SAnime.CANCELLED -> stringResource(MR.strings.cancelled)
+                    else -> null
+                }
+                statusLabel?.let {
                     Text(
                         text = it,
                         maxLines = 1,
