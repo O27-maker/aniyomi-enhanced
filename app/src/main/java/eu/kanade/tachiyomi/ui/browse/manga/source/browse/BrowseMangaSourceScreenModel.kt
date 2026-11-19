@@ -112,11 +112,31 @@ class BrowseMangaSourceScreenModel(
             Pager(PagingConfig(pageSize = 25)) {
                 getRemoteManga.subscribe(sourceId, listing.query ?: "", listing.filters)
             }.flow.map { pagingData ->
-                pagingData.map {
-                    networkToLocalManga.await(it.toDomainManga(sourceId))
-                        .let { localManga -> getManga.subscribe(localManga.url, localManga.source) }
-                        .filterNotNull()
-                        .stateIn(ioCoroutineScope)
+                pagingData.map { remote ->
+                    val sourceManga = remote.toDomainManga(sourceId)
+                    networkToLocalManga.await(sourceManga)
+                        .let { localManga ->
+                            getManga.subscribe(localManga.url, localManga.source)
+                                .filterNotNull()
+                                .map { storedManga ->
+                                    if (storedManga.favorite) {
+                                        storedManga
+                                    } else {
+                                        storedManga.copy(
+                                            title = sourceManga.title,
+                                            author = sourceManga.author,
+                                            artist = sourceManga.artist,
+                                            description = sourceManga.description,
+                                            genre = sourceManga.genre,
+                                            status = sourceManga.status,
+                                            thumbnailUrl = sourceManga.thumbnailUrl,
+                                            updateStrategy = sourceManga.updateStrategy,
+                                            initialized = sourceManga.initialized,
+                                        )
+                                    }
+                                }
+                                .stateIn(ioCoroutineScope)
+                        }
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
             }
