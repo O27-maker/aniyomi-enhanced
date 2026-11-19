@@ -432,11 +432,13 @@ fun EntryListItem(
                     )
                 }
             }
-            description?.takeIf { it.isNotBlank() }?.let {
+            description?.let { raw ->
+            val cleanedDescription = raw.lines().filter { it.isNotBlank() }.take(4).joinToString("\n")
+            cleanedDescription.takeIf { it.isNotBlank() }?.let {
                 Text(
                     text = it,
                     modifier = Modifier.padding(top = 6.dp),
-                    maxLines = 2,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
                 )
