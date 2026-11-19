@@ -405,7 +405,7 @@ fun EntryListItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleSmall.copy(
-                        fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.5,
+                        fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.3,
                         fontWeight = FontWeight.Bold,
                     ),
                 )
