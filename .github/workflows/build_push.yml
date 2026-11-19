@@ -45,7 +45,19 @@ jobs:
       - name: Check code format
         run: ./gradlew spotlessCheck
 
+      - name: Decode release keystore
+        if: ${{ secrets.ANDROID_SIGNING_KEY != '' }}
+        env:
+          ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+        run: |
+          echo "$ANDROID_SIGNING_KEY" | base64 --decode > "$RUNNER_TEMP/aniyomi-plus-release.jks"
+
       - name: Build app
+        env:
+          ANDROID_SIGNING_KEY_PATH: ${{ runner.temp }}/aniyomi-plus-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease -Penable-updater
 
       - name: Run unit tests
