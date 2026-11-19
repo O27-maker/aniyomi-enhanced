@@ -14,6 +14,37 @@ plugins {
 android {
     namespace = "eu.kanade.tachiyomi"
 
+    val releaseKeystorePath = System.getenv("ANDROID_SIGNING_KEY_PATH")
+    val releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    val releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+    val releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+    val usePermanentReleaseSigning =
+        !releaseKeystorePath.isNullOrBlank() &&
+            !releaseKeystorePassword.isNullOrBlank() &&
+            !releaseKeyAlias.isNullOrBlank() &&
+            !releaseKeyPassword.isNullOrBlank() &&
+            file(releaseKeystorePath).exists()
+
+    signingConfigs {
+        if (usePermanentReleaseSigning) {
+            create("aniyomiPlusRelease") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                storeType = "JKS"
+            }
+        }
+    }
+
+    println(
+        if (usePermanentReleaseSigning) {
+            "Aniyomi+ release APKs will use the permanent signing key."
+        } else {
+            "Aniyomi+ release APKs will use the debug signing fallback."
+        },
+    )
+
     defaultConfig {
         applicationId = "xyz.jmir.tachiyomi.mi"
 
@@ -51,8 +82,12 @@ android {
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
 
-            // Use the Android debug keystore for installable community test builds.
-            signingConfig = signingConfigs.getByName("debug")
+            // Use the permanent Aniyomi+ key when supplied by CI; otherwise retain the debug fallback.
+            signingConfig = if (usePermanentReleaseSigning) {
+                signingConfigs.getByName("aniyomiPlusRelease")
+            } else {
+                signingConfigs.getByName("debug")
+            }
 
             buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLastCommitTime = true)}\"")
         }
