@@ -16,8 +16,6 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import eu.kanade.domain.entries.anime.model.copyFrom
 import eu.kanade.domain.entries.anime.model.toSAnime
-import eu.kanade.domain.entries.anime.model.copyFrom
-import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.presentation.browse.BrowseSourceLoadingItem
 import eu.kanade.presentation.browse.InLibraryBadge
 import eu.kanade.presentation.library.components.CommonEntryItemDefaults
