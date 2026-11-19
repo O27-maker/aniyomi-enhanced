@@ -56,6 +56,7 @@ fun BrowseMangaSourceList(
                 val manga by mangaList[index]?.collectAsState() ?: return@items
                 BrowseMangaSourceListItem(
                     manga = manga,
+                source = source,
                     onClick = { onMangaClick(manga) },
                     onLongClick = { onMangaLongClick(manga) },
                     entries = entries,
