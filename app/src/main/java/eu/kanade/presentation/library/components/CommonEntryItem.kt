@@ -43,11 +43,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.entries.components.ItemCover
+import eu.kanade.tachiyomi.animesource.model.SAnime
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.BadgeGroup
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
-import eu.kanade.tachiyomi.animesource.model.SAnime
 import tachiyomi.domain.entries.EntryCover as EntryCoverModel
 
 object CommonEntryItemDefaults {
