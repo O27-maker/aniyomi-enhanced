@@ -1,59 +1,15 @@
 package eu.kanade.tachiyomi.data.updater
 
 import android.content.Context
-import eu.kanade.tachiyomi.BuildConfig
-import eu.kanade.tachiyomi.util.system.isPreviewBuildType
-import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.release.interactor.GetApplicationRelease
-import uy.kohesive.injekt.injectLazy
 
+/**
+ * Upstream Aniyomi release checks are disabled for Aniyomi+.
+ * A dedicated Aniyomi+ release checker will be added when our release channel is ready.
+ */
 class AppUpdateChecker {
-
-    private val getApplicationRelease: GetApplicationRelease by injectLazy()
-
-    suspend fun checkForUpdate(context: Context, forceCheck: Boolean = false): GetApplicationRelease.Result {
-        // Disabling app update checks for older Android versions that we're going to drop support for
-        // if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-        //    return GetApplicationRelease.Result.OsTooOld
-        // }
-
-        return withIOContext {
-            val result = getApplicationRelease.await(
-                GetApplicationRelease.Arguments(
-                    isPreviewBuildType,
-                    BuildConfig.COMMIT_COUNT.toInt(),
-                    BuildConfig.VERSION_NAME,
-                    GITHUB_REPO,
-                    forceCheck,
-                ),
-            )
-
-            when (result) {
-                is GetApplicationRelease.Result.NewUpdate -> AppUpdateNotifier(context).promptUpdate(
-                    result.release,
-                )
-                else -> {}
-            }
-
-            result
-        }
-    }
+    suspend fun checkForUpdate(
+        context: Context,
+        forceCheck: Boolean = false,
+    ): GetApplicationRelease.Result = GetApplicationRelease.Result.NoNewUpdate
 }
-
-val GITHUB_REPO: String by lazy {
-    if (isPreviewBuildType) {
-        "aniyomiorg/aniyomi-preview"
-    } else {
-        "aniyomiorg/aniyomi"
-    }
-}
-
-val RELEASE_TAG: String by lazy {
-    if (isPreviewBuildType) {
-        "r${BuildConfig.COMMIT_COUNT}"
-    } else {
-        "v${BuildConfig.VERSION_NAME}"
-    }
-}
-
-val RELEASE_URL = "https://github.com/$GITHUB_REPO/releases/tag/$RELEASE_TAG"
