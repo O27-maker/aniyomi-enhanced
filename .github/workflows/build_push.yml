@@ -86,7 +86,7 @@ jobs:
 
           for apk in "${apks[@]}"; do
             output="$("$apksigner" verify --print-certs "$apk")"
-            actual_fingerprint="$(printf '%s\\n' "$output" | grep -i 'certificate SHA-256 digest:' | head -n 1 | sed 's/.*: //' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+            actual_fingerprint="$(printf '%s\n' "$output" | grep -i 'certificate SHA-256 digest:' | head -n 1 | sed 's/.*: //' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
             if [ "$actual_fingerprint" != "$expected_fingerprint" ]; then
               echo "Signing certificate mismatch for $apk"
               echo "Expected: $expected_fingerprint"
