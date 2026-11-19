@@ -49,7 +49,7 @@ fun NavigationRail(
                 .selectableGroup(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(
-                MaterialTheme.padding.extraSmall,
+                MaterialTheme.padding.small,
                 alignment = Alignment.CenterVertically,
             ),
         ) {
