@@ -204,12 +204,16 @@ class BrowseMangaSourceScreenModel(
                                     }
                             }
                             combine(baseFlow, latestChapters) { manga, chapters ->
-                                if (chapters == null) manga else manga.copy(
-                                    author = chapters.firstOrNull()?.let(::formatLatestChapter),
-                                    description = chapters.drop(1).joinToString("\n") { formatLatestChapter(it) }
-                                        .takeIf { it.isNotBlank() },
-                                    status = 0L,
-                                )
+                                if (chapters == null) {
+                                    manga
+                                } else {
+                                    manga.copy(
+                                        author = chapters.firstOrNull()?.let(::formatLatestChapter),
+                                        description = chapters.drop(1).joinToString("\n") { formatLatestChapter(it) }
+                                            .takeIf { it.isNotBlank() },
+                                        status = 0L,
+                                    )
+                                }
                             }.stateIn(ioCoroutineScope)
                         }
                 }
@@ -463,7 +467,6 @@ class BrowseMangaSourceScreenModel(
         val isUserQuery get() = listing is Listing.Search && !listing.query.isNullOrEmpty()
     }
 }
-
 
 private fun formatLatestChapter(chapter: SChapter): String {
     val date = chapter.date_upload.takeIf { it > 0L }?.let {
