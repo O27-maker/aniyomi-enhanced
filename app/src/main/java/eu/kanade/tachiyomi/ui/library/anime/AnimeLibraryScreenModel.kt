@@ -385,13 +385,17 @@ class AnimeLibraryScreenModel(
         ) { animelibAnimeList, prefs, _ ->
             animelibAnimeList
                 .map { animelibAnime ->
-                    val latestEpisodeLines = getEpisodesByAnimeId.await(animelibAnime.anime.id)
-                        .sortedWith(
-                            compareByDescending<Episode> { it.dateUpload }
-                                .thenByDescending { it.episodeNumber },
-                        )
-                        .take(3)
-                        .map(::formatLibraryEpisode)
+                    val latestEpisodeLines = if (libraryPreferences.displayMode().get() == LibraryDisplayMode.List) {
+                        getEpisodesByAnimeId.await(animelibAnime.anime.id)
+                            .sortedWith(
+                                compareByDescending<Episode> { it.dateUpload }
+                                    .thenByDescending { it.episodeNumber },
+                            )
+                            .take(3)
+                            .map(::formatLibraryEpisode)
+                    } else {
+                        emptyList()
+                    }
                     // Display mode based on user preference: take it from global library setting or category
                     AnimeLibraryItem(
                         animelibAnime,
