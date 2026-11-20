@@ -12,6 +12,7 @@ data class AnimeLibraryItem(
     var unseenCount: Long = -1,
     var isLocal: Boolean = false,
     var sourceLanguage: String = "",
+    var latestEpisodeLines: List<String> = emptyList(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),
 ) {
     /**
