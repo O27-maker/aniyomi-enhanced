@@ -54,9 +54,9 @@ internal fun AnimeLibraryList(
             EntryListItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },
                 title = anime.title,
-                author = anime.author ?: anime.artist,
-                description = anime.description,
-                status = anime.status,
+                author = libraryItem.latestEpisodeLines.firstOrNull() ?: anime.author ?: anime.artist,
+                description = libraryItem.latestEpisodeLines.drop(1).joinToString("\n").takeIf { it.isNotBlank() } ?: anime.description,
+                status = if (libraryItem.latestEpisodeLines.isNotEmpty()) 0L else anime.status,
                 coverData = AnimeCover(
                     animeId = anime.id,
                     sourceId = anime.source,
