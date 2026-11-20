@@ -497,5 +497,5 @@ private fun formatLatestEpisode(episode: SEpisode): String {
     val number = episode.episode_number.takeIf { it > 0f }?.let {
         if (it % 1f == 0f) it.toInt().toString() else it.toString()
     } ?: "?"
-    return "Chapter $number · $date"
+    return "Episode $number · $date"
 }
