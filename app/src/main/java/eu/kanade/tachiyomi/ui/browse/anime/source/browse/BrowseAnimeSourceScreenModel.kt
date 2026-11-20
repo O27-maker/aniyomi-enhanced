@@ -30,8 +30,6 @@ import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.source.anime.isLocalOrStub
 import eu.kanade.tachiyomi.util.removeBackgrounds
 import eu.kanade.tachiyomi.util.removeCovers
-import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -69,6 +67,8 @@ import tachiyomi.domain.source.anime.interactor.GetRemoteAnime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
 
 class BrowseAnimeSourceScreenModel(
@@ -191,8 +191,12 @@ class BrowseAnimeSourceScreenModel(
                                                                             fetchDetails = false,
                                                                             fetchSeasons = true,
                                                                         ).seasons
-                                                                        val latestSeason = seasons.maxByOrNull { it.season_number }
-                                                                        if (latestSeason == null) emptyList() else {
+                                                                        val latestSeason = seasons.maxByOrNull {
+                                                                            it.season_number
+                                                                        }
+                                                                        if (latestSeason == null) {
+                                                                            emptyList()
+                                                                        } else {
                                                                             source.getAnimeEpisodeUpdate(
                                                                                 latestSeason,
                                                                                 emptyList(),
@@ -209,7 +213,10 @@ class BrowseAnimeSourceScreenModel(
                                                                 emptyList()
                                                             }
                                                             val latest = fetched
-                                                                .sortedWith(compareByDescending<SEpisode> { it.date_upload }.thenByDescending { it.episode_number })
+                                                                .sortedWith(
+                                                                    compareByDescending<SEpisode> { it.date_upload }
+                                                                        .thenByDescending { it.episode_number },
+                                                                )
                                                                 .take(3)
                                                             episodeCache[key] = latest
                                                             latest
