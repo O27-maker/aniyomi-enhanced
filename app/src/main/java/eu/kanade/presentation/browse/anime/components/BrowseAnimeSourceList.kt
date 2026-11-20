@@ -5,18 +5,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import eu.kanade.domain.entries.anime.model.copyFrom
-import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.presentation.browse.BrowseSourceLoadingItem
 import eu.kanade.presentation.browse.InLibraryBadge
 import eu.kanade.presentation.library.components.CommonEntryItemDefaults
@@ -56,7 +50,6 @@ fun BrowseAnimeSourceList(
                 val anime by animeList[index]?.collectAsState() ?: return@items
                 BrowseAnimeSourceListItem(
                     anime = anime,
-                    source = source,
                     onClick = { onAnimeClick(anime) },
                     onLongClick = { onAnimeLongClick(anime) },
                     entries = entries,
@@ -78,29 +71,13 @@ fun BrowseAnimeSourceList(
 @Composable
 private fun BrowseAnimeSourceListItem(
     anime: Anime,
-    source: AnimeSource?,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = onClick,
     entries: Int,
     containerHeight: Int,
 ) {
-    var displayAnime by remember(anime.url, anime.source) { mutableStateOf(anime) }
-    LaunchedEffect(anime.url, anime.source) {
-        if (source != null) {
-            displayAnime = try {
-                displayAnime.copyFrom(source.getAnimeDetails(displayAnime.toSAnime()))
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                displayAnime
-            }
-        }
-    }
     EntryListItem(
-        title = displayAnime.title,
-        author = displayAnime.author ?: displayAnime.artist,
-        description = displayAnime.description,
-        status = displayAnime.status,
+        title = anime.title,
         coverData = AnimeCover(
             animeId = anime.id,
             sourceId = anime.source,
