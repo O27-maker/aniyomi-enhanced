@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.library.manga
 
+import android.text.format.DateUtils
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -370,6 +371,16 @@ class MangaLibraryScreenModel(
         ) { libraryMangaList, prefs, _ ->
             libraryMangaList
                 .map { libraryManga ->
+                    val latestChapterLines = getChaptersByMangaId.await(
+                        libraryManga.manga.id,
+                        applyScanlatorFilter = true,
+                    )
+                        .sortedWith(
+                            compareByDescending<Chapter> { it.dateUpload }
+                                .thenByDescending { it.chapterNumber },
+                        )
+                        .take(3)
+                        .map(::formatLibraryChapter)
                     // Display mode based on user preference: take it from global library setting or category
                     MangaLibraryItem(
                         libraryManga,
@@ -385,6 +396,7 @@ class MangaLibraryScreenModel(
                         } else {
                             ""
                         },
+                        latestChapterLines = latestChapterLines,
                     )
                 }
                 .groupBy { it.libraryManga.category }
@@ -794,4 +806,15 @@ class MangaLibraryScreenModel(
             return LibraryToolbarTitle(title, count)
         }
     }
+}
+
+
+private fun formatLibraryChapter(chapter: Chapter): String {
+    val number = chapter.chapterNumber.takeIf { it > 0.0 }?.let {
+        if (it % 1.0 == 0.0) it.toLong().toString() else it.toString()
+    } ?: "?"
+    val date = chapter.dateUpload.takeIf { it > 0L }?.let {
+        DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+    } ?: "Now"
+    return "Chapter $number · $date"
 }
