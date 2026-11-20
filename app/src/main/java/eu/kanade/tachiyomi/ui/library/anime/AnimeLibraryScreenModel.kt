@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.library.anime
 
+import android.text.format.DateUtils
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -384,6 +385,13 @@ class AnimeLibraryScreenModel(
         ) { animelibAnimeList, prefs, _ ->
             animelibAnimeList
                 .map { animelibAnime ->
+                    val latestEpisodeLines = getEpisodesByAnimeId.await(animelibAnime.anime.id)
+                        .sortedWith(
+                            compareByDescending<Episode> { it.dateUpload }
+                                .thenByDescending { it.episodeNumber },
+                        )
+                        .take(3)
+                        .map(::formatLibraryEpisode)
                     // Display mode based on user preference: take it from global library setting or category
                     AnimeLibraryItem(
                         animelibAnime,
@@ -399,6 +407,7 @@ class AnimeLibraryScreenModel(
                         } else {
                             ""
                         },
+                        latestEpisodeLines = latestEpisodeLines,
                     )
                 }
                 .groupBy { it.libraryAnime.category }
@@ -809,4 +818,15 @@ class AnimeLibraryScreenModel(
             return LibraryToolbarTitle(title, count)
         }
     }
+}
+
+
+private fun formatLibraryEpisode(episode: Episode): String {
+    val number = episode.episodeNumber.takeIf { it > 0.0 }?.let {
+        if (it % 1.0 == 0.0) it.toLong().toString() else it.toString()
+    } ?: "?"
+    val date = episode.dateUpload.takeIf { it > 0L }?.let {
+        DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+    } ?: "Now"
+    return "Episode $number · $date"
 }
