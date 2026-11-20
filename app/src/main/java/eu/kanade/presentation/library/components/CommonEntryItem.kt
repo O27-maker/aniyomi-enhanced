@@ -437,7 +437,19 @@ fun EntryListItem(
                         fontWeight = FontWeight.Bold,
                     ),
                 )
-                author?.takeIf { it.isNotBlank() }?.let { ChapterInfoLine(it) }
+                val isChapterList = author?.startsWith("Chapter ") == true
+                if (isChapterList) {
+                    author?.let { ChapterInfoLine(it) }
+                } else {
+                    (author?.takeIf { it.isNotBlank() } ?: "Unknown").let {
+                        Text(
+                            text = it,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                        )
+                    }
+                }
                 val statusLabel = when (status.toInt()) {
                     SAnime.ONGOING -> stringResource(MR.strings.ongoing)
                     SAnime.COMPLETED -> stringResource(MR.strings.completed)
@@ -454,7 +466,20 @@ fun EntryListItem(
                 }
             }
             description?.let { raw ->
-                raw.lines().filter { it.isNotBlank() }.take(2).forEach { ChapterInfoLine(it) }
+                if (isChapterList) {
+                    raw.lines().filter { it.isNotBlank() }.take(2).forEach { ChapterInfoLine(it) }
+                } else {
+                    val cleanedDescription = raw.lines().filter { it.isNotBlank() }.take(4).joinToString("\n")
+                    cleanedDescription.takeIf { it.isNotBlank() }?.let {
+                        Text(
+                            text = it,
+                            modifier = Modifier.padding(top = 6.dp),
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                        )
+                    }
+                }
             }
         }
         BadgeGroup(content = badge)
