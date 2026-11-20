@@ -437,7 +437,7 @@ fun EntryListItem(
                         fontWeight = FontWeight.Bold,
                     ),
                 )
-                val isChapterList = author?.startsWith("Chapter ") == true
+                val isChapterList = author?.startsWith("Chapter ") == true || author?.startsWith("Episode ") == true
                 if (isChapterList) {
                     author?.let { ChapterInfoLine(it) }
                 } else {
