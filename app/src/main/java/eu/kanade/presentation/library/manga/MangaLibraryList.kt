@@ -54,9 +54,9 @@ internal fun MangaLibraryList(
             EntryListItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },
                 title = manga.title,
-                author = manga.author ?: manga.artist,
-                description = manga.description,
-                status = manga.status,
+                author = libraryItem.latestChapterLines.firstOrNull() ?: manga.author ?: manga.artist,
+                description = libraryItem.latestChapterLines.drop(1).joinToString("\n").takeIf { it.isNotBlank() } ?: manga.description,
+                status = if (libraryItem.latestChapterLines.isNotEmpty()) 0L else manga.status,
                 coverData = MangaCover(
                     mangaId = manga.id,
                     sourceId = manga.source,
