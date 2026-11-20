@@ -371,16 +371,17 @@ class MangaLibraryScreenModel(
         ) { libraryMangaList, prefs, _ ->
             libraryMangaList
                 .map { libraryManga ->
-                    val latestChapterLines = getChaptersByMangaId.await(
-                        libraryManga.manga.id,
-                        applyScanlatorFilter = true,
-                    )
-                        .sortedWith(
-                            compareByDescending<Chapter> { it.dateUpload }
-                                .thenByDescending { it.chapterNumber },
-                        )
-                        .take(3)
-                        .map(::formatLibraryChapter)
+                    val latestChapterLines = if (libraryPreferences.displayMode().get() == LibraryDisplayMode.List) {
+                        getChaptersByMangaId.await(libraryManga.manga.id, applyScanlatorFilter = true)
+                            .sortedWith(
+                                compareByDescending<Chapter> { it.dateUpload }
+                                    .thenByDescending { it.chapterNumber },
+                            )
+                            .take(3)
+                            .map(::formatLibraryChapter)
+                    } else {
+                        emptyList()
+                    }
                     // Display mode based on user preference: take it from global library setting or category
                     MangaLibraryItem(
                         libraryManga,
