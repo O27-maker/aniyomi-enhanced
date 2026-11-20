@@ -472,5 +472,8 @@ private fun formatLatestChapter(chapter: SChapter): String {
     val date = chapter.date_upload.takeIf { it > 0L }?.let {
         DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
     } ?: "Unknown time"
-    return "${chapter.name} · $date"
+    val number = chapter.chapter_number.takeIf { it > 0f }?.let {
+        if (it % 1f == 0f) it.toInt().toString() else it.toString()
+    } ?: "?"
+    return "Chapter $number · $date"
 }
