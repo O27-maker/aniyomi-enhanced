@@ -414,7 +414,7 @@ fun EntryListItem(
                         text = it,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                     )
                 }
                 val statusLabel = when (status.toInt()) {
@@ -428,7 +428,7 @@ fun EntryListItem(
                         text = it,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                     )
                 }
             }
@@ -440,7 +440,7 @@ fun EntryListItem(
                         modifier = Modifier.padding(top = 6.dp),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                     )
                 }
             }
