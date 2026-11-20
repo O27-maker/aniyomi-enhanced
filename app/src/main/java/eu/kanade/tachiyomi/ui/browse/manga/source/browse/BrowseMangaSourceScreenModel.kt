@@ -28,8 +28,6 @@ import eu.kanade.tachiyomi.source.manga.isLocalOrStub
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.util.removeCovers
-import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
@@ -67,6 +65,8 @@ import tachiyomi.domain.source.manga.interactor.GetRemoteManga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 
 class BrowseMangaSourceScreenModel(
@@ -188,7 +188,10 @@ class BrowseMangaSourceScreenModel(
                                                                 emptyList()
                                                             }
                                                             val latest = fetched
-                                                                .sortedWith(compareByDescending<SChapter> { it.date_upload }.thenByDescending { it.chapter_number })
+                                                                .sortedWith(
+                                                                    compareByDescending<SChapter> { it.date_upload }
+                                                                        .thenByDescending { it.chapter_number },
+                                                                )
                                                                 .take(3)
                                                             chapterCache[key] = latest
                                                             latest
