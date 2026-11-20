@@ -824,7 +824,6 @@ class AnimeLibraryScreenModel(
     }
 }
 
-
 private fun formatLibraryEpisode(episode: Episode): String {
     val number = episode.episodeNumber.takeIf { it > 0.0 }?.let {
         if (it % 1.0 == 0.0) it.toLong().toString() else it.toString()
