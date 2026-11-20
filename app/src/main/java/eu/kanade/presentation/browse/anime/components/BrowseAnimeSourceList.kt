@@ -78,6 +78,9 @@ private fun BrowseAnimeSourceListItem(
 ) {
     EntryListItem(
         title = anime.title,
+        author = anime.author,
+        description = anime.description,
+        status = anime.status,
         coverData = AnimeCover(
             animeId = anime.id,
             sourceId = anime.source,
