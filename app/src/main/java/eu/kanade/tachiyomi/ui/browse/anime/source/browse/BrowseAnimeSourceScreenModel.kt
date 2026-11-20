@@ -208,14 +208,15 @@ class BrowseAnimeSourceScreenModel(
                                                             } catch (_: Exception) {
                                                                 emptyList()
                                                             }
-                                                            episodeCache[key] = fetched
-                                                            fetched
+                                                            val latest = fetched
+                                                                .sortedWith(compareByDescending<SEpisode> { it.date_upload }.thenByDescending { it.episode_number })
+                                                                .take(3)
+                                                            episodeCache[key] = latest
+                                                            latest
                                                         }
                                                     }
                                                 }
                                                 latestEpisodes.value = episodes
-                                                    .sortedWith(compareByDescending<SEpisode> { it.date_upload }.thenByDescending { it.episode_number })
-                                                    .take(3)
                                             }
                                         }
                                     }
