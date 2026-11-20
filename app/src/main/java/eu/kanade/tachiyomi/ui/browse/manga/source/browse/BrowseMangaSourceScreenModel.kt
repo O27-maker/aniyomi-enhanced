@@ -187,14 +187,15 @@ class BrowseMangaSourceScreenModel(
                                                             } catch (_: Exception) {
                                                                 emptyList()
                                                             }
-                                                            chapterCache[key] = fetched
-                                                            fetched
+                                                            val latest = fetched
+                                                                .sortedWith(compareByDescending<SChapter> { it.date_upload }.thenByDescending { it.chapter_number })
+                                                                .take(3)
+                                                            chapterCache[key] = latest
+                                                            latest
                                                         }
                                                     }
                                                 }
                                                 latestChapters.value = chapters
-                                                    .sortedWith(compareByDescending<SChapter> { it.date_upload }.thenByDescending { it.chapter_number })
-                                                    .take(3)
                                             }
                                         }
                                     }
