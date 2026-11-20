@@ -347,6 +347,34 @@ private fun Modifier.selectedOutline(
     if (isSelected) drawRect(color = if (subtle) color.copy(alpha = 0.12f) else color)
 }
 
+@Composable
+private fun ChapterInfoLine(value: String) {
+    val parts = value.split(" · ", limit = 2)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = parts.first(),
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = Color.Gray,
+                fontWeight = FontWeight.Medium,
+            ),
+        )
+        if (parts.size > 1) {
+            Text(
+                text = parts[1],
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+            )
+        }
+    }
+}
+
 /**
  * Layout of list item.
  */
@@ -394,7 +422,7 @@ fun EntryListItem(
         )
         Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 8.dp)
                 .weight(1f)
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.SpaceBetween,
@@ -409,14 +437,7 @@ fun EntryListItem(
                         fontWeight = FontWeight.Bold,
                     ),
                 )
-                (author?.takeIf { it.isNotBlank() } ?: "Unknown").let {
-                    Text(
-                        text = it,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                    )
-                }
+                author?.takeIf { it.isNotBlank() }?.let { ChapterInfoLine(it) }
                 val statusLabel = when (status.toInt()) {
                     SAnime.ONGOING -> stringResource(MR.strings.ongoing)
                     SAnime.COMPLETED -> stringResource(MR.strings.completed)
@@ -433,16 +454,7 @@ fun EntryListItem(
                 }
             }
             description?.let { raw ->
-                val cleanedDescription = raw.lines().filter { it.isNotBlank() }.take(4).joinToString("\n")
-                cleanedDescription.takeIf { it.isNotBlank() }?.let {
-                    Text(
-                        text = it,
-                        modifier = Modifier.padding(top = 6.dp),
-                        maxLines = 4,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                    )
-                }
+                raw.lines().filter { it.isNotBlank() }.take(2).forEach { ChapterInfoLine(it) }
             }
         }
         BadgeGroup(content = badge)
