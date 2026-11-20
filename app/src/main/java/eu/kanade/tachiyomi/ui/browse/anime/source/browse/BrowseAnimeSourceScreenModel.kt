@@ -112,11 +112,31 @@ class BrowseAnimeSourceScreenModel(
             Pager(PagingConfig(pageSize = 25)) {
                 getRemoteAnime.subscribe(sourceId, listing.query ?: "", listing.filters)
             }.flow.map { pagingData ->
-                pagingData.map {
-                    networkToLocalAnime.await(it.toDomainAnime(sourceId))
-                        .let { localAnime -> getAnime.subscribe(localAnime.url, localAnime.source) }
-                        .filterNotNull()
-                        .stateIn(ioCoroutineScope)
+                pagingData.map { remoteAnime ->
+                    val sourceAnime = remoteAnime.toDomainAnime(sourceId)
+                    networkToLocalAnime.await(sourceAnime)
+                        .let { localAnime ->
+                            getAnime.subscribe(localAnime.url, localAnime.source)
+                                .filterNotNull()
+                                .map { storedAnime ->
+                                    if (storedAnime.favorite) {
+                                        storedAnime
+                                    } else {
+                                        storedAnime.copy(
+                                            title = sourceAnime.title,
+                                            author = sourceAnime.author,
+                                            artist = sourceAnime.artist,
+                                            description = sourceAnime.description,
+                                            genre = sourceAnime.genre,
+                                            status = sourceAnime.status,
+                                            thumbnailUrl = sourceAnime.thumbnailUrl,
+                                            updateStrategy = sourceAnime.updateStrategy,
+                                            initialized = sourceAnime.initialized,
+                                        )
+                                    }
+                                }
+                                .stateIn(ioCoroutineScope)
+                        }
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
             }
