@@ -1,41 +1,56 @@
 package eu.kanade.tachiyomi.ui.browse.anime.source.browse
 
 import android.content.res.Configuration
+import android.text.format.DateUtils
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
-import cafe.adriel.voyager.core.model.StateScreenModel
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import cafe.adriel.voyager.core.model.screenModelScope
+import cafe.adriel.voyager.core.model.StateScreenModel
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.toDomainAnime
+import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.domain.source.anime.interactor.GetAnimeIncognitoState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
 import eu.kanade.presentation.util.ioCoroutineScope
+import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
+import eu.kanade.tachiyomi.animesource.model.FetchType
+import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
+import eu.kanade.tachiyomi.source.anime.isLocalOrStub
 import eu.kanade.tachiyomi.util.removeBackgrounds
 import eu.kanade.tachiyomi.util.removeCovers
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -48,18 +63,17 @@ import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.model.toAnimeUpdate
 import tachiyomi.domain.items.episode.interactor.SetAnimeDefaultEpisodeFlags
+import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.interactor.GetRemoteAnime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.Instant
-import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
+import uy.kohesive.injekt.Injekt
 
 class BrowseAnimeSourceScreenModel(
     private val sourceId: Long,
     listingQuery: String?,
-    sourceManager: AnimeSourceManager = Injekt.get(),
+    private val sourceManager: AnimeSourceManager = Injekt.get(),
     sourcePreferences: SourcePreferences = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val coverCache: AnimeCoverCache = Injekt.get(),
@@ -77,6 +91,10 @@ class BrowseAnimeSourceScreenModel(
 ) : StateScreenModel<BrowseAnimeSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
 
     var displayMode by sourcePreferences.sourceDisplayMode().asState(screenModelScope)
+
+    private val episodeFetchSemaphore = Semaphore(2)
+    private val episodeFetchAttempts = ConcurrentHashMap.newKeySet<String>()
+    private val episodeCache = ConcurrentHashMap<String, List<SEpisode>>()
 
     val source = sourceManager.getOrStub(sourceId)
 
@@ -136,6 +154,79 @@ class BrowseAnimeSourceScreenModel(
                                     }
                                 }
                                 .stateIn(ioCoroutineScope)
+                        }.let { baseFlow ->
+                            val latestEpisodes = MutableStateFlow<List<SEpisode>?>(null)
+                            screenModelScope.launch {
+                                sourcePreferences.sourceDisplayMode().changes()
+                                    .onStart { emit(sourcePreferences.sourceDisplayMode().get()) }
+                                    .distinctUntilChanged()
+                                    .collectLatest { mode ->
+                                        latestEpisodes.value = null
+                                        if (mode == LibraryDisplayMode.List) {
+                                            val anime = baseFlow.first()
+                                            if (!anime.favorite) {
+                                                val key = "${anime.source}:${anime.url}"
+                                                val episodes = episodeFetchSemaphore.withPermit {
+                                                    episodeCache[key] ?: run {
+                                                        val source = sourceManager.get(sourceId)
+                                                            ?: return@withPermit emptyList()
+                                                        if (source.isLocalOrStub()) return@withPermit emptyList()
+                                                        if (!episodeFetchAttempts.add(key)) {
+                                                            emptyList()
+                                                        } else {
+                                                            val fetched = try {
+                                                                val sourceAnime = anime.toSAnime()
+                                                                when (sourceAnime.fetch_type) {
+                                                                    FetchType.Episodes -> source.getAnimeEpisodeUpdate(
+                                                                        sourceAnime,
+                                                                        emptyList(),
+                                                                        fetchDetails = false,
+                                                                        fetchEpisodes = true,
+                                                                    ).episodes
+                                                                    FetchType.Seasons -> {
+                                                                        val seasons = source.getAnimeSeasonUpdate(
+                                                                            sourceAnime,
+                                                                            emptyList(),
+                                                                            fetchDetails = false,
+                                                                            fetchSeasons = true,
+                                                                        ).seasons
+                                                                        val latestSeason = seasons.maxByOrNull { it.season_number }
+                                                                        if (latestSeason == null) emptyList() else {
+                                                                            source.getAnimeEpisodeUpdate(
+                                                                                latestSeason,
+                                                                                emptyList(),
+                                                                                fetchDetails = false,
+                                                                                fetchEpisodes = true,
+                                                                            ).episodes
+                                                                        }
+                                                                    }
+                                                                }
+                                                            } catch (e: CancellationException) {
+                                                                episodeFetchAttempts.remove(key)
+                                                                throw e
+                                                            } catch (_: Exception) {
+                                                                emptyList()
+                                                            }
+                                                            episodeCache[key] = fetched
+                                                            fetched
+                                                        }
+                                                    }
+                                                }
+                                                latestEpisodes.value = episodes
+                                                    .sortedWith(compareByDescending<SEpisode> { it.date_upload }.thenByDescending { it.episode_number })
+                                                    .take(3)
+                                            }
+                                        }
+                                    }
+                            }
+                            combine(baseFlow, latestEpisodes) { anime, episodes ->
+                                if (episodes == null) anime else anime.copy(
+                                    author = episodes.firstOrNull()?.let(::formatLatestEpisode),
+                                    description = episodes.drop(1).joinToString("\n") { formatLatestEpisode(it) }
+                                        .takeIf { it.isNotBlank() },
+                                    status = 0L,
+                                )
+                            }.stateIn(ioCoroutineScope)
                         }
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
@@ -384,4 +475,12 @@ class BrowseAnimeSourceScreenModel(
     ) {
         val isUserQuery get() = listing is Listing.Search && !listing.query.isNullOrEmpty()
     }
+}
+
+
+private fun formatLatestEpisode(episode: SEpisode): String {
+    val date = episode.date_upload.takeIf { it > 0L }?.let {
+        DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+    } ?: "Unknown time"
+    return "${episode.name} · $date"
 }
