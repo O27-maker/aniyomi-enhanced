@@ -427,6 +427,7 @@ fun EntryListItem(
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
+            val isChapterList = author?.startsWith("Chapter ") == true || author?.startsWith("Episode ") == true
             Column {
                 Text(
                     text = title,
@@ -437,7 +438,6 @@ fun EntryListItem(
                         fontWeight = FontWeight.Bold,
                     ),
                 )
-                val isChapterList = author?.startsWith("Chapter ") == true || author?.startsWith("Episode ") == true
                 if (isChapterList) {
                     author?.let { ChapterInfoLine(it) }
                 } else {
