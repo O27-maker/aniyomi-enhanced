@@ -493,7 +493,7 @@ class BrowseAnimeSourceScreenModel(
 private fun formatLatestEpisode(episode: SEpisode): String {
     val date = episode.date_upload.takeIf { it > 0L }?.let {
         DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
-    } ?: "Unknown time"
+    } ?: "Now"
     val number = episode.episode_number.takeIf { it > 0f }?.let {
         if (it % 1f == 0f) it.toInt().toString() else it.toString()
     } ?: "?"
