@@ -1,40 +1,54 @@
 package eu.kanade.tachiyomi.ui.browse.manga.source.browse
 
 import android.content.res.Configuration
+import android.text.format.DateUtils
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
-import cafe.adriel.voyager.core.model.StateScreenModel
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import cafe.adriel.voyager.core.model.screenModelScope
+import cafe.adriel.voyager.core.model.StateScreenModel
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.domain.entries.manga.model.toDomainManga
+import eu.kanade.domain.entries.manga.model.toSManga
 import eu.kanade.domain.source.manga.interactor.GetMangaIncognitoState
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
 import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.CatalogueSource
+import eu.kanade.tachiyomi.source.manga.isLocalOrStub
+import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.util.removeCovers
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -47,18 +61,17 @@ import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.toMangaUpdate
 import tachiyomi.domain.items.chapter.interactor.SetMangaDefaultChapterFlags
+import tachiyomi.domain.library.model.LibraryDisplayMode
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.manga.interactor.GetRemoteManga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.Instant
-import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
+import uy.kohesive.injekt.Injekt
 
 class BrowseMangaSourceScreenModel(
     private val sourceId: Long,
     listingQuery: String?,
-    sourceManager: MangaSourceManager = Injekt.get(),
+    private val sourceManager: MangaSourceManager = Injekt.get(),
     sourcePreferences: SourcePreferences = Injekt.get(),
     private val libraryPreferences: LibraryPreferences = Injekt.get(),
     private val coverCache: MangaCoverCache = Injekt.get(),
@@ -75,6 +88,10 @@ class BrowseMangaSourceScreenModel(
 ) : StateScreenModel<BrowseMangaSourceScreenModel.State>(State(Listing.valueOf(listingQuery))) {
 
     var displayMode by sourcePreferences.sourceDisplayMode().asState(screenModelScope)
+
+    private val chapterFetchSemaphore = Semaphore(2)
+    private val chapterFetchAttempts = ConcurrentHashMap.newKeySet<String>()
+    private val chapterCache = ConcurrentHashMap<String, List<SChapter>>()
 
     val source = sourceManager.getOrStub(sourceId)
 
@@ -136,6 +153,59 @@ class BrowseMangaSourceScreenModel(
                                     }
                                 }
                                 .stateIn(ioCoroutineScope)
+                        }.let { baseFlow ->
+                            val latestChapters = MutableStateFlow<List<SChapter>?>(null)
+                            screenModelScope.launch {
+                                sourcePreferences.sourceDisplayMode().changes()
+                                    .onStart { emit(sourcePreferences.sourceDisplayMode().get()) }
+                                    .distinctUntilChanged()
+                                    .collectLatest { mode ->
+                                        latestChapters.value = null
+                                        if (mode == LibraryDisplayMode.List) {
+                                            val manga = baseFlow.first()
+                                            if (!manga.favorite) {
+                                                val key = "${manga.source}:${manga.url}"
+                                                val chapters = chapterFetchSemaphore.withPermit {
+                                                    chapterCache[key] ?: run {
+                                                        val source = sourceManager.get(sourceId)
+                                                            ?: return@withPermit emptyList()
+                                                        if (source.isLocalOrStub()) return@withPermit emptyList()
+                                                        if (!chapterFetchAttempts.add(key)) {
+                                                            emptyList()
+                                                        } else {
+                                                            val fetched = try {
+                                                                source.getMangaUpdate(
+                                                                    manga.toSManga(),
+                                                                    emptyList(),
+                                                                    fetchDetails = false,
+                                                                    fetchChapters = true,
+                                                                ).chapters
+                                                            } catch (e: CancellationException) {
+                                                                chapterFetchAttempts.remove(key)
+                                                                throw e
+                                                            } catch (_: Exception) {
+                                                                emptyList()
+                                                            }
+                                                            chapterCache[key] = fetched
+                                                            fetched
+                                                        }
+                                                    }
+                                                }
+                                                latestChapters.value = chapters
+                                                    .sortedWith(compareByDescending<SChapter> { it.date_upload }.thenByDescending { it.chapter_number })
+                                                    .take(3)
+                                            }
+                                        }
+                                    }
+                            }
+                            combine(baseFlow, latestChapters) { manga, chapters ->
+                                if (chapters == null) manga else manga.copy(
+                                    author = chapters.firstOrNull()?.let(::formatLatestChapter),
+                                    description = chapters.drop(1).joinToString("\n") { formatLatestChapter(it) }
+                                        .takeIf { it.isNotBlank() },
+                                    status = 0L,
+                                )
+                            }.stateIn(ioCoroutineScope)
                         }
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
@@ -387,4 +457,12 @@ class BrowseMangaSourceScreenModel(
     ) {
         val isUserQuery get() = listing is Listing.Search && !listing.query.isNullOrEmpty()
     }
+}
+
+
+private fun formatLatestChapter(chapter: SChapter): String {
+    val date = chapter.date_upload.takeIf { it > 0L }?.let {
+        DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
+    } ?: "Unknown time"
+    return "${chapter.name} · $date"
 }
