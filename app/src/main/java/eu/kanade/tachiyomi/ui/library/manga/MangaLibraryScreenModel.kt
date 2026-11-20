@@ -809,7 +809,6 @@ class MangaLibraryScreenModel(
     }
 }
 
-
 private fun formatLibraryChapter(chapter: Chapter): String {
     val number = chapter.chapterNumber.takeIf { it > 0.0 }?.let {
         if (it % 1.0 == 0.0) it.toLong().toString() else it.toString()
