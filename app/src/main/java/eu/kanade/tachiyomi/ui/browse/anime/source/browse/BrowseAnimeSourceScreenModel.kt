@@ -229,12 +229,16 @@ class BrowseAnimeSourceScreenModel(
                                     }
                             }
                             combine(baseFlow, latestEpisodes) { anime, episodes ->
-                                if (episodes == null) anime else anime.copy(
-                                    author = episodes.firstOrNull()?.let(::formatLatestEpisode),
-                                    description = episodes.drop(1).joinToString("\n") { formatLatestEpisode(it) }
-                                        .takeIf { it.isNotBlank() },
-                                    status = 0L,
-                                )
+                                if (episodes == null) {
+                                    anime
+                                } else {
+                                    anime.copy(
+                                        author = episodes.firstOrNull()?.let(::formatLatestEpisode),
+                                        description = episodes.drop(1).joinToString("\n") { formatLatestEpisode(it) }
+                                            .takeIf { it.isNotBlank() },
+                                        status = 0L,
+                                    )
+                                }
                             }.stateIn(ioCoroutineScope)
                         }
                 }
@@ -485,7 +489,6 @@ class BrowseAnimeSourceScreenModel(
         val isUserQuery get() = listing is Listing.Search && !listing.query.isNullOrEmpty()
     }
 }
-
 
 private fun formatLatestEpisode(episode: SEpisode): String {
     val date = episode.date_upload.takeIf { it > 0L }?.let {
