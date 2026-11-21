@@ -164,7 +164,7 @@ class BrowseMangaSourceScreenModel(
                                         latestChapters.value = null
                                         if (mode == LibraryDisplayMode.List) {
                                             val manga = baseFlow.first()
-                                            if (!manga.favorite) {
+                                            run {
                                                 val key = "${manga.source}:${manga.url}"
                                                 val chapters = chapterFetchSemaphore.withPermit {
                                                     chapterCache[key] ?: run {
@@ -473,7 +473,7 @@ private fun formatLatestChapter(chapter: SChapter): String {
         DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
     } ?: "Now"
     val number = chapter.chapter_number.takeIf { it > 0f }?.let {
-        if (it % 1f == 0f) it.toInt().toString() else it.toString()
+        java.text.DecimalFormat("0.##").format(it)
     } ?: "?"
     return "Chapter $number · $date"
 }
