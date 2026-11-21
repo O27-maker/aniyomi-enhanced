@@ -360,8 +360,9 @@ private fun ChapterInfoLine(value: String) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = MaterialTheme.typography.bodyMedium.fontSize * 1.1,
                 color = Color.Gray,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
             ),
         )
         if (parts.size > 1) {
