@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
@@ -30,6 +31,7 @@ fun BrowseMangaSourceList(
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
     source: CatalogueSource?,
+    onMangaVisible: (Manga) -> Unit,
 ) {
     val sourceListState = rememberLazyListState()
     BoxWithConstraints {
@@ -54,6 +56,7 @@ fun BrowseMangaSourceList(
                     onLongClick = { onMangaLongClick(manga) },
                     entries = entries,
                     containerHeight = containerHeightPx - topBarHeight,
+                    onMangaVisible = onMangaVisible,
                 )
             }
 
@@ -75,7 +78,11 @@ private fun BrowseMangaSourceListItem(
     onLongClick: () -> Unit = onClick,
     entries: Int,
     containerHeight: Int,
+    onMangaVisible: (Manga) -> Unit,
 ) {
+    LaunchedEffect(manga.source, manga.url) {
+        onMangaVisible(manga)
+    }
     EntryListItem(
         title = manga.title,
         author = manga.author,
