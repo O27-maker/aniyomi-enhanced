@@ -6,9 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
@@ -70,17 +70,17 @@ fun BrowseMangaSourceList(
             }
         }
     }
-        LaunchedEffect(sourceListState, mangaList) {
+
+    LaunchedEffect(sourceListState, mangaList) {
             snapshotFlow { sourceListState.layoutInfo.visibleItemsInfo.map { it.index } }
-                .collect { visibleIndices ->
-                    visibleIndices.forEach { index ->
-                        if (index in 1..mangaList.itemCount) {
-                            mangaList[index - 1]?.value?.let(onMangaVisible)
-                        }
+            .collect { visibleIndices ->
+                visibleIndices.forEach { index ->
+                    if (index in 1..mangaList.itemCount) {
+                        mangaList[index - 1]?.value?.let(onMangaVisible)
                     }
                 }
+            }
         }
-
 }
 
 @Composable
