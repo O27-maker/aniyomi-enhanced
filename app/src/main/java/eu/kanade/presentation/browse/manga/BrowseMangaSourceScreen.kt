@@ -140,6 +140,7 @@ fun BrowseSourceContent(
                 onMangaLongClick = onMangaLongClick,
                 source = source as? CatalogueSource,
                 onMangaVisible = onMangaVisible,
+                onMangaVisible = onMangaVisible,
             )
         }
         LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
