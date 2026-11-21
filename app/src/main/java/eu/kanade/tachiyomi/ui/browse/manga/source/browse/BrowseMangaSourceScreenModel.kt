@@ -186,7 +186,7 @@ class BrowseMangaSourceScreenModel(
         if (displayMode != LibraryDisplayMode.List || source.isLocalOrStub()) return
         val key = "${manga.source}:${manga.url}"
         val state = chapterStates.getOrPut(key) { MutableStateFlow(chapterCache[key]) }
-        if (state.value != null || !chapterFetchAttempts.add(key)) return
+        if (state.value?.isNotEmpty() == true || !chapterFetchAttempts.add(key)) return
 
         screenModelScope.launch {
             try {
