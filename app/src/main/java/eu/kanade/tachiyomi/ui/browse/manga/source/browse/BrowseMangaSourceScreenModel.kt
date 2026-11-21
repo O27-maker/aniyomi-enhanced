@@ -93,6 +93,7 @@ class BrowseMangaSourceScreenModel(
     private val chapterFetchSemaphore = Semaphore(2)
     private val chapterFetchAttempts = ConcurrentHashMap.newKeySet<String>()
     private val chapterCache = ConcurrentHashMap<String, List<SChapter>>()
+    private val chapterStates = ConcurrentHashMap<String, MutableStateFlow<List<SChapter>?>>()
 
     val source = sourceManager.getOrStub(sourceId)
 
@@ -155,60 +156,8 @@ class BrowseMangaSourceScreenModel(
                                 }
                                 .stateIn(ioCoroutineScope)
                         }.let { baseFlow ->
-                            val latestChapters = MutableStateFlow<List<SChapter>?>(null)
-                            screenModelScope.launch {
-                                sourcePreferences.sourceDisplayMode().changes()
-                                    .onStart { emit(sourcePreferences.sourceDisplayMode().get()) }
-                                    .distinctUntilChanged()
-                                    .collectLatest { mode ->
-                                        latestChapters.value = null
-                                        if (mode == LibraryDisplayMode.List) {
-                                            val manga = baseFlow.first()
-                                            run {
-                                                val key = "${manga.source}:${manga.url}"
-                                                val chapters = chapterFetchSemaphore.withPermit {
-                                                    chapterCache[key] ?: run {
-                                                        val source = sourceManager.get(sourceId)
-                                                            ?: return@withPermit emptyList()
-                                                        if (source.isLocalOrStub()) return@withPermit emptyList()
-                                                        if (!chapterFetchAttempts.add(key)) {
-                                                            emptyList()
-                                                        } else {
-                                                            val fetched = try {
-                                                                source.getMangaUpdate(
-                                                                    manga.toSManga(),
-                                                                    emptyList(),
-                                                                    fetchDetails = false,
-                                                                    fetchChapters = true,
-                                                                ).chapters
-                                                            } catch (e: CancellationException) {
-                                                                chapterFetchAttempts.remove(key)
-                                                                throw e
-                                                            } catch (_: Exception) {
-                                                                emptyList()
-                                                            }
-                                                            val latest = fetched
-                                                                .sortedWith(
-                                                                    compareByDescending<SChapter> { it.date_upload }
-                                                                        .thenByDescending { it.chapter_number },
-                                                                )
-                                                                .take(3)
-                                                            if (latest.isNotEmpty()) {
-                                                                chapterCache[key] = latest
-                                                            } else {
-                                                                // Empty results can be transient or source/listing-specific.
-                                                                // Allow another listing or filter to retry this title.
-                                                                chapterFetchAttempts.remove(key)
-                                                            }
-                                                            latest
-                                                        }
-                                                    }
-                                                }
-                                                latestChapters.value = chapters
-                                            }
-                                        }
-                                    }
-                            }
+                            val key = "${sourceManga.source}:${sourceManga.url}"
+                            val latestChapters = chapterStates.getOrPut(key) { MutableStateFlow(chapterCache[key]) }
                             combine(baseFlow, latestChapters) { manga, chapters ->
                                 if (chapters == null) {
                                     if (sourcePreferences.sourceDisplayMode().get() == LibraryDisplayMode.List) {
@@ -232,6 +181,44 @@ class BrowseMangaSourceScreenModel(
                 .cachedIn(ioCoroutineScope)
         }
         .stateIn(ioCoroutineScope, SharingStarted.Lazily, emptyFlow())
+
+    fun requestLatestChapters(manga: Manga) {
+        if (displayMode != LibraryDisplayMode.List || source.isLocalOrStub()) return
+        val key = "${manga.source}:${manga.url}"
+        val state = chapterStates.getOrPut(key) { MutableStateFlow(chapterCache[key]) }
+        if (state.value != null || !chapterFetchAttempts.add(key)) return
+
+        screenModelScope.launch {
+            try {
+                val chapters = chapterFetchSemaphore.withPermit {
+                    chapterCache[key] ?: run {
+                        val mangaSource = sourceManager.get(manga.source)
+                            ?: return@withPermit emptyList()
+                        if (mangaSource.isLocalOrStub()) return@withPermit emptyList()
+                        val fetched = mangaSource.getMangaUpdate(
+                            manga.toSManga(),
+                            emptyList(),
+                            fetchDetails = false,
+                            fetchChapters = true,
+                        ).chapters
+                        fetched.sortedWith(
+                            compareByDescending<SChapter> { it.date_upload }
+                                .thenByDescending { it.chapter_number },
+                        ).take(3)
+                    }
+                }
+                if (chapters.isNotEmpty()) chapterCache[key] = chapters
+                state.value = chapters
+                if (chapters.isEmpty()) chapterFetchAttempts.remove(key)
+            } catch (e: CancellationException) {
+                chapterFetchAttempts.remove(key)
+                throw e
+            } catch (_: Exception) {
+                chapterFetchAttempts.remove(key)
+                state.value = emptyList()
+            }
+        }
+    }
 
     fun getColumnsPreference(orientation: Int): GridCells {
         val isLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE
