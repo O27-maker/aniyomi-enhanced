@@ -58,8 +58,7 @@ fun BrowseMangaSourceList(
                     onLongClick = { onMangaLongClick(manga) },
                     entries = entries,
                     containerHeight = containerHeightPx - topBarHeight,
-                    onMangaVisible = onMangaVisible,
-                )
+                    )
             }
 
             item {
@@ -75,7 +74,7 @@ fun BrowseMangaSourceList(
             snapshotFlow { sourceListState.layoutInfo.visibleItemsInfo.map { it.index } }
                 .collect { visibleIndices ->
                     visibleIndices.forEach { index ->
-                        if (index > 0) {
+                        if (index in 1..mangaList.itemCount) {
                             mangaList[index - 1]?.value?.let(onMangaVisible)
                         }
                     }
