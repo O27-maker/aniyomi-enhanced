@@ -52,6 +52,7 @@ fun BrowseSourceContent(
     onLocalSourceHelpClick: () -> Unit,
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
+    onMangaVisible: (Manga) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -138,6 +139,7 @@ fun BrowseSourceContent(
                 onMangaClick = onMangaClick,
                 onMangaLongClick = onMangaLongClick,
                 source = source as? CatalogueSource,
+                onMangaVisible = onMangaVisible,
             )
         }
         LibraryDisplayMode.CompactGrid, LibraryDisplayMode.CoverOnlyGrid -> {
