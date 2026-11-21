@@ -429,19 +429,37 @@ fun EntryListItem(
             verticalArrangement = Arrangement.Center,
         ) {
             val isChapterList = author?.startsWith("Chapter ") == true || author?.startsWith("Episode ") == true
-            Column {
-                Text(
-                    text = title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.3,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-                if (isChapterList) {
-                    author?.let { ChapterInfoLine(it) }
-                } else {
+            if (isChapterList) {
+                Box(modifier = Modifier.fillMaxHeight()) {
+                    Text(
+                        text = title,
+                        modifier = Modifier.align(Alignment.TopStart),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.3,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        verticalArrangement = Arrangement.spacedBy(1.dp),
+                    ) {
+                        author?.let { ChapterInfoLine(it) }
+                        description?.lines()?.filter { it.isNotBlank() }?.take(2)?.forEach { ChapterInfoLine(it) }
+                    }
+                }
+            } else {
+                Column {
+                    Text(
+                        text = title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.3,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
                     (author?.takeIf { it.isNotBlank() } ?: "Unknown").let {
                         Text(
                             text = it,
@@ -450,35 +468,31 @@ fun EntryListItem(
                             style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                         )
                     }
-                }
-                val statusLabel = when (status.toInt()) {
-                    SAnime.ONGOING -> stringResource(MR.strings.ongoing)
-                    SAnime.COMPLETED -> stringResource(MR.strings.completed)
-                    SAnime.CANCELLED -> stringResource(MR.strings.cancelled)
-                    else -> null
-                }
-                statusLabel?.let {
-                    Text(
-                        text = it,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                    )
-                }
-            }
-            description?.let { raw ->
-                if (isChapterList) {
-                    raw.lines().filter { it.isNotBlank() }.take(2).forEach { ChapterInfoLine(it) }
-                } else {
-                    val cleanedDescription = raw.lines().filter { it.isNotBlank() }.take(4).joinToString("\n")
-                    cleanedDescription.takeIf { it.isNotBlank() }?.let {
+                    val statusLabel = when (status.toInt()) {
+                        SAnime.ONGOING -> stringResource(MR.strings.ongoing)
+                        SAnime.COMPLETED -> stringResource(MR.strings.completed)
+                        SAnime.CANCELLED -> stringResource(MR.strings.cancelled)
+                        else -> null
+                    }
+                    statusLabel?.let {
                         Text(
                             text = it,
-                            modifier = Modifier.padding(top = 6.dp),
-                            maxLines = 4,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
                         )
+                    }
+                    description?.let { raw ->
+                        val cleanedDescription = raw.lines().filter { it.isNotBlank() }.take(4).joinToString("\\n")
+                        cleanedDescription.takeIf { it.isNotBlank() }?.let {
+                            Text(
+                                text = it,
+                                modifier = Modifier.padding(top = 6.dp),
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                            )
+                        }
                     }
                 }
             }
