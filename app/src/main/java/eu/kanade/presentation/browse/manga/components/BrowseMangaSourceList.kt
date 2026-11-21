@@ -79,7 +79,7 @@ fun BrowseMangaSourceList(
                         mangaList[index - 1]?.value?.let(onMangaVisible)
                     }
                 }
-        }
+            }
     }
 }
 
