@@ -418,6 +418,7 @@ fun EntryListItem(
         }
     }
 }
+
 @Composable
 private fun ContinueViewingButton(
     size: Dp,
