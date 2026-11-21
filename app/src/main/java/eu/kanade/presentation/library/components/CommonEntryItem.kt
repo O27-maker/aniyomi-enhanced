@@ -407,9 +407,18 @@ fun EntryListItem(
                 overflow = TextOverflow.Clip,
             )
         }
+        }
+        BadgeGroup(content = badge)
+        if (onClickContinueViewing != null) {
+            ContinueViewingButton(
+                size = ContinueViewingButtonSizeSmall,
+                iconSize = ContinueViewingButtonIconSizeSmall,
+                onClick = onClickContinueViewing,
+                modifier = Modifier.padding(start = ContinueViewingButtonListSpacing),
+            )
+        }
     }
 }
-
 @Composable
 private fun ContinueViewingButton(
     size: Dp,
