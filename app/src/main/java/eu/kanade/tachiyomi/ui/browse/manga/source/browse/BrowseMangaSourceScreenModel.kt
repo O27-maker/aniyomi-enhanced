@@ -193,7 +193,13 @@ class BrowseMangaSourceScreenModel(
                                                                         .thenByDescending { it.chapter_number },
                                                                 )
                                                                 .take(3)
-                                                            chapterCache[key] = latest
+                                                            if (latest.isNotEmpty()) {
+                                                                chapterCache[key] = latest
+                                                            } else {
+                                                                // Empty results can be transient or source/listing-specific.
+                                                                // Allow another listing or filter to retry this title.
+                                                                chapterFetchAttempts.remove(key)
+                                                            }
                                                             latest
                                                         }
                                                     }
