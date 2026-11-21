@@ -348,41 +348,8 @@ private fun Modifier.selectedOutline(
     if (isSelected) drawRect(color = if (subtle) color.copy(alpha = 0.12f) else color)
 }
 
-@Composable
-private fun ChapterInfoLine(value: String) {
-    val parts = value.split(" · ", limit = 2)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .border(0.7.dp, Color(0xFF424242), RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = parts.first(),
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = MaterialTheme.typography.bodyMedium.fontSize * 1.1,
-                color = Color.Gray,
-                fontWeight = FontWeight.Bold,
-            ),
-        )
-        if (parts.size > 1) {
-            Text(
-                text = parts[1],
-                maxLines = 1,
-                overflow = TextOverflow.Clip,
-                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-            )
-        }
-    }
-}
-
 /**
- * Layout of list item.
+ * Minimal layout of list item: cover and title only.
  */
 @Composable
 fun EntryListItem(
@@ -431,84 +398,15 @@ fun EntryListItem(
                 .padding(horizontal = 8.dp)
                 .weight(1f)
                 .fillMaxHeight(),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.Top,
         ) {
-            val isChapterList = author?.startsWith("Chapter ") == true || author?.startsWith("Episode ") == true
-            if (isChapterList) {
-                Box(modifier = Modifier.fillMaxHeight()) {
-                    Text(
-                        text = title,
-                        modifier = Modifier.align(Alignment.TopStart),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.3,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    )
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        verticalArrangement = Arrangement.spacedBy(1.dp),
-                    ) {
-                        author?.let { ChapterInfoLine(it) }
-                        description?.lines()?.filter { it.isNotBlank() }?.take(2)?.forEach { ChapterInfoLine(it) }
-                    }
-                }
-            } else {
-                Column {
-                    Text(
-                        text = title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.3,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    )
-                    (author?.takeIf { it.isNotBlank() } ?: "Unknown").let {
-                        Text(
-                            text = it,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                        )
-                    }
-                    val statusLabel = when (status.toInt()) {
-                        SAnime.ONGOING -> stringResource(MR.strings.ongoing)
-                        SAnime.COMPLETED -> stringResource(MR.strings.completed)
-                        SAnime.CANCELLED -> stringResource(MR.strings.cancelled)
-                        else -> null
-                    }
-                    statusLabel?.let {
-                        Text(
-                            text = it,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                        )
-                    }
-                    description?.let { raw ->
-                        val cleanedDescription = raw.lines().filter { it.isNotBlank() }.take(4).joinToString("\\n")
-                        cleanedDescription.takeIf { it.isNotBlank() }?.let {
-                            Text(
-                                text = it,
-                                modifier = Modifier.padding(top = 6.dp),
-                                maxLines = 4,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        BadgeGroup(content = badge)
-        if (onClickContinueViewing != null) {
-            ContinueViewingButton(
-                size = ContinueViewingButtonSizeSmall,
-                iconSize = ContinueViewingButtonIconSizeSmall,
-                onClick = onClickContinueViewing,
-                modifier = Modifier.padding(start = ContinueViewingButtonListSpacing),
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontSize = MaterialTheme.typography.titleSmall.fontSize * 1.3,
+                    fontWeight = FontWeight.Bold,
+                ),
+                overflow = TextOverflow.Clip,
             )
         }
     }
