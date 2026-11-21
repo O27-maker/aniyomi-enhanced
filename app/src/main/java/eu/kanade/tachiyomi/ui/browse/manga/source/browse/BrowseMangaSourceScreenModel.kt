@@ -205,7 +205,11 @@ class BrowseMangaSourceScreenModel(
                             }
                             combine(baseFlow, latestChapters) { manga, chapters ->
                                 if (chapters == null) {
-                                    manga
+                                    if (sourcePreferences.sourceDisplayMode().get() == LibraryDisplayMode.List) {
+                                        manga.copy(author = null, description = null, status = 0L)
+                                    } else {
+                                        manga
+                                    }
                                 } else {
                                     manga.copy(
                                         author = chapters.firstOrNull()?.let(::formatLatestChapter),
