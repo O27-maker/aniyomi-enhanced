@@ -33,7 +33,7 @@ fun BrowseMangaSourceList(
     onMangaClick: (Manga) -> Unit,
     onMangaLongClick: (Manga) -> Unit,
     source: CatalogueSource?,
-    onMangaVisible: (Manga) -> Unit,
+    onViewportChanged: (List<Pair<Manga, Int>>) -> Unit,
 ) {
     val sourceListState = rememberLazyListState()
     BoxWithConstraints {
@@ -74,11 +74,23 @@ fun BrowseMangaSourceList(
     LaunchedEffect(sourceListState, mangaList) {
         snapshotFlow { sourceListState.layoutInfo.visibleItemsInfo.map { it.index } }
             .collect { visibleIndices ->
-                visibleIndices.forEach { index ->
-                    if (index in 1..mangaList.itemCount) {
-                        mangaList[index - 1]?.value?.let(onMangaVisible)
+                val mangaPriorities = mutableMapOf<String, Pair<Manga, Int>>()
+                visibleIndices.filter { it in 1..mangaList.itemCount }.forEach { index ->
+                    mangaList[index - 1]?.value?.let { manga ->
+                        mangaPriorities["${manga.source}:${manga.url}"] = manga to 0
                     }
                 }
+                val lastVisible = visibleIndices.filter { it in 1..mangaList.itemCount }.maxOrNull()
+                if (lastVisible != null) {
+                    (lastVisible + 1..lastVisible + 2).forEach { index ->
+                        if (index in 1..mangaList.itemCount) {
+                            mangaList[index - 1]?.value?.let { manga ->
+                                mangaPriorities["${manga.source}:${manga.url}"] = manga to 1
+                            }
+                        }
+                    }
+                }
+                onViewportChanged(mangaPriorities.values.toList())
             }
     }
 }
