@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalDensity
@@ -18,6 +19,7 @@ import eu.kanade.presentation.library.components.CommonEntryItemDefaults
 import eu.kanade.presentation.library.components.EntryListItem
 import eu.kanade.tachiyomi.source.CatalogueSource
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.presentation.core.util.plus
@@ -69,6 +71,17 @@ fun BrowseMangaSourceList(
             }
         }
     }
+        LaunchedEffect(sourceListState, mangaList) {
+            snapshotFlow { sourceListState.layoutInfo.visibleItemsInfo.map { it.index } }
+                .collect { visibleIndices ->
+                    visibleIndices.forEach { index ->
+                        if (index > 0) {
+                            mangaList[index - 1]?.value?.let(onMangaVisible)
+                        }
+                    }
+                }
+        }
+
 }
 
 @Composable
@@ -78,11 +91,7 @@ private fun BrowseMangaSourceListItem(
     onLongClick: () -> Unit = onClick,
     entries: Int,
     containerHeight: Int,
-    onMangaVisible: (Manga) -> Unit,
 ) {
-    LaunchedEffect(manga.source, manga.url) {
-        onMangaVisible(manga)
-    }
     EntryListItem(
         title = manga.title,
         author = manga.author,
