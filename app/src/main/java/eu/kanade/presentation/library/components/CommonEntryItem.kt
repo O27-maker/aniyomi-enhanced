@@ -354,6 +354,7 @@ private fun ChapterInfoLine(value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = 2.dp)
             .border(0.7.dp, Color(0xFF424242), RoundedCornerShape(6.dp))
             .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
