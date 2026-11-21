@@ -250,6 +250,7 @@ data class BrowseMangaSourceScreen(
                 onHelpClick = { uriHandler.openUri(Constants.URL_HELP) },
                 onLocalSourceHelpClick = onHelpClick,
                 onMangaClick = { navigator.push((MangaScreen(it.id, true))) },
+                onMangaVisible = screenModel::requestLatestChapters,
                 onMangaLongClick = { manga ->
                     scope.launchIO {
                         val duplicateManga = screenModel.getDuplicateLibraryManga(manga)
