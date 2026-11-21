@@ -407,7 +407,6 @@ fun EntryListItem(
                 overflow = TextOverflow.Clip,
             )
         }
-        }
         BadgeGroup(content = badge)
         if (onClickContinueViewing != null) {
             ContinueViewingButton(
