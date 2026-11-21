@@ -425,7 +425,7 @@ fun EntryListItem(
                 .padding(horizontal = 8.dp)
                 .weight(1f)
                 .fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.Center,
         ) {
             val isChapterList = author?.startsWith("Chapter ") == true || author?.startsWith("Episode ") == true
             Column {
