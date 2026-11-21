@@ -812,7 +812,7 @@ class MangaLibraryScreenModel(
 private fun formatLibraryChapter(chapter: Chapter): String {
     val number = chapter.chapterNumber.takeIf { it > 0.0 }?.let {
         java.text.DecimalFormat("0.##").format(it)
-    } ?: "?"
+    } ?: Regex("\\d+(?:\\.\\d+)?").find(chapter.name)?.value ?: "Unknown"
     val date = chapter.dateUpload.takeIf { it > 0L }?.let {
         DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString()
     } ?: "Now"
