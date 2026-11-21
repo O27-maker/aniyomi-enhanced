@@ -218,7 +218,13 @@ class BrowseAnimeSourceScreenModel(
                                                                         .thenByDescending { it.episode_number },
                                                                 )
                                                                 .take(3)
-                                                            episodeCache[key] = latest
+                                                            if (latest.isNotEmpty()) {
+                                                                episodeCache[key] = latest
+                                                            } else {
+                                                                // Empty results can be transient or source/listing-specific.
+                                                                // Allow another listing or filter to retry this title.
+                                                                episodeFetchAttempts.remove(key)
+                                                            }
                                                             latest
                                                         }
                                                     }
