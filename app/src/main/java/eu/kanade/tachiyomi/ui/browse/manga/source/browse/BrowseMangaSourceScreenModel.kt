@@ -45,8 +45,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.channels.Channel
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.mapAsCheckboxState
 import tachiyomi.core.common.util.lang.launchIO
@@ -90,10 +89,15 @@ class BrowseMangaSourceScreenModel(
 
     var displayMode by sourcePreferences.sourceDisplayMode().asState(screenModelScope)
 
-    private val chapterFetchSemaphore = Semaphore(2)
+    private data class PendingChapterFetch(val manga: Manga, var priority: Int, val sequence: Long)
+
     private val chapterFetchAttempts = ConcurrentHashMap.newKeySet<String>()
     private val chapterCache = ConcurrentHashMap<String, List<SChapter>>()
     private val chapterStates = ConcurrentHashMap<String, MutableStateFlow<List<SChapter>?>>()
+    private val chapterQueueLock = Any()
+    private val pendingChapterFetches = mutableMapOf<String, PendingChapterFetch>()
+    private val chapterFetchSignal = Channel<Unit>(Channel.UNLIMITED)
+    private var chapterFetchSequence = 0L
 
     val source = sourceManager.getOrStub(sourceId)
 
@@ -118,6 +122,20 @@ class BrowseMangaSourceScreenModel(
 
         if (!getIncognitoState.await(source.id)) {
             sourcePreferences.lastUsedMangaSource().set(source.id)
+        }
+
+        repeat(2) {
+            screenModelScope.launch {
+                while (true) {
+                    chapterFetchSignal.receive()
+                    val pending = synchronized(chapterQueueLock) {
+                        pendingChapterFetches.values
+                            .minWithOrNull(compareBy<PendingChapterFetch> { it.priority }.thenBy { it.sequence })
+                            ?.also { pendingChapterFetches.remove("${it.manga.source}:${it.manga.url}") }
+                    } ?: continue
+                    fetchLatestChapters(pending.manga)
+                }
+            }
         }
     }
 
@@ -182,41 +200,58 @@ class BrowseMangaSourceScreenModel(
         }
         .stateIn(ioCoroutineScope, SharingStarted.Lazily, emptyFlow())
 
-    fun requestLatestChapters(manga: Manga) {
+    fun updateLatestChapterViewport(items: List<Pair<Manga, Int>>) {
         if (displayMode != LibraryDisplayMode.List || source.isLocalOrStub()) return
+        val priorities = items.associate { ("${it.first.source}:${it.first.url}") to it }
+        synchronized(chapterQueueLock) {
+            val stale = pendingChapterFetches.keys.filter { it !in priorities }
+            stale.forEach { key ->
+                pendingChapterFetches.remove(key)
+                chapterFetchAttempts.remove(key)
+            }
+            priorities.forEach { (key, pair) ->
+                val manga = pair.first
+                val priority = pair.second
+                val state = chapterStates.getOrPut(key) { MutableStateFlow(chapterCache[key]) }
+                if (state.value?.isNotEmpty() == true) return@forEach
+                val pending = pendingChapterFetches[key]
+                if (pending != null) {
+                    pending.priority = priority
+                } else if (chapterFetchAttempts.add(key)) {
+                    pendingChapterFetches[key] = PendingChapterFetch(manga, priority, chapterFetchSequence++)
+                    chapterFetchSignal.trySend(Unit)
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchLatestChapters(manga: Manga) {
         val key = "${manga.source}:${manga.url}"
         val state = chapterStates.getOrPut(key) { MutableStateFlow(chapterCache[key]) }
-        if (state.value?.isNotEmpty() == true || !chapterFetchAttempts.add(key)) return
-
-        screenModelScope.launch {
-            try {
-                val chapters = chapterFetchSemaphore.withPermit {
-                    chapterCache[key] ?: run {
-                        val mangaSource = sourceManager.get(manga.source)
-                            ?: return@withPermit emptyList()
-                        if (mangaSource.isLocalOrStub()) return@withPermit emptyList()
-                        val fetched = mangaSource.getMangaUpdate(
-                            manga.toSManga(),
-                            emptyList(),
-                            fetchDetails = false,
-                            fetchChapters = true,
-                        ).chapters
-                        fetched.sortedWith(
-                            compareByDescending<SChapter> { it.date_upload }
-                                .thenByDescending { it.chapter_number },
-                        ).take(3)
-                    }
-                }
-                if (chapters.isNotEmpty()) chapterCache[key] = chapters
-                state.value = chapters
-                if (chapters.isEmpty()) chapterFetchAttempts.remove(key)
-            } catch (e: CancellationException) {
-                chapterFetchAttempts.remove(key)
-                throw e
-            } catch (_: Exception) {
-                chapterFetchAttempts.remove(key)
-                state.value = emptyList()
+        try {
+            val chapters = chapterCache[key] ?: run {
+                val mangaSource = sourceManager.get(manga.source) ?: return
+                if (mangaSource.isLocalOrStub()) return
+                val fetched = mangaSource.getMangaUpdate(
+                    manga.toSManga(),
+                    emptyList(),
+                    fetchDetails = false,
+                    fetchChapters = true,
+                ).chapters
+                fetched.sortedWith(
+                    compareByDescending<SChapter> { it.date_upload }
+                        .thenByDescending { it.chapter_number },
+                ).take(3)
             }
+            if (chapters.isNotEmpty()) chapterCache[key] = chapters
+            state.value = chapters
+            if (chapters.isEmpty()) chapterFetchAttempts.remove(key)
+        } catch (e: CancellationException) {
+            chapterFetchAttempts.remove(key)
+            throw e
+        } catch (_: Exception) {
+            chapterFetchAttempts.remove(key)
+            state.value = emptyList()
         }
     }
 
