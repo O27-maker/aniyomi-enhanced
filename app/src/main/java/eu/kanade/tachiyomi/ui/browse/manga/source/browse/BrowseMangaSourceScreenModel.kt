@@ -474,6 +474,6 @@ private fun formatLatestChapter(chapter: SChapter): String {
     } ?: "Now"
     val number = chapter.chapter_number.takeIf { it > 0f }?.let {
         java.text.DecimalFormat("0.##").format(it)
-    } ?: "?"
+    } ?: Regex("\\d+(?:\\.\\d+)?").find(chapter.name)?.value ?: "Unknown"
     return "Chapter $number · $date"
 }
