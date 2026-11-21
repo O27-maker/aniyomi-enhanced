@@ -176,7 +176,7 @@ class BrowseMangaSourceScreenModel(
                                                         } else {
                                                             val fetched = try {
                                                                 source.getMangaUpdate(
-                                                                manga.toSManga(),
+                                                                    manga.toSManga(),
                                                                 emptyList(),
                                                                 fetchDetails = false,
                                                                 fetchChapters = true,
