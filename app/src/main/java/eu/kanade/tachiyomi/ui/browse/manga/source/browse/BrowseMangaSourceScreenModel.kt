@@ -175,7 +175,12 @@ class BrowseMangaSourceScreenModel(
                                                             emptyList()
                                                         } else {
                                                             val fetched = try {
-                                                                source.getChapterList(manga.toSManga())
+                                                                source.getMangaUpdate(
+                                                                manga.toSManga(),
+                                                                emptyList(),
+                                                                fetchDetails = false,
+                                                                fetchChapters = true,
+                                                            ).chapters
                                                             } catch (e: CancellationException) {
                                                                 chapterFetchAttempts.remove(key)
                                                                 throw e
