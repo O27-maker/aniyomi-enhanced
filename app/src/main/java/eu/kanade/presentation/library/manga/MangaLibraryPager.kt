@@ -111,7 +111,7 @@ fun MangaLibraryPager(
                 LibraryDisplayMode.ComfortableGrid -> {
                     MangaLibraryComfortableGrid(
                         items = library,
-                        columns = displayColumns,
+                        columns = columns,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,
