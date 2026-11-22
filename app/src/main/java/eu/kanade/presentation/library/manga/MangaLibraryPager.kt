@@ -72,6 +72,8 @@ fun MangaLibraryPager(
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val columns by remember(isLandscape) { getColumnsForOrientation(isLandscape) }
+            // Keep phones at the default three-column grid; tablets use adaptive columns.
+            val gridColumns = if (configuration.screenWidthDp >= 600) columns else 3
             // In List mode, Auto fits four covers in the available library height.
             val listEntries = columns.takeIf { it > 0 } ?: 4
 
@@ -97,7 +99,7 @@ fun MangaLibraryPager(
                     MangaLibraryCompactGrid(
                         items = library,
                         showTitle = displayMode == LibraryDisplayMode.CompactGrid,
-                        columns = columns,
+                        columns = gridColumns,
                         contentPadding = contentPadding,
                         selection = selectedManga,
                         onClick = onClickManga,
