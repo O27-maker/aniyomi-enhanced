@@ -237,7 +237,7 @@ object AboutScreen : Screen() {
     }
 
     fun getVersionName(withBuildDate: Boolean): String {
-        return "0.2.0".let {
+        return "0.2.1".let {
             if (withBuildDate) {
                 "$it (${getFormattedBuildTime()})"
             } else {
