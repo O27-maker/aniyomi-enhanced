@@ -111,7 +111,7 @@ fun AnimeLibraryPager(
                 LibraryDisplayMode.ComfortableGrid -> {
                     AnimeLibraryComfortableGrid(
                         items = library,
-                        columns = columns,
+                        columns = gridColumns,
                         contentPadding = contentPadding,
                         selection = selectedAnime,
                         onClick = onClickAnime,
