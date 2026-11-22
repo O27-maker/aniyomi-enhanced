@@ -72,8 +72,6 @@ fun AnimeLibraryPager(
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val columns by remember(isLandscape) { getColumnsForOrientation(isLandscape) }
-            // Auto keeps the Aniyomi+ default at three covers per row.
-            val displayColumns = columns.takeIf { it > 0 } ?: 3
             // In List mode, Auto fits four covers in the available library height.
             val listEntries = columns.takeIf { it > 0 } ?: 4
 
@@ -97,7 +95,7 @@ fun AnimeLibraryPager(
                     AnimeLibraryCompactGrid(
                         items = library,
                         showTitle = displayMode is LibraryDisplayMode.CompactGrid,
-                        columns = displayColumns,
+                        columns = columns,
                         contentPadding = contentPadding,
                         selection = selectedAnime,
                         onClick = onClickAnime,
