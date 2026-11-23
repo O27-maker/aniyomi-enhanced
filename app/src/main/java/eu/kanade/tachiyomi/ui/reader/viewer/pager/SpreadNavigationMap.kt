@@ -3,9 +3,9 @@ package eu.kanade.tachiyomi.ui.reader.viewer.pager
 /**
  * Index mapping for a logical Spread display sequence.
  *
- * Page indices always refer to the sequence passed to [SpreadPageMapper.map]
- * (the effective display order, which may already be reversed for R2L).
- * This helper deliberately does not alter page order or reader progress.
+ * Page indices refer to the effective display sequence passed to
+ * [SpreadPageMapper.map], which may already be reversed for R2L. This class
+ * never mutates page order or original page objects.
  */
 internal object SpreadNavigationMap {
 
@@ -14,35 +14,15 @@ internal object SpreadNavigationMap {
         val pageIndices: List<Int>,
     )
 
-    fun <T> fromGroups(groups: List<SpreadPageMapper.Group<T>>): List<Spread> =
-        groups.mapIndexed { spreadIndex, group ->
+    fun <T> fromGroups(groups: List<SpreadPageMapper.Group<T>>): List<Spread> {
+        var pageIndex = 0
+        return groups.mapIndexed { spreadIndex, group ->
             val pageIndices = when (group) {
-                is SpreadPageMapper.Group.Single -> listOf(spreadIndexPageIndex(groups, group))
-                is SpreadPageMapper.Group.Pair -> listOf(
-                    spreadIndexPageIndex(groups, group.first),
-                    spreadIndexPageIndex(groups, group.second),
-                )
+                is SpreadPageMapper.Group.Single -> listOf(pageIndex++)
+                is SpreadPageMapper.Group.Pair -> listOf(pageIndex++, pageIndex++)
             }
             Spread(spreadIndex, pageIndices)
         }
-
-    private fun <T> spreadIndexPageIndex(groups: List<SpreadPageMapper.Group<T>>, target: Any): Int {
-        var pageIndex = 0
-        for (group in groups) {
-            when (group) {
-                is SpreadPageMapper.Group.Single -> {
-                    if (group.page === target || group.page == target) return pageIndex
-                    pageIndex++
-                }
-                is SpreadPageMapper.Group.Pair -> {
-                    if (group.first === target || group.first == target) return pageIndex
-                    pageIndex++
-                    if (group.second === target || group.second == target) return pageIndex
-                    pageIndex++
-                }
-            }
-        }
-        return -1
     }
 
     /** Returns the display spread containing the given effective page index. */
@@ -60,7 +40,7 @@ internal object SpreadNavigationMap {
         return -1
     }
 
-    /** Returns the effective page indices belonging to a spread. */
+    /** Returns effective page indices belonging to a spread, or empty if invalid. */
     fun pageIndicesForSpread(groups: List<SpreadPageMapper.Group<*>>, spreadIndex: Int): List<Int> {
         if (spreadIndex !in groups.indices) return emptyList()
         var pageIndex = 0
