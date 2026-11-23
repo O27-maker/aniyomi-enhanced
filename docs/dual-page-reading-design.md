@@ -79,3 +79,14 @@ The existing `PagerViewerAdapter` creates one `PagerPageHolder` per `ReaderPage`
 
 Added `SpreadNavigationMap` as a pure helper that maps logical spreads to effective page-index ranges and maps an effective page index back to its spread. It consumes mapper groups in the order supplied and does not reverse R2L sequences. This helper is groundwork only: it is not connected to ViewPager selection, progress, or resume handling. Tests cover page-index mapping, invalid indices, and an already-reversed R2L sequence. Tests remain unexecuted.
 
+
+
+## ViewPager selection, progress, and resume findings
+
+The existing `PagerViewer` treats adapter items as the navigation unit: `moveToPage(ReaderPage)` resolves the page object in `adapter.items` and selects that item position; page changes call `onReaderPageSelected`, which notifies the Activity/ViewModel. `ReaderViewModel.onPageSelected` saves progress using the selected page's underlying index and updates the active chapter. Therefore, a spread integration cannot simply collapse two `ReaderPage` items into one without explicitly defining which underlying page becomes the active/progress page and how `moveToPage` maps either member back to its spread. Current reader progress is page-based, not spread-based. A safe initial policy is: the spread's direction-leading page is the navigation anchor, but jumps/resume to either member select the containing spread and retain the requested member as the active page when possible. This needs implementation and tests before wiring.
+
+`PagerViewer` selection also triggers holder selection/panning, preload checks, chapter transition behavior, and adjacent chapter loading. Any spread holder must not suppress these calls. `InsertPage` is explicitly excluded from progress updates by the ViewModel, so it must remain excluded after integration. Chapter transition objects are adapter items and must remain standalone display items.
+
+## Spread integration readiness checkpoint
+
+Source inspection is complete enough to establish the key integration contracts, but not enough to safely build the actual renderer. The missing critical detail is how the `ViewPagerAdapter` and `DirectionalViewPager` instantiate/recycle child views and how the image holder gesture/pan state should be delegated for two children. Before a renderer implementation, inspect the base adapter/pager lifecycle and determine whether a nested two-child holder can safely reuse `PagerPageHolder` or whether an alternative image-renderer wrapper is needed. Do not change adapter item counts yet.
