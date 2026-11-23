@@ -90,3 +90,17 @@ The existing `PagerViewer` treats adapter items as the navigation unit: `moveToP
 ## Spread integration readiness checkpoint
 
 Source inspection is complete enough to establish the key integration contracts, but not enough to safely build the actual renderer. The missing critical detail is how the `ViewPagerAdapter` and `DirectionalViewPager` instantiate/recycle child views and how the image holder gesture/pan state should be delegated for two children. Before a renderer implementation, inspect the base adapter/pager lifecycle and determine whether a nested two-child holder can safely reuse `PagerPageHolder` or whether an alternative image-renderer wrapper is needed. Do not change adapter item counts yet.
+
+
+## Holder lifecycle and image-renderer findings (follow-up)
+
+- `PagerPageHolder` is itself a `ReaderPageImageView`, not a lightweight data holder. It creates and owns its page loading coroutine in `init`, renders the image into its own child view, owns progress/error UI, applies page processing (including current dual-page split/rotation behavior), and reports image/scale callbacks to `PagerViewer`.
+- `PagerPageHolder.onDetachedFromWindow()` cancels its loading/status job and sets `loadJob = null`, but does not start a replacement job in `onAttachedToWindow()`. This makes blindly nesting existing holders in a spread container and reattaching them potentially unsafe: a detached holder may no longer observe page status/reload.
+- `PagerViewer.getPageHolder()` searches only direct children of the `ViewPager` for `PagerPageHolder` instances. If a two-page spread wrapper becomes a direct child instead, holder lookup (used for page selection and pan navigation) would stop finding its nested page holders unless this is deliberately redesigned.
+- The base `ViewPagerAdapter` directly adds the created view to the container and removes it during destruction; it has no child-holder lifecycle management or wrapper support. The pager's offscreen limit is one. `PagerPageHolder` is also `PositionableView` keyed to its single `ReaderPage`, while the adapter's current item identity is the page/transition object.
+- `ReaderPageImageView` owns zoom, gesture, animated-image and subsampling behavior. It cannot be safely treated as a passive drawable; each spread child needs deliberate gesture routing and independent image state.
+
+### Updated safe implementation boundary
+
+A wrapper that nests existing `PagerPageHolder` instances is not currently safe without changes to detach/re-attach loading, direct-child holder lookup, selected-page callbacks, pan/navigation, and gesture delegation. Do not implement a two-holder spread by simply nesting holders or collapsing adapter item counts. Next step is to prototype and test a minimal holder lifecycle refactor that can restart page-status observation when attached (without duplicate jobs), then design the spread container to expose an active underlying page to `PagerViewer` while keeping both original pages and transitions in the authoritative sequence. No renderer integration is approved until these contracts are accounted for.
+
