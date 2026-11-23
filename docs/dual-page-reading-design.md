@@ -104,3 +104,11 @@ Source inspection is complete enough to establish the key integration contracts,
 
 A wrapper that nests existing `PagerPageHolder` instances is not currently safe without changes to detach/re-attach loading, direct-child holder lookup, selected-page callbacks, pan/navigation, and gesture delegation. Do not implement a two-holder spread by simply nesting holders or collapsing adapter item counts. Next step is to prototype and test a minimal holder lifecycle refactor that can restart page-status observation when attached (without duplicate jobs), then design the spread container to expose an active underlying page to `PagerViewer` while keeping both original pages and transitions in the authoritative sequence. No renderer integration is approved until these contracts are accounted for.
 
+
+
+## Page status-flow trace
+
+- `Page.statusFlow` and `Page.progressFlow` are StateFlow-backed streams. A collector restarted after detachment can observe the latest retained page status/progress rather than requiring a fresh emission.
+- This supports a narrow lifecycle strategy: separate status/progress observation from invoking `pageLoader.loadPage(page)`. Reattach should reconnect observers, but must not automatically call `loadPage` again until the loader's idempotency/queue semantics are confirmed.
+- Existing `PagerPageHolder.loadPageAndProcessStatus()` currently launches both `loader.loadPage(page)` and status collection under its coroutine scope. Cancelling the whole job on detach cancels both child operations; the loader call may have cancellation/queue side effects. Refactoring this as observer-only restart is not yet proven safe.
+- Source/API implementation of the concrete page loader was not confirmed in this repository via the available file fetch. Therefore no lifecycle code has been changed; implementation is blocked pending concrete loader semantics and/or tests that validate cancellation and reattachment.
