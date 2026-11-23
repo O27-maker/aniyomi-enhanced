@@ -63,3 +63,13 @@ Spread and Split Scroll must work with the existing reading modes where their se
 - Adapter/pager and Webtoon pipeline inspected at source level.
 - Dual-page remains presentation-only; page-loading and progress pipelines must remain authoritative.
 - No renderer integration has been committed yet. This investigation is source inspection only; Android compilation and tests remain unverified.
+
+
+## Spread mapper validation cases added
+
+A committed JUnit test suite now covers empty input, portrait pairing, odd page counts, first-page isolation, landscape breaks, `canPair` exclusions, and R2L mapping against an already-reversed display sequence. These tests are committed but have not been executed locally or in CI.
+
+
+## Spread integration decision
+
+The existing `PagerViewerAdapter` creates one `PagerPageHolder` per `ReaderPage`, and `PagerViewer` selection/progress/preloading is based on individual page identities. The current mapper produces logical groups only; it does not provide a safe multi-page holder or coordinated page-selection/navigation behavior. Therefore, wiring the mapper into `getCount()` or replacing adapter items with groups now would be premature. The next implementation should first define a spread holder/container that can host two existing page image holders while preserving each page's loading state, image/error callbacks, lifecycle/recycling, and original page identities. Spread navigation/progress should map to the active original page, and chapter transitions/InsertPage must remain standalone unless explicitly handled.
