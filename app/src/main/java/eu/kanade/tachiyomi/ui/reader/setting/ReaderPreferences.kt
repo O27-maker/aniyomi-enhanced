@@ -117,6 +117,9 @@ class ReaderPreferences(
         false,
     )
 
+    fun dualPageMode() = preferenceStore.getInt("pref_dual_page_mode", 0)
+
+
     // endregion
 
     // region Color filter
