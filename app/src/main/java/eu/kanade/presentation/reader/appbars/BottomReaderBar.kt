@@ -7,19 +7,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.ViewColumn
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import eu.kanade.presentation.reader.DualPageSelectDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
-import tachiyomi.i18n.MR
-import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 fun BottomReaderBar(
@@ -28,10 +32,23 @@ fun BottomReaderBar(
     onClickReadingMode: () -> Unit,
     orientation: ReaderOrientation,
     onClickOrientation: () -> Unit,
-    cropEnabled: Boolean,
-    onClickCropBorder: () -> Unit,
+    dualPageMode: Int,
+    onChangeDualPageMode: (Int) -> Unit,
     onClickSettings: () -> Unit,
 ) {
+    var showDualPageDialog by remember { mutableStateOf(false) }
+
+    if (showDualPageDialog) {
+        DualPageSelectDialog(
+            selectedMode = dualPageMode,
+            onDismissRequest = { showDualPageDialog = false },
+            onApply = { mode ->
+                onChangeDualPageMode(mode)
+                showDualPageDialog = false
+            },
+        )
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -54,10 +71,10 @@ fun BottomReaderBar(
             )
         }
 
-        IconButton(onClick = onClickCropBorder) {
+        IconButton(onClick = { showDualPageDialog = true }) {
             Icon(
-                painter = painterResource(if (cropEnabled) R.drawable.ic_crop_24dp else R.drawable.ic_crop_off_24dp),
-                contentDescription = stringResource(MR.strings.pref_crop_borders),
+                imageVector = Icons.Outlined.ViewColumn,
+                contentDescription = "Dual-page",
             )
         }
 
