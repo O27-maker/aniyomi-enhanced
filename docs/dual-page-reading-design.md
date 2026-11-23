@@ -47,3 +47,19 @@ Spread and Split Scroll must work with the existing reading modes where their se
 - Distributor unit tests: committed, not executed.
 - Actual Spread/Split Scroll rendering integration: not implemented.
 - Android build and tests: not verified.
+
+
+## Reader integration findings (follow-up investigation)
+
+- `PagerViewerAdapter.setChapters()` constructs a source sequence containing previous/current/next chapter pages and chapter transitions, inserts preprocessed split pages, then reverses the complete sequence for `R2LPagerViewer`. The pager tracks selected items and page identities for progress and chapter preload.
+- `PagerViewer` selection callbacks notify the activity, call page-holder selection, and preload chapters. Navigation and page-split operations are adapter-aware.
+- `WebtoonViewer` is a separate `RecyclerView`-based implementation with a distinct adapter and page-holder lifecycle; it is not a subclass of `PagerViewer`. Its continuous and non-continuous variants share a distinct rendering pipeline.
+- `WebtoonPageHolder` owns page loading/status collection, image processing, image rendering, error UI, and recycling. It is unsafe to bypass or duplicate this lifecycle when implementing Split Scroll.
+- Because pager and webtoon are separate implementations, Dual-page must be integrated per viewer type or through a carefully scoped shared layout abstraction. It must not assume one universal holder/container can safely serve both.
+- The adapter's page sequence already incorporates R2L reversal; layout mapping should consume the sequence in its effective display order and avoid applying a second direction reversal.
+
+## Updated integration status
+
+- Adapter/pager and Webtoon pipeline inspected at source level.
+- Dual-page remains presentation-only; page-loading and progress pipelines must remain authoritative.
+- No renderer integration has been committed yet. This investigation is source inspection only; Android compilation and tests remain unverified.
