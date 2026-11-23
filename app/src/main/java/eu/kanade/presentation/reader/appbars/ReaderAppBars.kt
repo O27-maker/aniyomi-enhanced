@@ -62,8 +62,8 @@ fun ReaderAppBars(
     onClickReadingMode: () -> Unit,
     orientation: ReaderOrientation,
     onClickOrientation: () -> Unit,
-    cropEnabled: Boolean,
-    onClickCropBorder: () -> Unit,
+    dualPageMode: Int,
+    onChangeDualPageMode: (Int) -> Unit,
     onClickSettings: () -> Unit,
 ) {
     val isRtl = viewer is R2LPagerViewer
@@ -184,8 +184,8 @@ fun ReaderAppBars(
                     onClickReadingMode = onClickReadingMode,
                     orientation = orientation,
                     onClickOrientation = onClickOrientation,
-                    cropEnabled = cropEnabled,
-                    onClickCropBorder = onClickCropBorder,
+                    dualPageMode = dualPageMode,
+                    onChangeDualPageMode = onChangeDualPageMode,
                     onClickSettings = onClickSettings,
                 )
             }
