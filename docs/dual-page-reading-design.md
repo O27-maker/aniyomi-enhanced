@@ -73,3 +73,9 @@ A committed JUnit test suite now covers empty input, portrait pairing, odd page 
 ## Spread integration decision
 
 The existing `PagerViewerAdapter` creates one `PagerPageHolder` per `ReaderPage`, and `PagerViewer` selection/progress/preloading is based on individual page identities. The current mapper produces logical groups only; it does not provide a safe multi-page holder or coordinated page-selection/navigation behavior. Therefore, wiring the mapper into `getCount()` or replacing adapter items with groups now would be premature. The next implementation should first define a spread holder/container that can host two existing page image holders while preserving each page's loading state, image/error callbacks, lifecycle/recycling, and original page identities. Spread navigation/progress should map to the active original page, and chapter transitions/InsertPage must remain standalone unless explicitly handled.
+
+
+## Spread navigation mapping prototype
+
+Added `SpreadNavigationMap` as a pure helper that maps logical spreads to effective page-index ranges and maps an effective page index back to its spread. It consumes mapper groups in the order supplied and does not reverse R2L sequences. This helper is groundwork only: it is not connected to ViewPager selection, progress, or resume handling. Tests cover page-index mapping, invalid indices, and an already-reversed R2L sequence. Tests remain unexecuted.
+
