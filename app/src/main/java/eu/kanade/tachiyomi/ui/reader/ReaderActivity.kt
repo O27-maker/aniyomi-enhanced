@@ -375,10 +375,7 @@ class ReaderActivity : BaseActivity() {
                 ReaderPreferences.ColorFilterMode.getOrNull(colorOverlayMode)?.second
             }
 
-            val cropBorderPaged by readerPreferences.cropBorders().collectAsState()
-            val cropBorderWebtoon by readerPreferences.cropBordersWebtoon().collectAsState()
-            val isPagerType = ReadingMode.isPagerType(viewModel.getMangaReadingMode())
-            val cropEnabled = if (isPagerType) cropBorderPaged else cropBorderWebtoon
+            val dualPageMode by readerPreferences.dualPageMode().collectAsState()
 
             ReaderContentOverlay(
                 brightness = state.brightnessOverlayValue,
@@ -421,12 +418,8 @@ class ReaderActivity : BaseActivity() {
                     viewModel.getMangaOrientation(resolveDefault = false),
                 ),
                 onClickOrientation = viewModel::openOrientationModeSelectDialog,
-                cropEnabled = cropEnabled,
-                onClickCropBorder = {
-                    val enabled = viewModel.toggleCropBorders()
-                    menuToggleToast?.cancel()
-                    menuToggleToast = toast(if (enabled) MR.strings.on else MR.strings.off)
-                },
+                dualPageMode = dualPageMode,
+                onChangeDualPageMode = { readerPreferences.dualPageMode().set(it) },
                 onClickSettings = viewModel::openSettingsDialog,
             )
 
