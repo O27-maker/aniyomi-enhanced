@@ -3,9 +3,8 @@ package eu.kanade.tachiyomi.ui.reader.viewer.pager
 /**
  * Pure page distribution for the experimental Split Scroll reader.
  *
- * Items are assigned alternately to left and right columns in original order.
- * Original indices are retained so callers can map placements back to chapter
- * pages without losing page identity or progress information.
+ * Items are assigned alternately to left/right columns in the supplied effective
+ * sequence. Original indices are retained for selection/progress mapping.
  */
 internal object SplitScrollPageDistributor {
 
@@ -27,6 +26,12 @@ internal object SplitScrollPageDistributor {
         /** All placements, ordered by their original source index. */
         fun inSourceOrder(): List<Placement<T>> =
             (left + right).sortedBy { it.originalIndex }
+
+        /** Resolve a page's index in the effective source sequence to its placement. */
+        fun placementForOriginalIndex(originalIndex: Int): Placement<T>? {
+            if (originalIndex < 0) return null
+            return (left + right).firstOrNull { it.originalIndex == originalIndex }
+        }
     }
 
     fun <T> distribute(items: List<T>): Distribution<T> {
