@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
 import android.content.Context
-import android.view.View
 import android.view.ViewGroup
 
 /**
@@ -25,8 +24,8 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         check(childCount <= 2) { "SpreadFrameLayout supports at most two page children" }
-        val width = MeasureSpec.getSize(widthMeasureSpec)
-        val height = MeasureSpec.getSize(heightMeasureSpec)
+        val width = resolveSize(MeasureSpec.getSize(widthMeasureSpec), widthMeasureSpec)
+        val height = resolveSize(MeasureSpec.getSize(heightMeasureSpec), heightMeasureSpec)
         val slots = if (childCount == 2) SpreadLayoutGeometry.pair(isR2L) else listOf(SpreadLayoutGeometry.single())
 
         for (index in 0 until childCount) {
@@ -36,7 +35,7 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
             val childHeightSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
             getChildAt(index).measure(childWidthSpec, childHeightSpec)
         }
-        setMeasuredDimension(resolveSize(width, widthMeasureSpec), resolveSize(height, heightMeasureSpec))
+        setMeasuredDimension(width, height)
     }
 
 
