@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -43,5 +44,16 @@ class SplitScrollPageDistributorTest {
         assertEquals(source, placements.map { it.item })
         assertEquals(source.indices.toList(), placements.map { it.originalIndex })
         assertEquals(source.size, result.left.size + result.right.size)
+    }
+
+    @Test
+    fun placementLookupResolvesColumnByEffectiveIndex() {
+        val result = SplitScrollPageDistributor.distribute(listOf("a", "b", "c"))
+        assertEquals(
+            SplitScrollPageDistributor.Placement(1, "b", SplitScrollPageDistributor.Column.RIGHT),
+            result.placementForOriginalIndex(1),
+        )
+        assertNull(result.placementForOriginalIndex(-1))
+        assertNull(result.placementForOriginalIndex(99))
     }
 }
