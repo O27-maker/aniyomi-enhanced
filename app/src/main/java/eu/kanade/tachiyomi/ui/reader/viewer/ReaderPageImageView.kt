@@ -23,6 +23,7 @@ import coil3.asDrawable
 import coil3.dispose
 import coil3.imageLoader
 import coil3.request.CachePolicy
+import coil3.request.Disposable
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Precision
@@ -67,6 +68,9 @@ open class ReaderPageImageView @JvmOverloads constructor(
     private var pageView: View? = null
 
     private var config: Config? = null
+
+    /** Active Coil request, released when this page holder is recycled. */
+    private var imageRequest: Disposable? = null
 
     /**
      * Keep animated pages from running while their pager holder is detached.
@@ -201,12 +205,16 @@ open class ReaderPageImageView @JvmOverloads constructor(
         }
     }
 
-    fun recycle() = pageView?.let {
-        when (it) {
-            is SubsamplingScaleImageView -> it.recycle()
-            is AppCompatImageView -> it.dispose()
+    fun recycle() {
+        imageRequest?.dispose()
+        imageRequest = null
+        pageView?.let {
+            when (it) {
+                is SubsamplingScaleImageView -> it.recycle()
+                is AppCompatImageView -> it.dispose()
+            }
+            it.isVisible = false
         }
-        it.isVisible = false
     }
 
     /**
@@ -360,7 +368,10 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     .customDecoder(true)
                     .crossfade(false)
                     .build()
-                    .let(context.imageLoader::enqueue)
+                    .let { request ->
+                        imageRequest?.dispose()
+                        imageRequest = context.imageLoader.enqueue(request)
+                    }
             }
             else -> {
                 throw IllegalArgumentException("Not implemented for class ${data::class.simpleName}")
@@ -433,7 +444,8 @@ open class ReaderPageImageView @JvmOverloads constructor(
             )
             .crossfade(false)
             .build()
-        context.imageLoader.enqueue(request)
+        imageRequest?.dispose()
+        imageRequest = context.imageLoader.enqueue(request)
     }
 
     private fun Int.getSystemScaledDuration(): Int {
