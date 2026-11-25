@@ -134,13 +134,24 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     }
 
     /**
-     * Permanently dispose page holders when the pager adapter removes their views.
-     * Ordinary detach/reattach remains reusable for nested Spread containers.
+     * Permanently dispose reader holders when the pager adapter removes their views.
+     * A presentation container may wrap the original holders, so walk the complete
+     * removed view tree rather than checking only its root.
+     * Ordinary detach/reattach remains reusable until the adapter destroys the tree.
      */
     override fun destroyView(container: ViewGroup, position: Int, view: View) {
+        disposeViewTree(view)
+    }
+
+    private fun disposeViewTree(view: View) {
         when (view) {
             is PagerPageHolder -> view.dispose()
             is PagerTransitionHolder -> view.dispose()
+            is ViewGroup -> {
+                for (index in 0 until view.childCount) {
+                    disposeViewTree(view.getChildAt(index))
+                }
+            }
         }
     }
 
