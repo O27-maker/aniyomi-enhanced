@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
+import android.content.Context
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.DiffUtil
@@ -29,7 +30,7 @@ class WebtoonAdapter(val viewer: WebtoonViewer) : RecyclerView.Adapter<RecyclerV
      * Context that has been wrapped to use the correct theme values based on the
      * current app theme and reader background color
      */
-    private var readerThemedContext = viewer.activity.createReaderThemeContext()
+    private var readerThemedContext: Context? = viewer.activity.createReaderThemeContext()
 
     /**
      * Updates this adapter with the given [chapters]. It handles setting a few pages of the
@@ -93,6 +94,16 @@ class WebtoonAdapter(val viewer: WebtoonViewer) : RecyclerView.Adapter<RecyclerV
     }
 
     /**
+     * Releases adapter-owned page data and the Activity-themed context during viewer teardown.
+     * RecyclerView must be detached before this is called so its holders are recycled first.
+     */
+    fun clear() {
+        items = emptyList()
+        currentChapter = null
+        readerThemedContext = null
+    }
+
+    /**
      * Returns the amount of items of the adapter.
      */
     override fun getItemCount(): Int {
@@ -116,11 +127,11 @@ class WebtoonAdapter(val viewer: WebtoonViewer) : RecyclerView.Adapter<RecyclerV
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             PAGE_VIEW -> {
-                val view = ReaderPageImageView(readerThemedContext, isWebtoon = true)
+                val view = ReaderPageImageView(requireNotNull(readerThemedContext), isWebtoon = true)
                 WebtoonPageHolder(view, viewer)
             }
             TRANSITION_VIEW -> {
-                val view = LinearLayout(readerThemedContext)
+                val view = LinearLayout(requireNotNull(readerThemedContext))
                 WebtoonTransitionHolder(view, viewer)
             }
             else -> error("Unknown view type")
