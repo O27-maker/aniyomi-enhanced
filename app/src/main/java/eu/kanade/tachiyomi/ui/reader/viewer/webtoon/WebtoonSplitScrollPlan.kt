@@ -53,6 +53,7 @@ internal data class WebtoonSplitScrollPlan<T>(
      */
     fun matchesSource(items: List<T>): Boolean {
         if (items.size != sourceSize) return false
+        if (segments.isEmpty()) return false
         var nextSourceIndex = 0
         for ((segmentIndex, segment) in segments.withIndex()) {
             val isLastSegment = segmentIndex == segments.lastIndex
