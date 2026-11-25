@@ -97,4 +97,48 @@ class WebtoonSplitScrollPlanTest {
         assertEquals(false, malformed.matchesSource(listOf(first, second)))
     }
 
+    @Test
+    fun `source snapshot validation rejects placements assigned to wrong columns`() {
+        val first = "first"
+        val second = "second"
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, first, Column.RIGHT),
+                    ),
+                    right = listOf(
+                        WebtoonSplitScrollPlan.Placement(1, second, Column.LEFT),
+                    ),
+                    boundaryAfter = null,
+                ),
+            ),
+            sourceSize = 2,
+        )
+
+        assertEquals(false, malformed.matchesSource(listOf(first, second)))
+    }
+
+    @Test
+    fun `source snapshot validation rejects non full width chapter boundaries`() {
+        val transition = "transition"
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = emptyList(),
+                    right = emptyList(),
+                    boundaryAfter = WebtoonSplitScrollPlan.Placement(0, transition, Column.LEFT),
+                ),
+                WebtoonSplitScrollPlan.Segment(
+                    left = emptyList(),
+                    right = emptyList(),
+                    boundaryAfter = null,
+                ),
+            ),
+            sourceSize = 1,
+        )
+
+        assertEquals(false, malformed.matchesSource(listOf(transition)))
+    }
+
 }
