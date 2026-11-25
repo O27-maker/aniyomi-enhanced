@@ -90,8 +90,11 @@ class WebtoonPageHolder(
      * Binds the given [page] with this view holder, subscribing to its state.
      */
     fun bind(page: ReaderPage) {
-        this.page = page
+        // Stop the previous page before publishing the new identity. Otherwise an old
+        // collector can briefly observe this.page as the newly bound page.
         loadJob?.cancel()
+        loadJob = null
+        this.page = page
         loadJob = scope.launch { loadPageAndProcessStatus() }
         refreshLayoutParams()
     }
@@ -112,6 +115,8 @@ class WebtoonPageHolder(
      * Called when the view is recycled and added to the view pool.
      */
     override fun recycle() {
+        // Clear the page identity before cancellation so stale retry actions cannot target it.
+        page = null
         loadJob?.cancel()
         loadJob = null
 
