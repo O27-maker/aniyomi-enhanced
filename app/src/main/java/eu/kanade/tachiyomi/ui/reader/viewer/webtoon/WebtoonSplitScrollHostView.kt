@@ -42,7 +42,7 @@ internal class WebtoonSplitScrollHostView(
         rightRecycler = createRecycler(scrollDistance)
 
         leftFrame = WebtoonFrame(context).apply {
-            layoutParams = LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
             addView(
                 leftRecycler,
                 FrameLayout.LayoutParams(
@@ -104,12 +104,12 @@ internal class WebtoonSplitScrollHostView(
     /** Apply one shared width split while preserving independent column scrolling. */
     fun setLeftWidthPercent(percent: Int) {
         leftWidthPercent = percent.coerceIn(MIN_WIDTH_PERCENT, MAX_WIDTH_PERCENT)
-        leftFrame.layoutParams = LayoutParams(
+        leftFrame.layoutParams = LinearLayout.LayoutParams(
             0,
             ViewGroup.LayoutParams.MATCH_PARENT,
             leftWidthPercent.toFloat(),
         )
-        rightFrame.layoutParams = LayoutParams(
+        rightFrame.layoutParams = LinearLayout.LayoutParams(
             0,
             ViewGroup.LayoutParams.MATCH_PARENT,
             (100 - leftWidthPercent).toFloat(),
