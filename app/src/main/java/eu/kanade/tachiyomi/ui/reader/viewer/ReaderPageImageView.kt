@@ -72,6 +72,16 @@ open class ReaderPageImageView @JvmOverloads constructor(
     /** Active Coil request, released when this page holder is recycled. */
     private var imageRequest: Disposable? = null
 
+    /** Invalidates callbacks that outlive the request or page-view lifecycle that created them. */
+    private var imageRequestGeneration = 0L
+
+    private fun beginImageRequest(): Long {
+        imageRequest?.dispose()
+        imageRequest = null
+        imageRequestGeneration += 1
+        return imageRequestGeneration
+    }
+
     /**
      * Keep animated pages from running while their pager holder is detached.
      * The drawable itself remains attached to the image view so zoom and decoded
@@ -206,8 +216,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     fun recycle() {
-        imageRequest?.dispose()
-        imageRequest = null
+        beginImageRequest()
         pageView?.let {
             when (it) {
                 is SubsamplingScaleImageView -> it.recycle()
@@ -348,18 +357,23 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     return@apply
                 }
 
+                val requestGeneration = beginImageRequest()
                 ImageRequest.Builder(context)
                     .data(data)
                     .memoryCachePolicy(CachePolicy.DISABLED)
                     .diskCachePolicy(CachePolicy.DISABLED)
                     .target(
                         onSuccess = { result ->
-                            val image = result as BitmapImage
-                            setImage(ImageSource.bitmap(image.bitmap))
-                            isVisible = true
+                            if (imageRequestGeneration == requestGeneration) {
+                                val image = result as BitmapImage
+                                setImage(ImageSource.bitmap(image.bitmap))
+                                isVisible = true
+                            }
                         },
                         onError = {
-                            onImageLoadError()
+                            if (imageRequestGeneration == requestGeneration) {
+                                onImageLoadError()
+                            }
                         },
                     )
                     .size(ViewSizeResolver(this@ReaderPageImageView))
@@ -369,7 +383,6 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     .crossfade(false)
                     .build()
                     .let { request ->
-                        imageRequest?.dispose()
                         imageRequest = context.imageLoader.enqueue(request)
                     }
             }
@@ -426,25 +439,29 @@ open class ReaderPageImageView @JvmOverloads constructor(
             setZoomTransitionDuration(config.zoomDuration.getSystemScaledDuration())
         }
 
+        val requestGeneration = beginImageRequest()
         val request = ImageRequest.Builder(context)
             .data(data)
             .memoryCachePolicy(CachePolicy.DISABLED)
             .diskCachePolicy(CachePolicy.DISABLED)
             .target(
                 onSuccess = { result ->
-                    val drawable = result.asDrawable(context.resources)
-                    setImageDrawable(drawable)
-                    if (isAttachedToWindow) (drawable as? Animatable)?.start()
-                    isVisible = true
-                    this@ReaderPageImageView.onImageLoaded()
+                    if (imageRequestGeneration == requestGeneration) {
+                        val drawable = result.asDrawable(context.resources)
+                        setImageDrawable(drawable)
+                        if (isAttachedToWindow) (drawable as? Animatable)?.start()
+                        isVisible = true
+                        this@ReaderPageImageView.onImageLoaded()
+                    }
                 },
                 onError = {
-                    this@ReaderPageImageView.onImageLoadError()
+                    if (imageRequestGeneration == requestGeneration) {
+                        this@ReaderPageImageView.onImageLoadError()
+                    }
                 },
             )
             .crossfade(false)
             .build()
-        imageRequest?.dispose()
         imageRequest = context.imageLoader.enqueue(request)
     }
 
