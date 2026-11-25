@@ -18,6 +18,7 @@ internal data class WebtoonSplitScrollHostViewportSnapshot<T : Any>(
         val widthPercent: Int,
         val zoom: Float,
         val scrollOffsetPx: Int,
+        val generation: Long,
     )
 
     companion object {
@@ -51,16 +52,16 @@ internal data class WebtoonSplitScrollHostViewportSnapshot<T : Any>(
 
             return WebtoonSplitScrollHostState(
                 left = snapshot.left.toColumnState(
-                    previousGeneration = 0L,
+                    previousGeneration = snapshot.left.generation,
                 ),
                 right = snapshot.right.toColumnState(
-                    previousGeneration = 0L,
+                    previousGeneration = snapshot.right.generation,
                 ),
             )
         }
 
         private fun WebtoonSplitScrollHostState.ColumnState.toViewport() =
-            Viewport(widthPercent, zoom, scrollOffsetPx)
+            Viewport(widthPercent, zoom, scrollOffsetPx, generation)
 
         private fun Viewport.toColumnState(previousGeneration: Long) =
             WebtoonSplitScrollHostState.ColumnState(
