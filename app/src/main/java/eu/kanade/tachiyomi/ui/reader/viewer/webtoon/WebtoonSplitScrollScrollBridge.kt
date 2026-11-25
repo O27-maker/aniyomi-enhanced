@@ -17,12 +17,14 @@ internal class WebtoonSplitScrollScrollBridge(
     private val leftAdapter: WebtoonSplitScrollColumnAdapter,
     private val rightAdapter: WebtoonSplitScrollColumnAdapter,
     private val onSelection: (WebtoonSplitScrollSelectionCoordinator.Result) -> Unit,
+    private val sourceItems: () -> List<Any>,
     initialSegmentIndex: Int = 0,
 ) {
 
     private val coordinator = WebtoonSplitScrollSelectionCoordinator(plan)
 
     private var state = coordinator.initialState(initialSegmentIndex)
+    private var invalidated = false
     private lateinit var leftBinding: WebtoonSplitScrollHostState.Binding
     private lateinit var rightBinding: WebtoonSplitScrollHostState.Binding
 
@@ -47,6 +49,11 @@ internal class WebtoonSplitScrollScrollBridge(
         state = state.copy(host = right.first)
         rightBinding = right.second
 
+        if (!plan.matchesSource(sourceItems())) {
+            invalidate()
+            return
+        }
+
         leftRecycler.addOnScrollListener(leftListener)
         rightRecycler.addOnScrollListener(rightListener)
 
@@ -61,6 +68,7 @@ internal class WebtoonSplitScrollScrollBridge(
      * The owner must submit the next segment's placements to both column adapters afterwards.
      */
     fun advancePastBoundary(): Boolean {
+        if (!isSourceCurrent()) return false
         val next = coordinator.advancePastBoundary(state) ?: return false
         state = next
         coordinator.readyBoundary(state)?.let { result ->
@@ -72,6 +80,24 @@ internal class WebtoonSplitScrollScrollBridge(
 
     /** Invalidate delayed callbacks before the host or either column is discarded. */
     fun dispose() {
+        invalidate()
+    }
+
+    /**
+     * A source mutation makes every original index in this projection unsafe.
+     * Stop both listeners and let the owner build a fresh plan and host from the
+     * new authoritative adapter snapshot; never attempt an in-place index remap.
+     */
+    private fun isSourceCurrent(): Boolean {
+        if (invalidated) return false
+        if (plan.matchesSource(sourceItems())) return true
+        invalidate()
+        return false
+    }
+
+    private fun invalidate() {
+        if (invalidated) return
+        invalidated = true
         leftRecycler.removeOnScrollListener(leftListener)
         rightRecycler.removeOnScrollListener(rightListener)
         state = state.copy(
@@ -88,6 +114,7 @@ internal class WebtoonSplitScrollScrollBridge(
     ): RecyclerView.OnScrollListener =
         object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (!isSourceCurrent()) return
                 val layoutManager = recycler.layoutManager as? WebtoonLayoutManager ?: return
                 val localPosition = layoutManager.findLastEndVisibleItemPosition()
                 if (localPosition == RecyclerView.NO_POSITION) return
