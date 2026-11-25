@@ -209,6 +209,10 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         config.zoomPropertyChangedListener = null
         config.navigationModeChangedListener = null
 
+        // Detach first so RecyclerView recycles its holders while the adapter is still valid.
+        recycler.adapter = null
+        adapter.clear()
+
         super.destroy()
         scope.cancel()
     }
