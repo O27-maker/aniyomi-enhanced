@@ -190,6 +190,8 @@ class PagerPageHolder(
                 Triple(source, isAnimated, background)
             }
             withUIContext {
+                // A dispatched UI continuation can race with permanent adapter disposal.
+                if (disposed) return@withUIContext
                 setImage(
                     source,
                     isAnimated,
@@ -211,6 +213,7 @@ class PagerPageHolder(
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
+                if (disposed) return@withUIContext
                 setError()
             }
         }
