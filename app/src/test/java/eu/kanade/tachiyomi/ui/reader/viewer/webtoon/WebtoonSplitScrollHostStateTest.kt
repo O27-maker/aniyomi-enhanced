@@ -78,4 +78,20 @@ class WebtoonSplitScrollHostStateTest {
 
         assertEquals(0, result.stateFor(Column.RIGHT).scrollOffsetPx)
     }
+    @Test
+    fun `detaching one column invalidates only its binding`() {
+        val (withLeft, leftBinding) = WebtoonSplitScrollHostState().attach(Column.LEFT)
+        val (withBoth, rightBinding) = withLeft.attach(Column.RIGHT)
+
+        val detachedLeft = withBoth.detach(Column.LEFT)
+        val afterCallbacks = detachedLeft
+            .recordScroll(leftBinding, 500)
+            .recordScroll(rightBinding, 250)
+
+        assertEquals(0, afterCallbacks.left.scrollOffsetPx)
+        assertEquals(250, afterCallbacks.right.scrollOffsetPx)
+        assertFalse(afterCallbacks.left.attached)
+        assertTrue(afterCallbacks.right.attached)
+    }
+
 }
