@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
-import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerConfig
@@ -33,11 +32,6 @@ class PagerConfig(
         private set
 
     var dualPageSplitChangedListener: ((Boolean) -> Unit)? = null
-
-    /** Selected presentation mode; does not alter legacy image splitting. */
-    var dualPagePresentationMode = DualPagePresentationMode.fromPreference(readerPreferences.dualPageMode().get())
-        private set
-    var dualPagePresentationModeChangedListener: ((DualPagePresentationMode) -> Unit)? = null
 
     var imageScaleType = 1
         private set
@@ -88,12 +82,6 @@ class PagerConfig(
             .drop(1)
             .onEach { navigationModeChangedListener?.invoke() }
             .launchIn(scope)
-
-        readerPreferences.dualPageMode()
-            .register(
-                { dualPagePresentationMode = DualPagePresentationMode.fromPreference(it) },
-                { dualPagePresentationModeChangedListener?.invoke(dualPagePresentationMode) },
-            )
 
         readerPreferences.dualPageSplitPaged()
             .register(
