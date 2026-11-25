@@ -131,8 +131,12 @@ internal class WebtoonSplitScrollHostView(
      * Display a full-width boundary view after the current two-column segment.
      * The caller owns the view and must only show it after both columns are done.
      */
-    fun showBoundary(view: View) {
+    fun showBoundary(view: View, onContinue: () -> Unit) {
         boundarySlot.removeAllViews()
+        // The existing transition card has no action of its own. Make the full-width
+        // boundary an explicit tap target so the reader can enter the next segment.
+        view.setOnClickListener { onContinue() }
+        view.isClickable = true
         boundarySlot.addView(
             view,
             FrameLayout.LayoutParams(
@@ -145,6 +149,7 @@ internal class WebtoonSplitScrollHostView(
     }
 
     fun hideBoundary() {
+        boundarySlot.getChildAt(0)?.setOnClickListener(null)
         boundarySlot.removeAllViews()
         boundarySlot.visibility = GONE
         columnsRow.visibility = VISIBLE
