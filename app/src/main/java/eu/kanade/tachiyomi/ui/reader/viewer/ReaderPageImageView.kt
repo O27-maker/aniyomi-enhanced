@@ -74,8 +74,17 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     /** Invalidates callbacks that outlive the request or page-view lifecycle that created them. */
     private var imageRequestGeneration = 0L
+    private var landscapeZoomHandler: android.os.Handler? = null
+    private var landscapeZoomRunnable: Runnable? = null
+
+    private fun cancelLandscapeZoom() {
+        landscapeZoomRunnable?.let { landscapeZoomHandler?.removeCallbacks(it) }
+        landscapeZoomRunnable = null
+        landscapeZoomHandler = null
+    }
 
     private fun beginImageRequest(): Long {
+        cancelLandscapeZoom()
         imageRequest?.dispose()
         imageRequest = null
         imageRequestGeneration += 1
@@ -167,43 +176,43 @@ open class ReaderPageImageView @JvmOverloads constructor(
             sWidth > sHeight &&
             scale == minScale
         ) {
+            val targetHandler = handler ?: return
             val requestGeneration = imageRequestGeneration
-            handler?.postDelayed(500) {
+            cancelLandscapeZoom()
+            val runnable = Runnable {
+                landscapeZoomRunnable = null
+                landscapeZoomHandler = null
                 if (
-                    imageRequestGeneration != requestGeneration ||
-                    pageView !== this ||
-                    !isAttachedToWindow ||
-                    !isReady
+                    imageRequestGeneration == requestGeneration &&
+                    pageView === this &&
+                    isAttachedToWindow &&
+                    isReady
                 ) {
-                    return@postDelayed
-                }
-                val point = when (config!!.zoomStartPosition) {
-                    ZoomStartPosition.LEFT -> if (forward) {
-                        PointF(0F, 0F)
-                    } else {
-                        PointF(
-                            sWidth.toFloat(),
-                            0F,
-                        )
+                    val point = when (config!!.zoomStartPosition) {
+                        ZoomStartPosition.LEFT -> if (forward) {
+                            PointF(0F, 0F)
+                        } else {
+                            PointF(sWidth.toFloat(), 0F)
+                        }
+                        ZoomStartPosition.RIGHT -> if (forward) {
+                            PointF(sWidth.toFloat(), 0F)
+                        } else {
+                            PointF(0F, 0F)
+                        }
+                        ZoomStartPosition.CENTER -> center
                     }
-                    ZoomStartPosition.RIGHT -> if (forward) {
-                        PointF(sWidth.toFloat(), 0F)
-                    } else {
-                        PointF(
-                            0F,
-                            0F,
-                        )
-                    }
-                    ZoomStartPosition.CENTER -> center
-                }
 
-                val targetScale = height.toFloat() / sHeight.toFloat()
-                animateScaleAndCenter(targetScale, point)
-                    ?.withDuration(500)
-                    ?.withEasing(EASE_IN_OUT_QUAD)
-                    ?.withInterruptible(true)
-                    ?.start()
+                    val targetScale = height.toFloat() / sHeight.toFloat()
+                    animateScaleAndCenter(targetScale, point)
+                        ?.withDuration(500)
+                        ?.withEasing(EASE_IN_OUT_QUAD)
+                        ?.withInterruptible(true)
+                        ?.start()
+                }
             }
+            landscapeZoomHandler = targetHandler
+            landscapeZoomRunnable = runnable
+            targetHandler.postDelayed(runnable, 500)
         }
     }
 
