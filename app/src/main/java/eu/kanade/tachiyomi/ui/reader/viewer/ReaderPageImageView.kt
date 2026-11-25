@@ -169,7 +169,14 @@ open class ReaderPageImageView @JvmOverloads constructor(
         ) {
             val requestGeneration = imageRequestGeneration
             handler?.postDelayed(500) {
-                if (imageRequestGeneration != requestGeneration) return@postDelayed
+                if (
+                    imageRequestGeneration != requestGeneration ||
+                    pageView !== this ||
+                    !isAttachedToWindow ||
+                    !isReady
+                ) {
+                    return@postDelayed
+                }
                 val point = when (config!!.zoomStartPosition) {
                     ZoomStartPosition.LEFT -> if (forward) {
                         PointF(0F, 0F)
