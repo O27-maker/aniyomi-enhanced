@@ -112,4 +112,21 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         assertEquals(1, next?.barrier?.segmentIndex)
         assertNull(next?.selectedSourceIndex)
     }
+    @Test
+    fun `leading and consecutive empty segments expose their boundaries immediately`() {
+        val plan = WebtoonSplitScrollPlan.create<Any>(
+            listOf("first-transition", "second-transition", "page"),
+        ) { it.toString().endsWith("transition") }
+        val coordinator = WebtoonSplitScrollSelectionCoordinator(plan)
+
+        val first = coordinator.readyBoundary(coordinator.initialState())
+        assertTrue(first?.boundaryReady == true)
+        assertEquals(0, first?.selection?.sourceIndex)
+
+        val secondState = coordinator.advancePastBoundary(first!!.state)
+        val second = coordinator.readyBoundary(secondState!!)
+        assertTrue(second?.boundaryReady == true)
+        assertEquals(1, second?.selection?.sourceIndex)
+    }
+
 }
