@@ -134,6 +134,14 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     }
 
     /**
+     * Permanently dispose page holders when the pager adapter removes their views.
+     * Ordinary detach/reattach remains reusable for nested Spread containers.
+     */
+    override fun destroyView(container: ViewGroup, position: Int, view: View) {
+        (view as? PagerPageHolder)?.dispose()
+    }
+
+    /**
      * Creates a new view for the item at the given [position].
      */
     override fun createView(container: ViewGroup, position: Int): View {
