@@ -189,4 +189,14 @@ class WebtoonSplitScrollPlanTest {
         assertEquals(false, malformed.matchesSource(listOf(first, second)))
     }
 
+    @Test
+    fun `source snapshot validation rejects a plan with no segments`() {
+        val malformed = WebtoonSplitScrollPlan<String>(
+            segments = emptyList(),
+            sourceSize = 0,
+        )
+
+        assertEquals(false, malformed.matchesSource(emptyList()))
+    }
+
 }
