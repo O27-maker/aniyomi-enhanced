@@ -77,7 +77,7 @@ internal class WebtoonSplitScrollScrollBridge(
     }
 
     private fun createListener(
-        recycler: WebtoonSplitScrollRecycler,
+        recycler: RecyclerView,
         adapter: WebtoonSplitScrollColumnAdapter,
         binding: WebtoonSplitScrollHostState.Column,
     ): RecyclerView.OnScrollListener =
@@ -107,9 +107,4 @@ internal class WebtoonSplitScrollScrollBridge(
             }
         }
 
-    /**
-     * Both split columns use WebtoonRecyclerView, but keeping the listener parameter
-     * as RecyclerView avoids coupling this bridge to unrelated gesture implementation.
-     */
-    private typealias WebtoonSplitScrollRecycler = RecyclerView
 }
