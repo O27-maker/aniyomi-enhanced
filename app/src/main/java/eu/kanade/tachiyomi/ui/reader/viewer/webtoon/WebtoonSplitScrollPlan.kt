@@ -1,46 +1,103 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
-import eu.kanade.tachiyomi.ui.reader.viewer.pager.SplitScrollPageDistributor
-
 /**
- * Immutable projection for the Webtoon Split Scroll host.
+ * Immutable, source-index-preserving projection for a future Split Scroll host.
  *
- * The Webtoon adapter's effective item list remains authoritative. This plan only
- * describes which source items belong in each independently scrolling column and
- * which items must be rendered across the full host width.
+ * Each segment owns two independently scrollable page sequences. A chapter
+ * transition is attached to the segment before it as a full-width barrier.
+ * Empty segments are retained, so leading and consecutive barriers are not lost.
+ *
+ * This is a projection only: WebtoonAdapter.items remains the source of truth.
  */
 internal data class WebtoonSplitScrollPlan<T>(
-    val left: List<SplitScrollPageDistributor.Placement<T>>,
-    val right: List<SplitScrollPageDistributor.Placement<T>>,
-    val fullWidth: List<SplitScrollPageDistributor.Placement<T>>,
+    val segments: List<Segment<T>>,
     val sourceSize: Int,
 ) {
-    /** Returns a placement using the original WebtoonAdapter.items index. */
-    fun placementForSourceIndex(index: Int): SplitScrollPageDistributor.Placement<T>? {
-        if (index !in 0 until sourceSize) return null
-        return (left + right + fullWidth).firstOrNull { it.originalIndex == index }
+    internal enum class Column {
+        LEFT,
+        RIGHT,
+        FULL_WIDTH,
     }
 
-    /** Ordered projection for progress, selection, and adapter-diff coordination. */
-    fun inSourceOrder(): List<SplitScrollPageDistributor.Placement<T>> =
-        (left + right + fullWidth).sortedBy { it.originalIndex }
+    internal data class Placement<T>(
+        val originalIndex: Int,
+        val item: T,
+        val column: Column,
+    )
+
+    internal data class Segment<T>(
+        val left: List<Placement<T>>,
+        val right: List<Placement<T>>,
+        val boundaryAfter: Placement<T>?,
+    )
+
+    /** Resolve an original WebtoonAdapter.items index without depending on display order. */
+    fun placementForSourceIndex(index: Int): Placement<T>? {
+        if (index !in 0 until sourceSize) return null
+        return segments.asSequence()
+            .flatMap { segment ->
+                sequence {
+                    yieldAll(segment.left)
+                    yieldAll(segment.right)
+                    segment.boundaryAfter?.let { yield(it) }
+                }
+            }
+            .firstOrNull { it.originalIndex == index }
+    }
+
+    /** A stable source-order view for progress and selection mapping. */
+    fun inSourceOrder(): List<Placement<T>> =
+        segments.flatMap { segment ->
+            buildList {
+                addAll(segment.left)
+                addAll(segment.right)
+                segment.boundaryAfter?.let(::add)
+            }
+        }.sortedBy { it.originalIndex }
 
     companion object {
         /**
-         * Builds a plan without changing [items]. Boundary items (chapter transitions)
-         * are full-width barriers; ordinary items alternate columns within each segment.
+         * Pages alternate left/right inside each segment. A boundary closes the
+         * current segment, is retained as a full-width item, and resets the next
+         * segment to the left column. The trailing segment is always retained.
          */
         fun <T> create(
             items: List<T>,
             isBoundary: (T) -> Boolean,
         ): WebtoonSplitScrollPlan<T> {
-            val distribution = SplitScrollPageDistributor.distribute(items, isBoundary)
-            return WebtoonSplitScrollPlan(
-                left = distribution.left,
-                right = distribution.right,
-                fullWidth = distribution.fullWidth,
-                sourceSize = items.size,
-            )
+            val segments = mutableListOf<Segment<T>>()
+            var left = mutableListOf<Placement<T>>()
+            var right = mutableListOf<Placement<T>>()
+            var nextColumn = Column.LEFT
+
+            fun closeSegment(boundary: Placement<T>?) {
+                segments += Segment(
+                    left = left.toList(),
+                    right = right.toList(),
+                    boundaryAfter = boundary,
+                )
+                left = mutableListOf()
+                right = mutableListOf()
+                nextColumn = Column.LEFT
+            }
+
+            items.forEachIndexed { index, item ->
+                if (isBoundary(item)) {
+                    closeSegment(Placement(index, item, Column.FULL_WIDTH))
+                } else {
+                    val placement = Placement(index, item, nextColumn)
+                    if (nextColumn == Column.LEFT) {
+                        left += placement
+                        nextColumn = Column.RIGHT
+                    } else {
+                        right += placement
+                        nextColumn = Column.LEFT
+                    }
+                }
+            }
+
+            closeSegment(null)
+            return WebtoonSplitScrollPlan(segments = segments, sourceSize = items.size)
         }
     }
 }
