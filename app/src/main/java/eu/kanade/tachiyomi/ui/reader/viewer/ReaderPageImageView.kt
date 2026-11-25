@@ -276,9 +276,13 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 is PhotoView -> {
                     setOnScaleChangeListener(null)
                     setOnDoubleTapListener(null)
+                    (drawable as? Animatable)?.stop()
                     setImageDrawable(null)
                 }
-                is AppCompatImageView -> setImageDrawable(null)
+                is AppCompatImageView -> {
+                    (drawable as? Animatable)?.stop()
+                    setImageDrawable(null)
+                }
             }
             removeView(this)
         }
