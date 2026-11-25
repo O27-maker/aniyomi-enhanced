@@ -43,6 +43,35 @@ class WebtoonSplitScrollHostViewportSnapshotTest {
     }
 
     @Test
+    fun `restore sanitizes non finite zoom values`() {
+        val items = listOf(Item("one"), Item("two"))
+        val plan = WebtoonSplitScrollPlan.create(items) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostViewportSnapshot.capture(
+            plan,
+            0,
+            WebtoonSplitScrollHostState(),
+        )!!.copy(
+            left = WebtoonSplitScrollHostViewportSnapshot.Viewport(
+                widthPercent = 50,
+                zoom = Float.NaN,
+                scrollOffsetPx = 0,
+                generation = 2,
+            ),
+            right = WebtoonSplitScrollHostViewportSnapshot.Viewport(
+                widthPercent = 50,
+                zoom = Float.POSITIVE_INFINITY,
+                scrollOffsetPx = 0,
+                generation = 4,
+            ),
+        )
+
+        val restored = WebtoonSplitScrollHostViewportSnapshot.restore(plan, snapshot)
+
+        assertEquals(WebtoonSplitScrollHostState.DEFAULT_ZOOM, restored?.left?.zoom)
+        assertEquals(WebtoonSplitScrollHostState.DEFAULT_ZOOM, restored?.right?.zoom)
+    }
+
+    @Test
     fun `restored generation rejects callbacks from previous host`() {
         val items = listOf(Item("one"), Item("two"))
         val plan = WebtoonSplitScrollPlan.create(items) { it.boundary }
