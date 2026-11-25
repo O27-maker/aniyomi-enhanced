@@ -17,11 +17,9 @@ class WebtoonSplitScrollBarrierCoordinatorTest {
     }
 
     @Test
-    fun `one column reaching end does not release full width boundary`() {
+    fun `one column reaching end does not release boundary while other has pages`() {
         val coordinator = coordinator()
-        val initial = coordinator.initialState()
-
-        val waiting = coordinator.markColumnAtEnd(initial, 0, Column.LEFT)
+        val waiting = coordinator.markColumnAtEnd(coordinator.initialState(), 0, Column.LEFT)
 
         assertTrue(waiting.leftAtEnd)
         assertFalse(waiting.rightAtEnd)
@@ -30,39 +28,61 @@ class WebtoonSplitScrollBarrierCoordinatorTest {
     }
 
     @Test
-    fun `boundary releases only after both independent columns reach end`() {
+    fun `boundary releases after both columns reach end`() {
         val coordinator = coordinator()
         val initial = coordinator.initialState()
+        val both = coordinator.markColumnAtEnd(
+            coordinator.markColumnAtEnd(initial, 0, Column.LEFT),
+            0,
+            Column.RIGHT,
+        )
 
-        val leftWaiting = coordinator.markColumnAtEnd(initial, 0, Column.LEFT)
-        val bothWaiting = coordinator.markColumnAtEnd(leftWaiting, 0, Column.RIGHT)
+        assertTrue(coordinator.isBoundaryReady(both))
+        assertEquals(1, coordinator.advance(both)?.segmentIndex)
+        assertEquals(false, coordinator.advance(both)?.leftAtEnd)
+        assertEquals(false, coordinator.advance(both)?.rightAtEnd)
+    }
 
-        assertTrue(coordinator.isBoundaryReady(bothWaiting))
-        assertEquals(1, coordinator.advance(bothWaiting)?.segmentIndex)
-        assertEquals(false, coordinator.advance(bothWaiting)?.leftAtEnd)
-        assertEquals(false, coordinator.advance(bothWaiting)?.rightAtEnd)
+    @Test
+    fun `empty column is already complete and cannot deadlock a boundary`() {
+        val plan = WebtoonSplitScrollPlan.create(listOf("only-left", "transition")) {
+            it == "transition"
+        }
+        val coordinator = WebtoonSplitScrollBarrierCoordinator(plan)
+        val initial = coordinator.initialState()
+
+        assertFalse(initial.leftAtEnd)
+        assertTrue(initial.rightAtEnd)
+        val ready = coordinator.markColumnAtEnd(initial, 0, Column.LEFT)
+        assertTrue(coordinator.isBoundaryReady(ready))
+    }
+
+    @Test
+    fun `empty leading segment releases its transition immediately`() {
+        val plan = WebtoonSplitScrollPlan.create(listOf("transition", "page")) {
+            it == "transition"
+        }
+        val coordinator = WebtoonSplitScrollBarrierCoordinator(plan)
+        val initial = coordinator.initialState()
+
+        assertTrue(initial.bothColumnsAtEnd)
+        assertTrue(coordinator.isBoundaryReady(initial))
+        assertEquals(1, coordinator.advance(initial)?.segmentIndex)
     }
 
     @Test
     fun `stale callbacks from another segment are ignored`() {
         val coordinator = coordinator()
         val initial = coordinator.initialState()
-
-        val unchanged = coordinator.markColumnAtEnd(initial, 1, Column.LEFT)
-
-        assertEquals(initial, unchanged)
-        assertFalse(coordinator.isBoundaryReady(unchanged))
+        assertEquals(initial, coordinator.markColumnAtEnd(initial, 1, Column.LEFT))
     }
 
     @Test
-    fun `full width and unknown columns cannot satisfy a column arrival`() {
+    fun `full width callback cannot satisfy a column arrival`() {
         val coordinator = coordinator()
         val initial = coordinator.initialState()
-
-        val unchanged = coordinator.markColumnAtEnd(initial, 0, Column.FULL_WIDTH)
-
-        assertEquals(initial, unchanged)
-        assertFalse(coordinator.isBoundaryReady(unchanged))
+        assertEquals(initial, coordinator.markColumnAtEnd(initial, 0, Column.FULL_WIDTH))
+        assertFalse(coordinator.isBoundaryReady(initial))
     }
 
     @Test
