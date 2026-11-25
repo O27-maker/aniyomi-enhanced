@@ -265,6 +265,10 @@ open class ReaderPageImageView @JvmOverloads constructor(
      * the wrapper or its owning viewer.
      */
     fun disposePermanently() {
+        // Stop animation before recycle() releases the image view and its drawable.
+        (pageView as? AppCompatImageView)?.drawable
+            ?.let { it as? Animatable }
+            ?.stop()
         recycle()
         pageView?.apply {
             setOnClickListener(null)
@@ -276,13 +280,9 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 is PhotoView -> {
                     setOnScaleChangeListener(null)
                     setOnDoubleTapListener(null)
-                    (drawable as? Animatable)?.stop()
                     setImageDrawable(null)
                 }
-                is AppCompatImageView -> {
-                    (drawable as? Animatable)?.stop()
-                    setImageDrawable(null)
-                }
+                is AppCompatImageView -> setImageDrawable(null)
             }
             removeView(this)
         }
