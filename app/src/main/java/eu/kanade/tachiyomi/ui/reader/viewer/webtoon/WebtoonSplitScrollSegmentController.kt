@@ -24,6 +24,7 @@ internal class WebtoonSplitScrollSegmentController(
     private var leftAdapter: WebtoonSplitScrollColumnAdapter? = null
     private var rightAdapter: WebtoonSplitScrollColumnAdapter? = null
     private var disposed = false
+    private var boundaryNotified = false
 
     val segmentIndex: Int
         get() = state.barrier.segmentIndex
@@ -65,7 +66,8 @@ internal class WebtoonSplitScrollSegmentController(
 
         state = result.state
         onSelection(result)
-        if (result.boundaryReady) {
+        if (result.boundaryReady && !boundaryNotified) {
+            boundaryNotified = true
             onBoundaryReady(plan.segments.getOrNull(segmentIndex)?.boundaryAfter)
         }
     }
@@ -94,6 +96,7 @@ internal class WebtoonSplitScrollSegmentController(
     }
 
     private fun bindSegment() {
+        boundaryNotified = false
         val segment = plan.segments.getOrNull(segmentIndex) ?: return
 
         val leftAttach = state.host.attach(WebtoonSplitScrollHostState.Column.LEFT)
@@ -121,7 +124,10 @@ internal class WebtoonSplitScrollSegmentController(
         coordinator.readyBoundary(state)?.let { result ->
             state = result.state
             onSelection(result)
-            onBoundaryReady(segment.boundaryAfter)
+            if (!boundaryNotified) {
+                boundaryNotified = true
+                onBoundaryReady(segment.boundaryAfter)
+            }
         }
     }
 
