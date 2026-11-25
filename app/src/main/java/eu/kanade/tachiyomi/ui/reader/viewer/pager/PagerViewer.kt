@@ -118,10 +118,12 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                 NavigationRegion.LEFT -> moveLeftAt(event.rawX, event.rawY)
             }
         }
-        pager.longTapListener = f@{
+        pager.longTapListener = f@{ event ->
             if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
-                val item = adapter.items.getOrNull(pager.currentItem)
-                if (item is ReaderPage) {
+                // In Spread mode the long-pressed page may not be the selected page.
+                val item = pager.findPageHolderAt(event.rawX, event.rawY)?.item as? ReaderPage
+                    ?: adapter.items.getOrNull(pager.currentItem) as? ReaderPage
+                if (item != null) {
                     activity.onPageLongTap(item)
                     return@f true
                 }
