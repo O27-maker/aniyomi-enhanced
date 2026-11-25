@@ -53,6 +53,13 @@ internal data class WebtoonSplitScrollPlan<T>(
      */
     fun matchesSource(items: List<T>): Boolean {
         if (items.size != sourceSize) return false
+        if (segments.any { segment ->
+                segment.left.any { it.column != Column.LEFT } ||
+                    segment.right.any { it.column != Column.RIGHT } ||
+                    segment.boundaryAfter?.column?.let { it != Column.FULL_WIDTH } == true
+            }
+        ) return false
+
         val placements = inSourceOrder()
         if (placements.size != items.size) return false
         return placements.withIndex().all { (index, placement) ->
