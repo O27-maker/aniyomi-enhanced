@@ -220,7 +220,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
                     val transitionView = ReaderTransitionView(activity).apply {
                         bind(transition, downloadManager, activity.viewModel.manga)
                     }
-                    host.showBoundary(transitionView)
+                    host.showBoundary(transitionView) {
+                        splitScrollController?.advancePastBoundary()
+                    }
                 }
             },
         )
