@@ -45,6 +45,21 @@ internal data class WebtoonSplitScrollPlan<T>(
             .firstOrNull { it.originalIndex == index }
     }
 
+    /**
+     * Verify that this projection still describes the exact authoritative source snapshot.
+     *
+     * Identity is intentional: ReaderPage and ChapterTransition instances are the objects
+     * consumed by the active reader. An equal-looking replacement still requires a rebuild.
+     */
+    fun matchesSource(items: List<T>): Boolean {
+        if (items.size != sourceSize) return false
+        val placements = inSourceOrder()
+        if (placements.size != items.size) return false
+        return placements.all { placement ->
+            items.getOrNull(placement.originalIndex) === placement.item
+        }
+    }
+
     /** A stable source-order view for progress and selection mapping. */
     fun inSourceOrder(): List<Placement<T>> =
         segments.flatMap { segment ->
