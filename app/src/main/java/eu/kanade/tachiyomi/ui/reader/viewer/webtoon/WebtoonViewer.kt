@@ -16,6 +16,8 @@ import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
+import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
@@ -66,6 +68,10 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Adapter of the recycler view.
      */
     private val adapter = WebtoonAdapter(this)
+
+    /** Experimental two-column host; the normal reader remains the fallback. */
+    private var splitScrollHost: WebtoonSplitScrollHostView? = null
+    private var splitScrollController: WebtoonSplitScrollSegmentController? = null
 
     /**
      * Currently active item. It can be a chapter page or a chapter transition.
@@ -162,8 +168,48 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             activity.binding.navigationOverlay.setNavigation(config.navigator, showOnStart)
         }
 
+        // Recreate the active viewer so ReaderActivity obtains the correct root view
+        // when the user changes between the standard and experimental presentation.
+        config.dualPagePresentationModeChangedListener = {
+            ActivityCompat.recreate(activity)
+        }
+
         frame.layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         frame.addView(recycler)
+    }
+
+
+    /**
+     * Install the experimental Split Scroll projection over the authoritative
+     * WebtoonAdapter sequence. The standard RecyclerView and adapter are retained
+     * untouched so switching back is a safe fallback.
+     */
+    private fun installSplitScrollHost(initialSourceIndex: Int?) {
+        splitScrollController?.dispose()
+        val host = WebtoonSplitScrollHostView(activity).apply {
+            layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            setDoubleTapZoomEnabled(config.doubleTapZoom)
+            setZoomOutDisabled(config.zoomOutDisabled)
+        }
+        splitScrollHost = host
+
+        val plan = WebtoonSplitScrollPlan.create(adapter.items) { it is ChapterTransition }
+        splitScrollController = WebtoonSplitScrollSegmentController(
+            viewer = this,
+            host = host,
+            plan = plan,
+            onSelection = ::onSplitScrollSelection,
+            onBoundaryReady = { placement ->
+                val transition = placement?.item as? ChapterTransition
+                if (transition != null) {
+                    val transitionView = ReaderTransitionView(activity).apply {
+                        bind(transition, downloadManager, activity.viewModel.manga)
+                    }
+                    host.showBoundary(transitionView)
+                }
+            },
+        )
+        initialSourceIndex?.let { splitScrollController?.moveToSourceIndex(it) }
     }
 
     private fun checkAllowPreload(page: ReaderPage?): Boolean {
@@ -190,7 +236,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Returns the view this viewer uses.
      */
     override fun getView(): View {
-        return frame
+        return splitScrollHost ?: frame
     }
 
     /**
@@ -208,6 +254,12 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         config.doubleTapZoomChangedListener = null
         config.zoomPropertyChangedListener = null
         config.navigationModeChangedListener = null
+        config.dualPagePresentationModeChangedListener = null
+
+        splitScrollController?.dispose()
+        splitScrollController = null
+        splitScrollHost?.setColumnAdapters(null, null)
+        splitScrollHost = null
 
         // Detach first so RecyclerView recycles its holders while the adapter is still valid.
         recycler.adapter = null
@@ -258,6 +310,19 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     override fun setChapters(chapters: ViewerChapters) {
         val forceTransition = config.alwaysShowChapterTransition || currentPage is ChapterTransition
         adapter.setChapters(chapters, forceTransition)
+
+        if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
+            val requestedPage = chapters.currChapter.pages
+                ?.getOrNull(chapters.currChapter.requestedPage)
+            installSplitScrollHost(requestedPage?.let(adapter.items::indexOf)?.takeIf { it >= 0 })
+            recycler.isVisible = false
+            return
+        } else {
+            splitScrollController?.dispose()
+            splitScrollController = null
+            splitScrollHost = null
+            recycler.isVisible = true
+        }
 
         if (recycler.isGone) {
             logcat { "Recycler first layout" }
