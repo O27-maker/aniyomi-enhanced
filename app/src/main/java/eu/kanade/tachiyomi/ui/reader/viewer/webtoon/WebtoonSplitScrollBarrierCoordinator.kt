@@ -20,6 +20,7 @@ internal class WebtoonSplitScrollBarrierCoordinator<T>(
     }
 
     fun initialState(segmentIndex: Int = 0): State {
+        if (!hasValidProjection()) return State(segmentIndex = 0)
         val safeIndex = segmentIndex.coerceIn(0, (plan.segments.size - 1).coerceAtLeast(0))
         val segment = plan.segments.getOrNull(safeIndex)
         return State(
@@ -34,6 +35,7 @@ internal class WebtoonSplitScrollBarrierCoordinator<T>(
         callbackSegmentIndex: Int,
         column: WebtoonSplitScrollPlan.Column,
     ): State {
+        if (!hasValidProjection()) return state
         if (callbackSegmentIndex != state.segmentIndex) return state
         return when (column) {
             WebtoonSplitScrollPlan.Column.LEFT -> state.copy(leftAtEnd = true)
@@ -43,14 +45,19 @@ internal class WebtoonSplitScrollBarrierCoordinator<T>(
     }
 
     fun isBoundaryReady(state: State): Boolean {
+        if (!hasValidProjection()) return false
         val segment = plan.segments.getOrNull(state.segmentIndex) ?: return false
         return segment.boundaryAfter != null && state.bothColumnsAtEnd
     }
 
     fun advance(state: State): State? {
-        if (!isBoundaryReady(state)) return null
+        if (!hasValidProjection() || !isBoundaryReady(state)) return null
         val nextIndex = state.segmentIndex + 1
         if (nextIndex !in plan.segments.indices) return null
         return initialState(nextIndex)
     }
+
+    /** Reject malformed projections before they can release a chapter barrier. */
+    private fun hasValidProjection(): Boolean =
+        plan.matchesSource(plan.inSourceOrder().map { it.item })
 }
