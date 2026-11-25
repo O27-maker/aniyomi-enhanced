@@ -40,6 +40,20 @@ class SpreadAdapterProjectionTest {
     }
 
     @Test
+    fun projectionRejectsMutatedOrReplacedSourceItems() {
+        val original = listOf(Any(), Any())
+        val projection = SpreadAdapterProjection.build(
+            adapterItems = original,
+            selectedAdapterIndex = 0,
+        )
+
+        assertEquals(true, projection.matchesSource(original))
+        assertEquals(false, projection.matchesSource(listOf(original[0], Any())))
+        assertEquals(false, projection.matchesSource(listOf(original[0])))
+        assertEquals(false, projection.matchesSource(listOf(Any(), original[1])))
+    }
+
+    @Test
     fun missingSelectedAdapterIndexProducesNullAnchor() {
         val projection = SpreadAdapterProjection.build(
             adapterItems = listOf("p0", "p1"),
