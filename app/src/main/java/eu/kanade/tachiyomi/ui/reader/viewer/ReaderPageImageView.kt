@@ -198,11 +198,11 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 }
 
                 val targetScale = height.toFloat() / sHeight.toFloat()
-                animateScaleAndCenter(targetScale, point)!!
-                    .withDuration(500)
-                    .withEasing(EASE_IN_OUT_QUAD)
-                    .withInterruptible(true)
-                    .start()
+                animateScaleAndCenter(targetScale, point)
+                    ?.withDuration(500)
+                    ?.withEasing(EASE_IN_OUT_QUAD)
+                    ?.withInterruptible(true)
+                    ?.start()
             }
         }
     }
@@ -290,11 +290,11 @@ open class ReaderPageImageView @JvmOverloads constructor(
         (pageView as? SubsamplingScaleImageView)?.let { view ->
 
             val target = fn(view.center ?: return, view)
-            view.animateCenter(target)!!
-                .withEasing(EASE_OUT_QUAD)
-                .withDuration(250)
-                .withInterruptible(true)
-                .start()
+            view.animateCenter(target)
+                ?.withEasing(EASE_OUT_QUAD)
+                ?.withDuration(250)
+                ?.withInterruptible(true)
+                ?.start()
         }
     }
 
