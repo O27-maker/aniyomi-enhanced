@@ -5,6 +5,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.core.app.ActivityCompat
 import androidx.core.view.isGone
@@ -48,6 +49,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Frame containing the recycler view.
      */
     private val frame = WebtoonFrame(activity)
+
+    /** Stable root lets the viewer swap its internal presentation after setChapters(). */
+    private val root = FrameLayout(activity)
 
     /**
      * Distance to scroll when the user taps on one side of the recycler view.
@@ -174,8 +178,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             ActivityCompat.recreate(activity)
         }
 
-        frame.layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        frame.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         frame.addView(recycler)
+        root.addView(frame, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
     }
 
 
@@ -191,7 +196,10 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             setDoubleTapZoomEnabled(config.doubleTapZoom)
             setZoomOutDisabled(config.zoomOutDisabled)
         }
+        splitScrollHost?.let(root::removeView)
         splitScrollHost = host
+        frame.isVisible = false
+        root.addView(host, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
         val plan = WebtoonSplitScrollPlan.create(adapter.items) { it is ChapterTransition }
         splitScrollController = WebtoonSplitScrollSegmentController(
@@ -236,7 +244,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Returns the view this viewer uses.
      */
     override fun getView(): View {
-        return splitScrollHost ?: frame
+        return root
     }
 
     /**
@@ -259,6 +267,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         splitScrollController?.dispose()
         splitScrollController = null
         splitScrollHost?.setColumnAdapters(null, null)
+        splitScrollHost?.let(root::removeView)
         splitScrollHost = null
 
         // Detach first so RecyclerView recycles its holders while the adapter is still valid.
@@ -320,7 +329,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         } else {
             splitScrollController?.dispose()
             splitScrollController = null
+            splitScrollHost?.let(root::removeView)
             splitScrollHost = null
+            frame.isVisible = true
             recycler.isVisible = true
         }
 
