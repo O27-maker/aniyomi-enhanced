@@ -14,6 +14,25 @@ class WebtoonSplitScrollSelectionTest {
     ) { it == "transition" }
 
     @Test
+    fun `malformed projection cannot resolve a column selection`() {
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = emptyList(),
+                    right = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, "page", Column.RIGHT),
+                    ),
+                    boundaryAfter = null,
+                ),
+            ),
+            sourceSize = 1,
+        )
+
+        assertNull(WebtoonSplitScrollSelection.fromColumn(malformed, 0, Column.RIGHT, 0))
+        assertNull(WebtoonSplitScrollSelection.fromColumn(malformed, 0, Column.LEFT, 0))
+    }
+
+    @Test
     fun `left and right callbacks resolve their own original adapter item`() {
         val plan = plan()
 
