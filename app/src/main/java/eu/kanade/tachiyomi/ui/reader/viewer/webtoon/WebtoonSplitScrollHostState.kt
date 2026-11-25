@@ -30,7 +30,7 @@ internal data class WebtoonSplitScrollHostState(
         val generation: Long,
     )
 
-    fun column(column: Column): ColumnState =
+    fun stateFor(column: Column): ColumnState =
         when (column) {
             Column.LEFT -> left
             Column.RIGHT -> right
@@ -38,7 +38,7 @@ internal data class WebtoonSplitScrollHostState(
 
     /** Start/restart one column's holder lifecycle and return its callback token. */
     fun attach(column: Column): Pair<WebtoonSplitScrollHostState, Binding> {
-        val current = column(column)
+        val current = stateFor(column)
         val next = current.copy(
             generation = current.generation + 1,
             attached = true,
@@ -67,7 +67,7 @@ internal data class WebtoonSplitScrollHostState(
      * currently attached binding; left and right offsets are never synchronized.
      */
     fun recordScroll(binding: Binding, offsetPx: Int): WebtoonSplitScrollHostState {
-        val current = column(binding.column)
+        val current = stateFor(binding.column)
         if (!current.attached || current.generation != binding.generation) return this
         return withColumn(binding.column, current.copy(scrollOffsetPx = offsetPx.coerceAtLeast(0)))
     }
