@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
+import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerConfig
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation
@@ -25,6 +26,11 @@ class WebtoonConfig(
 ) : ViewerConfig(readerPreferences, scope) {
 
     var themeChangedListener: (() -> Unit)? = null
+
+    /** Selected presentation mode; does not alter legacy image splitting. */
+    var dualPagePresentationMode = DualPagePresentationMode.fromPreference(readerPreferences.dualPageMode().get())
+        private set
+    var dualPagePresentationModeChangedListener: ((DualPagePresentationMode) -> Unit)? = null
 
     var imageCropBorders = false
         private set
@@ -60,6 +66,12 @@ class WebtoonConfig(
             .drop(1)
             .onEach { navigationModeChangedListener?.invoke() }
             .launchIn(scope)
+
+        readerPreferences.dualPageMode()
+            .register(
+                { dualPagePresentationMode = DualPagePresentationMode.fromPreference(it) },
+                { dualPagePresentationModeChangedListener?.invoke(dualPagePresentationMode) },
+            )
 
         readerPreferences.dualPageSplitWebtoon()
             .register({ dualPageSplit = it }, { imagePropertyChangedListener?.invoke() })
