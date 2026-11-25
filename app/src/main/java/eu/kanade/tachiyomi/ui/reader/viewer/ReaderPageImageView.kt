@@ -133,6 +133,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     open fun onPageSelected(forward: Boolean) {
+        val requestGeneration = imageRequestGeneration
         with(pageView as? SubsamplingScaleImageView) {
             if (this == null) return
             if (isReady) {
@@ -141,13 +142,17 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 setOnImageEventListener(
                     object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
                         override fun onReady() {
-                            setupZoom(config)
-                            landscapeZoom(forward)
-                            this@ReaderPageImageView.onImageLoaded()
+                            if (imageRequestGeneration == requestGeneration) {
+                                setupZoom(config)
+                                landscapeZoom(forward)
+                                this@ReaderPageImageView.onImageLoaded()
+                            }
                         }
 
                         override fun onImageLoadError(e: Exception) {
-                            onImageLoadError()
+                            if (imageRequestGeneration == requestGeneration) {
+                                this@ReaderPageImageView.onImageLoadError()
+                            }
                         }
                     },
                 )
@@ -162,7 +167,9 @@ open class ReaderPageImageView @JvmOverloads constructor(
             sWidth > sHeight &&
             scale == minScale
         ) {
+            val requestGeneration = imageRequestGeneration
             handler?.postDelayed(500) {
+                if (imageRequestGeneration != requestGeneration) return@postDelayed
                 val point = when (config!!.zoomStartPosition) {
                     ZoomStartPosition.LEFT -> if (forward) {
                         PointF(0F, 0F)
