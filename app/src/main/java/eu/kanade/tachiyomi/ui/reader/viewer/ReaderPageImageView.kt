@@ -300,6 +300,8 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private fun prepareNonAnimatedImageView() {
         if (pageView is SubsamplingScaleImageView) return
+        // Invalidate callbacks before recycling a view of the previous image type.
+        beginImageRequest()
         releasePageView()
         removeView(pageView)
 
@@ -417,6 +419,8 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private fun prepareAnimatedImageView() {
         if (pageView is AppCompatImageView) return
+        // Invalidate callbacks before disposing a view of the previous image type.
+        beginImageRequest()
         releasePageView()
         removeView(pageView)
 
