@@ -96,6 +96,15 @@ internal class WebtoonSplitScrollSegmentController(
     }
 
 
+    /** Resolve a visible local row to its original page for long-press actions. */
+    fun pageAt(column: WebtoonSplitScrollHostState.Column, position: Int): ReaderPage? {
+        if (disposed) return null
+        return when (column) {
+            WebtoonSplitScrollHostState.Column.LEFT -> leftAdapter?.pageAt(position)
+            WebtoonSplitScrollHostState.Column.RIGHT -> rightAdapter?.pageAt(position)
+        }
+    }
+
     /**
      * Position the active segment at an original reader index without confusing
      * a column-local adapter position with the authoritative source sequence.
