@@ -13,6 +13,7 @@ import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.widget.ViewPagerAdapter
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -59,6 +60,8 @@ class PagerPageHolder(
      */
     private var loadJob: Job? = null
 
+    private var disposed = false
+
     init {
         startLoading()
     }
@@ -73,9 +76,22 @@ class PagerPageHolder(
     }
 
     private fun startLoading() {
-        if (loadJob?.isActive != true) {
+        if (!disposed && loadJob?.isActive != true) {
             loadJob = scope.launch { loadPageAndProcessStatus() }
         }
+    }
+
+    /**
+     * Permanently releases this holder when the pager adapter destroys its view.
+     * Detachment alone is not disposal because Spread containers may reattach holders.
+     */
+    fun dispose() {
+        if (disposed) return
+        disposed = true
+        loadJob?.cancel()
+        loadJob = null
+        scope.cancel()
+        recycle()
     }
 
     /**
