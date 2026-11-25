@@ -15,7 +15,7 @@ internal object SpreadAdapterNavigationMap {
         units: List<SpreadAdapterItemMapper.Unit<T>>,
         adapterIndex: Int,
     ): Int {
-        if (adapterIndex < 0) return -1
+        if (adapterIndex < 0 || !hasValidUnits(units)) return -1
         return units.indexOfFirst { unit ->
             when (unit) {
                 is SpreadAdapterItemMapper.Unit.Single -> unit.adapterIndex == adapterIndex
@@ -29,6 +29,29 @@ internal object SpreadAdapterNavigationMap {
      * Returns a display-unit anchor that retains the requested adapter item.
      * Invalid adapter indices return null rather than silently selecting a page.
      */
+    private fun <T> hasValidUnits(units: List<SpreadAdapterItemMapper.Unit<T>>): Boolean {
+        if (units.isEmpty()) return true
+        var expectedIndex = when (val first = units.first()) {
+            is SpreadAdapterItemMapper.Unit.Single -> first.adapterIndex
+            is SpreadAdapterItemMapper.Unit.Pair -> first.firstAdapterIndex
+        }
+        if (expectedIndex < 0) return false
+        for (unit in units) {
+            when (unit) {
+                is SpreadAdapterItemMapper.Unit.Single -> {
+                    if (unit.adapterIndex != expectedIndex) return false
+                    expectedIndex++
+                }
+                is SpreadAdapterItemMapper.Unit.Pair -> {
+                    if (unit.firstAdapterIndex != expectedIndex) return false
+                    if (unit.secondAdapterIndex != expectedIndex + 1) return false
+                    expectedIndex += 2
+                }
+            }
+        }
+        return true
+    }
+
     fun <T> anchorForAdapter(
         units: List<SpreadAdapterItemMapper.Unit<T>>,
         adapterIndex: Int,
