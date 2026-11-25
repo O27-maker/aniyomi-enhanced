@@ -248,7 +248,11 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     it.setOnImageEventListener(null)
                     it.recycle()
                 }
-                is AppCompatImageView -> it.dispose()
+                is AppCompatImageView -> {
+                    // Stop animated pages before Coil clears the drawable during recycling.
+                    (it.drawable as? Animatable)?.stop()
+                    it.dispose()
+                }
             }
             it.isVisible = false
         }
