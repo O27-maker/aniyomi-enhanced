@@ -95,6 +95,29 @@ internal class WebtoonSplitScrollSegmentController(
         return true
     }
 
+
+    /**
+     * Position the active segment at an original reader index without confusing
+     * a column-local adapter position with the authoritative source sequence.
+     */
+    fun moveToSourceIndex(sourceIndex: Int): Boolean {
+        if (disposed) return false
+        val segment = plan.segments.getOrNull(segmentIndex) ?: return false
+        val leftPosition = segment.left.indexOfFirst { it.originalIndex == sourceIndex }
+        if (leftPosition >= 0) {
+            (host.leftRecycler.layoutManager as? WebtoonLayoutManager)
+                ?.scrollToPositionWithOffset(leftPosition, 0)
+            return true
+        }
+        val rightPosition = segment.right.indexOfFirst { it.originalIndex == sourceIndex }
+        if (rightPosition >= 0) {
+            (host.rightRecycler.layoutManager as? WebtoonLayoutManager)
+                ?.scrollToPositionWithOffset(rightPosition, 0)
+            return true
+        }
+        return false
+    }
+
     /** Invalidate callbacks and detach both column adapters before host teardown. */
     fun dispose() {
         if (disposed) return
