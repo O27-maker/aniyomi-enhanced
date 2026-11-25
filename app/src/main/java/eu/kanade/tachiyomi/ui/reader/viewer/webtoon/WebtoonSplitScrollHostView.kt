@@ -22,7 +22,7 @@ import androidx.recyclerview.widget.WebtoonLayoutManager
  */
 internal class WebtoonSplitScrollHostView(
     context: Context,
-) : LinearLayout(context) {
+) : FrameLayout(context) {
 
     val leftRecycler: WebtoonRecyclerView
     val rightRecycler: WebtoonRecyclerView
@@ -36,8 +36,6 @@ internal class WebtoonSplitScrollHostView(
         private set
 
     init {
-        orientation = VERTICAL
-
         val scrollDistance = resources.displayMetrics.heightPixels * 3 / 4
 
         leftRecycler = createRecycler(scrollDistance)
@@ -71,10 +69,9 @@ internal class WebtoonSplitScrollHostView(
         }
         addView(
             columnsRow,
-            LayoutParams(
+            FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                1f,
+                ViewGroup.LayoutParams.MATCH_PARENT,
             ),
         )
 
@@ -83,9 +80,9 @@ internal class WebtoonSplitScrollHostView(
         }
         addView(
             boundarySlot,
-            LayoutParams(
+            FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
             ),
         )
 
@@ -143,12 +140,14 @@ internal class WebtoonSplitScrollHostView(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ),
         )
+        columnsRow.visibility = GONE
         boundarySlot.visibility = VISIBLE
     }
 
     fun hideBoundary() {
         boundarySlot.removeAllViews()
         boundarySlot.visibility = GONE
+        columnsRow.visibility = VISIBLE
     }
 
     /** Attach independent adapters supplied by the future segmented viewer. */
