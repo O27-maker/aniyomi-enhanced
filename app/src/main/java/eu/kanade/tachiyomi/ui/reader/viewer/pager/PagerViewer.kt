@@ -162,6 +162,18 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         // Clear them so a detached pager cannot retain this viewer and its activity.
         pager.tapListener = null
         pager.longTapListener = null
+
+        // The adapter has now disposed instantiated holders; release its remaining page models.
+        adapter.clear()
+        currentPage = null
+        awaitingIdleViewerChapters = null
+
+        // Preference observers are scoped, while these callbacks are explicit viewer references.
+        config.dualPageSplitChangedListener = null
+        config.dualPagePresentationModeChangedListener = null
+        config.imagePropertyChangedListener = null
+        config.navigationModeChangedListener = null
+
         super.destroy()
         scope.cancel()
     }
