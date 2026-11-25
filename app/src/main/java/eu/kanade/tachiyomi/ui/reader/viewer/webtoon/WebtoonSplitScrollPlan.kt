@@ -31,6 +31,27 @@ internal data class WebtoonSplitScrollPlan<T>(
         val boundaryAfter: Placement<T>?,
     )
 
+    /** Resolve the segment containing an original WebtoonAdapter.items index. */
+    fun segmentIndexForSourceIndex(index: Int): Int {
+        if (index !in 0 until sourceSize) return -1
+        return segments.indexOfFirst { segment ->
+            segment.left.any { it.originalIndex == index } ||
+                segment.right.any { it.originalIndex == index }
+        }
+    }
+
+    /** Resolve a page's column-local adapter position from its original source index. */
+    fun columnPositionForSourceIndex(index: Int): Pair<Column, Int>? {
+        if (index !in 0 until sourceSize) return null
+        segments.forEach { segment ->
+            val leftPosition = segment.left.indexOfFirst { it.originalIndex == index }
+            if (leftPosition >= 0) return Column.LEFT to leftPosition
+            val rightPosition = segment.right.indexOfFirst { it.originalIndex == index }
+            if (rightPosition >= 0) return Column.RIGHT to rightPosition
+        }
+        return null
+    }
+
     /** Resolve an original WebtoonAdapter.items index without depending on display order. */
     fun placementForSourceIndex(index: Int): Placement<T>? {
         if (index !in 0 until sourceSize) return null
