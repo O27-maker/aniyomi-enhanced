@@ -171,6 +171,9 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         if (currentPage !is ReaderPage) return
 
         val currentIndex = items.indexOf(currentPage)
+        // A page may finish decoding after its chapter has been replaced. Never insert
+        // a split page for an item that is no longer part of the effective adapter sequence.
+        if (currentIndex == -1) return
 
         // Put aside preprocessed pages for next chapter so they don't get removed when changing chapter
         if (currentPage.chapter.chapter.id != currentChapter?.chapter?.id) {
@@ -191,7 +194,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         }
 
         // Same here it will enter a endless cycle of insert pages
-        if (items[placeAtIndex] is InsertPage) {
+        if (items.getOrNull(placeAtIndex) is InsertPage) {
             return
         }
 
