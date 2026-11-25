@@ -1,0 +1,115 @@
+package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
+
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.WebtoonLayoutManager
+
+/**
+ * Bridges independent column scroll events to the source-index-aware selection coordinator.
+ *
+ * The bridge deliberately does not synchronize scroll positions or call ReaderActivity itself.
+ * Its owner receives accepted selections and decides when/how to forward them to reader progress.
+ * The two adapters remain projections of the authoritative WebtoonAdapter.items sequence.
+ */
+internal class WebtoonSplitScrollScrollBridge(
+    plan: WebtoonSplitScrollPlan<Any>,
+    private val leftRecycler: WebtoonRecyclerView,
+    private val rightRecycler: WebtoonRecyclerView,
+    private val leftAdapter: WebtoonSplitScrollColumnAdapter,
+    private val rightAdapter: WebtoonSplitScrollColumnAdapter,
+    private val onSelection: (WebtoonSplitScrollSelectionCoordinator.Result) -> Unit,
+) {
+
+    private val coordinator = WebtoonSplitScrollSelectionCoordinator(plan)
+
+    private var state = coordinator.initialState()
+    private lateinit var leftBinding: WebtoonSplitScrollHostState.Binding
+    private lateinit var rightBinding: WebtoonSplitScrollHostState.Binding
+
+    private val leftListener = createListener(
+        recycler = leftRecycler,
+        adapter = leftAdapter,
+        binding = WebtoonSplitScrollHostState.Column.LEFT,
+    )
+
+    private val rightListener = createListener(
+        recycler = rightRecycler,
+        adapter = rightAdapter,
+        binding = WebtoonSplitScrollHostState.Column.RIGHT,
+    )
+
+    init {
+        val left = state.host.attach(WebtoonSplitScrollHostState.Column.LEFT)
+        state = state.copy(host = left.first)
+        leftBinding = left.second
+
+        val right = state.host.attach(WebtoonSplitScrollHostState.Column.RIGHT)
+        state = state.copy(host = right.first)
+        rightBinding = right.second
+
+        leftRecycler.addOnScrollListener(leftListener)
+        rightRecycler.addOnScrollListener(rightListener)
+
+        coordinator.readyBoundary(state)?.let { result ->
+            state = result.state
+            onSelection(result)
+        }
+    }
+
+    /**
+     * Advance to the next segment after the owner has displayed/handled the full-width boundary.
+     * The owner must submit the next segment's placements to both column adapters afterwards.
+     */
+    fun advancePastBoundary(): Boolean {
+        val next = coordinator.advancePastBoundary(state) ?: return false
+        state = next
+        return true
+    }
+
+    /** Invalidate delayed callbacks before the host or either column is discarded. */
+    fun dispose() {
+        leftRecycler.removeOnScrollListener(leftListener)
+        rightRecycler.removeOnScrollListener(rightListener)
+        state = state.copy(
+            host = state.host
+                .detach(WebtoonSplitScrollHostState.Column.LEFT)
+                .detach(WebtoonSplitScrollHostState.Column.RIGHT),
+        )
+    }
+
+    private fun createListener(
+        recycler: WebtoonSplitScrollRecycler,
+        adapter: WebtoonSplitScrollColumnAdapter,
+        binding: WebtoonSplitScrollHostState.Column,
+    ): RecyclerView.OnScrollListener =
+        object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                val layoutManager = recycler.layoutManager as? WebtoonLayoutManager ?: return
+                val localPosition = layoutManager.findLastEndVisibleItemPosition()
+                if (localPosition == RecyclerView.NO_POSITION) return
+
+                val sourceIndex = adapter.originalIndexAt(localPosition) ?: return
+                val lifecycleBinding = when (binding) {
+                    WebtoonSplitScrollHostState.Column.LEFT -> leftBinding
+                    WebtoonSplitScrollHostState.Column.RIGHT -> rightBinding
+                }
+                val result = coordinator.onColumnScrolled(
+                    state = state,
+                    binding = lifecycleBinding,
+                    segmentIndex = state.barrier.segmentIndex,
+                    endVisibleSourceIndex = sourceIndex,
+                    scrollOffsetPx = recycler.computeVerticalScrollOffset(),
+                    reachedSegmentEnd = localPosition == adapter.itemCount - 1,
+                )
+                if (result.accepted) {
+                    state = result.state
+                    onSelection(result)
+                }
+            }
+        }
+
+    /**
+     * Both split columns use WebtoonRecyclerView, but keeping the listener parameter
+     * as RecyclerView avoids coupling this bridge to unrelated gesture implementation.
+     */
+    private typealias WebtoonSplitScrollRecycler = RecyclerView
+}
