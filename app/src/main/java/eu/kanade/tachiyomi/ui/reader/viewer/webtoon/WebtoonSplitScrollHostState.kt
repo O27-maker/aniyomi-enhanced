@@ -60,7 +60,12 @@ internal data class WebtoonSplitScrollHostState(
         withColumn(column, stateFor(column).copy(widthPercent = widthPercent.coerceIn(MIN_WIDTH_PERCENT, MAX_WIDTH_PERCENT)))
 
     fun setZoom(column: Column, zoom: Float): WebtoonSplitScrollHostState =
-        withColumn(column, stateFor(column).copy(zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)))
+        withColumn(
+            column,
+            stateFor(column).copy(
+                zoom = zoom.takeIf { it.isFinite() }?.coerceIn(MIN_ZOOM, MAX_ZOOM) ?: DEFAULT_ZOOM,
+            ),
+        )
 
     /**
      * Store a column's own scroll offset. A callback is accepted only for the exact
