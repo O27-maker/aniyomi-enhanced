@@ -1,5 +1,8 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.WebtoonLayoutManager
+
 /**
  * Binds one immutable Split Scroll segment to the host's two independent RecyclerViews.
  *
@@ -29,8 +32,13 @@ internal class WebtoonSplitScrollSegmentController(
     val segmentIndex: Int
         get() = state.barrier.segmentIndex
 
+    private val leftScrollListener = createScrollListener(WebtoonSplitScrollHostState.Column.LEFT)
+    private val rightScrollListener = createScrollListener(WebtoonSplitScrollHostState.Column.RIGHT)
+
     init {
         bindSegment()
+        host.leftRecycler.addOnScrollListener(leftScrollListener)
+        host.rightRecycler.addOnScrollListener(rightScrollListener)
     }
 
     /**
@@ -91,6 +99,8 @@ internal class WebtoonSplitScrollSegmentController(
     fun dispose() {
         if (disposed) return
         disposed = true
+        host.leftRecycler.removeOnScrollListener(leftScrollListener)
+        host.rightRecycler.removeOnScrollListener(rightScrollListener)
         detachBindings()
         host.setColumnAdapters(null, null)
         leftAdapter = null
@@ -130,6 +140,23 @@ internal class WebtoonSplitScrollSegmentController(
                 boundaryNotified = true
                 onBoundaryReady(segment.boundaryAfter)
             }
+        }
+    }
+
+
+    /**
+     * Each RecyclerView reports only its own end-visible row and viewport offset.
+     * No scroll position is copied to the opposite column.
+     */
+    private fun createScrollListener(
+        column: WebtoonSplitScrollHostState.Column,
+    ) = object : RecyclerView.OnScrollListener() {
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            val layoutManager = recyclerView.layoutManager as? WebtoonLayoutManager ?: return
+            val endVisiblePosition = layoutManager.findLastEndVisibleItemPosition()
+            if (endVisiblePosition == RecyclerView.NO_POSITION) return
+            val offset = layoutManager.findViewByPosition(endVisiblePosition)?.top?.coerceAtLeast(0) ?: 0
+            onColumnScrolled(column, endVisiblePosition, offset)
         }
     }
 
