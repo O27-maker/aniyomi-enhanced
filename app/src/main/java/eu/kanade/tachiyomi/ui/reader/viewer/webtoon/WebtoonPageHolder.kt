@@ -41,6 +41,7 @@ import tachiyomi.core.common.util.system.logcat
 class WebtoonPageHolder(
     private val frame: ReaderPageImageView,
     viewer: WebtoonViewer,
+    private val hostRecycler: WebtoonRecyclerView = viewer.recycler,
 ) : WebtoonBaseHolder(frame, viewer) {
 
     /**
@@ -63,7 +64,7 @@ class WebtoonPageHolder(
      * Getter to retrieve the height of the recycler view.
      */
     private val parentHeight
-        get() = viewer.recycler.height
+        get() = hostRecycler.height
 
     /**
      * Page of a chapter.
@@ -101,7 +102,7 @@ class WebtoonPageHolder(
                 bottomMargin = 15.dpToPx
             }
 
-            val margin = Resources.getSystem().displayMetrics.widthPixels * (viewer.config.sidePadding / 100f)
+            val margin = hostRecycler.width * (viewer.config.sidePadding / 100f)
             marginEnd = margin.toInt()
             marginStart = margin.toInt()
         }
