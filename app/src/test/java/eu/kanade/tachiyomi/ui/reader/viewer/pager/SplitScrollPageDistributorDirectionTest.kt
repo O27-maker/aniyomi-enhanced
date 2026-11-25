@@ -26,4 +26,19 @@ class SplitScrollPageDistributorDirectionTest {
         assertEquals(listOf(1), result.right.map { it.originalIndex })
         assertEquals(effective.indices.toList(), result.inSourceOrder().map { it.originalIndex })
     }
+
+    @Test
+    fun boundariesInReversedSequenceRemainFullWidth() {
+        val original = listOf("page-1", "page-2", "transition", "page-3", "page-4")
+        val effectiveR2L = original.reversed()
+        val result = SplitScrollPageDistributor.distribute(
+            effectiveR2L,
+            isBoundary = { it == "transition" },
+        )
+
+        assertEquals(listOf("page-4", "page-2"), result.left.map { it.item })
+        assertEquals(listOf("page-3", "page-1"), result.right.map { it.item })
+        assertEquals(listOf("transition"), result.fullWidth.map { it.item })
+        assertEquals(effectiveR2L, result.inSourceOrder().map { it.item })
+    }
 }
