@@ -49,7 +49,7 @@ internal data class WebtoonSplitScrollHostState(
 
     /** Invalidate callbacks from the detached host without affecting the other side. */
     fun detach(column: Column): WebtoonSplitScrollHostState {
-        val current = column(column)
+        val current = stateFor(column)
         return withColumn(
             column,
             current.copy(generation = current.generation + 1, attached = false),
@@ -57,10 +57,10 @@ internal data class WebtoonSplitScrollHostState(
     }
 
     fun resize(column: Column, widthPercent: Int): WebtoonSplitScrollHostState =
-        withColumn(column, column(column).copy(widthPercent = widthPercent.coerceIn(MIN_WIDTH_PERCENT, MAX_WIDTH_PERCENT)))
+        withColumn(column, stateFor(column).copy(widthPercent = widthPercent.coerceIn(MIN_WIDTH_PERCENT, MAX_WIDTH_PERCENT)))
 
     fun setZoom(column: Column, zoom: Float): WebtoonSplitScrollHostState =
-        withColumn(column, column(column).copy(zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)))
+        withColumn(column, stateFor(column).copy(zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)))
 
     /**
      * Store a column's own scroll offset. A callback is accepted only for the exact
