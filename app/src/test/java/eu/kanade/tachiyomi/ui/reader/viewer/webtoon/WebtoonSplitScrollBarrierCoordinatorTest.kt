@@ -17,6 +17,39 @@ class WebtoonSplitScrollBarrierCoordinatorTest {
     }
 
     @Test
+    fun `malformed projection cannot release or advance a chapter barrier`() {
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, "page", Column.LEFT),
+                        WebtoonSplitScrollPlan.Placement(1, "transition", Column.LEFT),
+                    ),
+                    right = emptyList(),
+                    boundaryAfter = WebtoonSplitScrollPlan.Placement(
+                        2,
+                        "transition",
+                        Column.FULL_WIDTH,
+                    ),
+                ),
+            ),
+            sourceSize = 3,
+        )
+        val coordinator = WebtoonSplitScrollBarrierCoordinator(malformed)
+        val initial = coordinator.initialState()
+        val forgedReady = WebtoonSplitScrollBarrierCoordinator.State(
+            segmentIndex = 0,
+            leftAtEnd = true,
+            rightAtEnd = true,
+        )
+
+        assertFalse(coordinator.isBoundaryReady(initial))
+        assertFalse(coordinator.isBoundaryReady(forgedReady))
+        assertEquals(initial, coordinator.markColumnAtEnd(initial, 0, Column.LEFT))
+        assertNull(coordinator.advance(forgedReady))
+    }
+
+    @Test
     fun `one column reaching end does not release boundary while other has pages`() {
         val coordinator = coordinator()
         val waiting = coordinator.markColumnAtEnd(coordinator.initialState(), 0, Column.LEFT)
