@@ -152,7 +152,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         }
 
         config.imagePropertyChangedListener = {
-            refreshAdapter()
+            if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL && adapter.items.isNotEmpty()) {
+                installSplitScrollHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
+            } else {
+                refreshAdapter()
+            }
         }
 
         config.themeChangedListener = {
@@ -161,10 +165,12 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
         config.doubleTapZoomChangedListener = {
             frame.doubleTapZoom = it
+            splitScrollHost?.setDoubleTapZoomEnabled(it)
         }
 
         config.zoomPropertyChangedListener = {
             frame.zoomOutDisabled = it
+            splitScrollHost?.setZoomOutDisabled(it)
         }
 
         config.navigationModeChangedListener = {
@@ -317,6 +323,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Tells this viewer to set the given [chapters] as active.
      */
     override fun setChapters(chapters: ViewerChapters) {
+        val firstLayout = recycler.isGone
         val forceTransition = config.alwaysShowChapterTransition || currentPage is ChapterTransition
         adapter.setChapters(chapters, forceTransition)
 
@@ -335,7 +342,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             recycler.isVisible = true
         }
 
-        if (recycler.isGone) {
+        if (firstLayout) {
             logcat { "Recycler first layout" }
             val pages = chapters.currChapter.pages ?: return
             moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
@@ -348,6 +355,10 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      */
     override fun moveToPage(page: ReaderPage) {
         val position = adapter.items.indexOf(page)
+        if (position != -1 && config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
+            splitScrollController?.moveToSourceIndex(position)
+            return
+        }
         if (position != -1) {
             layoutManager.scrollToPositionWithOffset(position, 0)
             if (layoutManager.findLastEndVisibleItemPosition() == -1) {
