@@ -21,6 +21,30 @@ internal data class WebtoonSplitScrollRebuildTarget<T>(
 
 internal object WebtoonSplitScrollRebuildTargetResolver {
 
+    /** A fresh projection and its identity-resolved restore target for one source snapshot. */
+    internal data class Rebuild<T>(
+        val plan: WebtoonSplitScrollPlan<T>,
+        val target: WebtoonSplitScrollRebuildTarget<T>?,
+    )
+
+    /**
+     * Build from the current authoritative sequence and resolve the old selection
+     * in that same projection. The caller should retain this pair together so it
+     * cannot accidentally apply a target produced for a different plan.
+     */
+    fun <T : Any> rebuild(
+        currentItems: List<T>,
+        selectedItem: T?,
+        isBoundary: (T) -> Boolean,
+    ): Rebuild<T> {
+        val snapshot = currentItems.toList()
+        val plan = WebtoonSplitScrollPlan.create(snapshot, isBoundary)
+        return Rebuild(
+            plan = plan,
+            target = resolve(plan, selectedItem),
+        )
+    }
+
     /**
      * Restore only when the exact selected item instance survives in the new plan.
      * If it was removed/replaced, return null so the owner can use the reader's
