@@ -280,6 +280,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
         pageView = null
         config = null
         pageBackground = null
+        background = null
         onImageLoaded = null
         onImageLoadError = null
         onScaleChanged = null
