@@ -166,9 +166,20 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Returns the PagerPageHolder for the provided page
      */
     private fun getPageHolder(page: ReaderPage): PagerPageHolder? =
-        pager.children
-            .filterIsInstance(PagerPageHolder::class.java)
-            .firstOrNull { it.item == page }
+        pager.findPageHolder(page)
+
+    /**
+     * Spread presentation nests the original page holders inside a frame. Search the
+     * pager's view tree so selection and pan navigation keep resolving the same holder.
+     */
+    private fun android.view.ViewGroup.findPageHolder(page: ReaderPage): PagerPageHolder? =
+        children.firstNotNullOfOrNull { child ->
+            when {
+                child is PagerPageHolder && child.item == page -> child
+                child is android.view.ViewGroup -> child.findPageHolder(page)
+                else -> null
+            }
+        }
 
     /**
      * Called when a new page (either a [ReaderPage] or [ChapterTransition]) is marked as active
