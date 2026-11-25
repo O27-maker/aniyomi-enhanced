@@ -112,3 +112,66 @@ class WebtoonSplitScrollHostRebuildSnapshotTest {
         )
     }
 }
+
+    @Test
+    fun `rejects atomic restore when selected item moves across a chapter boundary`() {
+        val first = Item("first")
+        val selected = Item("selected")
+        val sibling = Item("sibling")
+        val original = WebtoonSplitScrollPlan.create(listOf(first, selected, sibling)) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostRebuildSnapshot.capture(
+            original,
+            selected,
+            WebtoonSplitScrollHostState(),
+        )!!
+
+        val insertedBoundary = Item("new-boundary", boundary = true)
+        val rebuilt = WebtoonSplitScrollRebuildTargetResolver.rebuild(
+            listOf(first, insertedBoundary, selected, sibling),
+            selected,
+        ) { it.boundary }
+
+        assertNull(WebtoonSplitScrollHostRebuildSnapshot.restore(rebuilt, snapshot))
+    }
+
+    @Test
+    fun `rejects atomic restore when selection identity changes within the same segment`() {
+        val selected = Item("selected")
+        val newlySelected = Item("newly-selected")
+        val original = WebtoonSplitScrollPlan.create(listOf(selected, newlySelected)) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostRebuildSnapshot.capture(
+            original,
+            selected,
+            WebtoonSplitScrollHostState(),
+        )!!
+        val rebuild = WebtoonSplitScrollRebuildTargetResolver.rebuild(
+            listOf(selected, newlySelected),
+            newlySelected,
+        ) { it.boundary }
+
+        assertNull(WebtoonSplitScrollHostRebuildSnapshot.restore(rebuild, snapshot))
+    }
+
+    @Test
+    fun `restored viewport advances both column generations independently`() {
+        val selected = Item("selected")
+        val original = WebtoonSplitScrollPlan.create(listOf(selected, Item("sibling"))) { it.boundary }
+        val (leftAttached, leftBinding) = WebtoonSplitScrollHostState().attach(Column.LEFT)
+        val (bothAttached, rightBinding) = leftAttached.attach(Column.RIGHT)
+        val state = bothAttached
+            .recordScroll(leftBinding, 125)
+            .recordScroll(rightBinding, 875)
+        val snapshot = WebtoonSplitScrollHostRebuildSnapshot.capture(original, selected, state)!!
+        val rebuild = WebtoonSplitScrollRebuildTargetResolver.rebuild(
+            listOf(selected, Item("sibling")),
+            selected,
+        ) { it.boundary }
+
+        val restored = WebtoonSplitScrollHostRebuildSnapshot.restore(rebuild, snapshot)!!.viewportState
+
+        assertEquals(state.left.generation + 1, restored.left.generation)
+        assertEquals(state.right.generation + 1, restored.right.generation)
+        assertEquals(125, restored.left.scrollOffsetPx)
+        assertEquals(875, restored.right.scrollOffsetPx)
+    }
+}
