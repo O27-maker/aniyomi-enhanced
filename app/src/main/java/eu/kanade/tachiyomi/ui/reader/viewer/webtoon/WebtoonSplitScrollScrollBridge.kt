@@ -17,11 +17,12 @@ internal class WebtoonSplitScrollScrollBridge(
     private val leftAdapter: WebtoonSplitScrollColumnAdapter,
     private val rightAdapter: WebtoonSplitScrollColumnAdapter,
     private val onSelection: (WebtoonSplitScrollSelectionCoordinator.Result) -> Unit,
+    initialSegmentIndex: Int = 0,
 ) {
 
     private val coordinator = WebtoonSplitScrollSelectionCoordinator(plan)
 
-    private var state = coordinator.initialState()
+    private var state = coordinator.initialState(initialSegmentIndex)
     private lateinit var leftBinding: WebtoonSplitScrollHostState.Binding
     private lateinit var rightBinding: WebtoonSplitScrollHostState.Binding
 
@@ -62,6 +63,10 @@ internal class WebtoonSplitScrollScrollBridge(
     fun advancePastBoundary(): Boolean {
         val next = coordinator.advancePastBoundary(state) ?: return false
         state = next
+        coordinator.readyBoundary(state)?.let { result ->
+            state = result.state
+            onSelection(result)
+        }
         return true
     }
 
