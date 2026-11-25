@@ -18,9 +18,9 @@ class WebtoonSplitScrollRebuildTargetTest {
 
         val target = WebtoonSplitScrollRebuildTargetResolver.resolve(plan, selected)
 
-        assertEquals(1, target?.sourceIndex)
-        assertEquals(Column.RIGHT, target?.column)
-        assertEquals(0, target?.columnPosition)
+        assertEquals(2, target?.sourceIndex)
+        assertEquals(Column.LEFT, target?.column)
+        assertEquals(1, target?.columnPosition)
         assertEquals(0, target?.segmentIndex)
     }
 
@@ -34,7 +34,7 @@ class WebtoonSplitScrollRebuildTargetTest {
         val target = WebtoonSplitScrollRebuildTargetResolver.resolve(plan, boundary)
 
         assertEquals(1, target?.sourceIndex)
-        assertEquals(1, target?.segmentIndex)
+        assertEquals(0, target?.segmentIndex)
         assertEquals(Column.FULL_WIDTH, target?.column)
         assertEquals(null, target?.columnPosition)
         assertEquals(true, target?.isBoundary)
