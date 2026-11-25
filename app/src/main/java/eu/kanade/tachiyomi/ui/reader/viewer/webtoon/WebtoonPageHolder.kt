@@ -295,13 +295,12 @@ class WebtoonPageHolder(
         }
 
         val imageUrl = page?.imageUrl
+        errorLayout?.actionOpenInWebView?.setOnClickListener(null)
         errorLayout?.actionOpenInWebView?.isVisible = imageUrl != null
-        if (imageUrl != null) {
-            if (imageUrl.startsWith("http", true)) {
-                errorLayout?.actionOpenInWebView?.setOnClickListener {
-                    val intent = WebViewActivity.newIntent(context, imageUrl)
-                    context.startActivity(intent)
-                }
+        if (imageUrl?.startsWith("http", true) == true) {
+            errorLayout?.actionOpenInWebView?.setOnClickListener {
+                val intent = WebViewActivity.newIntent(context, imageUrl)
+                context.startActivity(intent)
             }
         }
 
