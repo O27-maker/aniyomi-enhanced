@@ -141,4 +141,52 @@ class WebtoonSplitScrollPlanTest {
         assertEquals(false, malformed.matchesSource(listOf(transition)))
     }
 
+    @Test
+    fun `source snapshot validation rejects pages placed after an unclosed segment`() {
+        val first = "first"
+        val second = "second"
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, first, Column.LEFT),
+                    ),
+                    right = emptyList(),
+                    boundaryAfter = null,
+                ),
+                WebtoonSplitScrollPlan.Segment(
+                    left = listOf(
+                        WebtoonSplitScrollPlan.Placement(1, second, Column.LEFT),
+                    ),
+                    right = emptyList(),
+                    boundaryAfter = null,
+                ),
+            ),
+            sourceSize = 2,
+        )
+
+        assertEquals(false, malformed.matchesSource(listOf(first, second)))
+    }
+
+    @Test
+    fun `source snapshot validation rejects non alternating pages within a segment`() {
+        val first = "first"
+        val second = "second"
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, first, Column.LEFT),
+                        WebtoonSplitScrollPlan.Placement(1, second, Column.LEFT),
+                    ),
+                    right = emptyList(),
+                    boundaryAfter = null,
+                ),
+            ),
+            sourceSize = 2,
+        )
+
+        assertEquals(false, malformed.matchesSource(listOf(first, second)))
+    }
+
 }
