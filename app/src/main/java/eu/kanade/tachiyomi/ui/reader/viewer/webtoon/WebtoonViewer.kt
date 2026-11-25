@@ -197,6 +197,18 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Destroys this viewer. Called when leaving the reader or swapping viewers.
      */
     override fun destroy() {
+        // Gesture callbacks are stored on the RecyclerView independently of the viewer scope.
+        // Clear them before teardown so a detached reader cannot retain this viewer/activity.
+        recycler.tapListener = null
+        recycler.longTapListener = null
+
+        // Preference callbacks also hold viewer references and are not coroutine-scoped.
+        config.imagePropertyChangedListener = null
+        config.themeChangedListener = null
+        config.doubleTapZoomChangedListener = null
+        config.zoomPropertyChangedListener = null
+        config.navigationModeChangedListener = null
+
         super.destroy()
         scope.cancel()
     }
