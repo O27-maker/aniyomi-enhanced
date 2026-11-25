@@ -96,8 +96,7 @@ class PagerPageHolder(
 
         // Drop transient controls that can retain the viewer/activity through click listeners
         // or custom view properties after the adapter permanently destroys this holder.
-        errorLayout?.root?.let(::removeView)
-        errorLayout = null
+        removeErrorLayout()
         progressIndicator?.let(::removeView)
         progressIndicator = null
     }
@@ -341,6 +340,14 @@ class PagerPageHolder(
      * Removes the decode error layout from the holder, if found.
      */
     private fun removeErrorLayout() {
+        errorLayout?.actionRetry?.apply {
+            setOnClickListener(null)
+            viewer = null
+        }
+        errorLayout?.actionOpenInWebView?.apply {
+            setOnClickListener(null)
+            viewer = null
+        }
         errorLayout?.root?.let(::removeView)
         errorLayout = null
     }
