@@ -111,20 +111,34 @@ internal class WebtoonSplitScrollSegmentController(
      */
     fun moveToSourceIndex(sourceIndex: Int): Boolean {
         if (disposed) return false
-        val segment = plan.segments.getOrNull(segmentIndex) ?: return false
-        val leftPosition = segment.left.indexOfFirst { it.originalIndex == sourceIndex }
-        if (leftPosition >= 0) {
-            (host.leftRecycler.layoutManager as? WebtoonLayoutManager)
-                ?.scrollToPositionWithOffset(leftPosition, 0)
-            return true
+        val targetSegmentIndex = plan.segmentIndexForSourceIndex(sourceIndex)
+        if (targetSegmentIndex < 0) return false
+
+        // Resume/progress indices refer to the complete authoritative adapter sequence.
+        // A target after a chapter transition may belong to a later segment than the
+        // controller's initial segment. Jump directly to that segment on initial restore
+        // instead of silently leaving the reader at the previous chapter boundary.
+        if (targetSegmentIndex != segmentIndex) {
+            host.hideBoundary()
+            detachBindings()
+            state = state.copy(
+                barrier = coordinator.initialState(targetSegmentIndex).barrier,
+                selectedSourceIndex = null,
+            )
+            bindSegment()
         }
-        val rightPosition = segment.right.indexOfFirst { it.originalIndex == sourceIndex }
-        if (rightPosition >= 0) {
-            (host.rightRecycler.layoutManager as? WebtoonLayoutManager)
-                ?.scrollToPositionWithOffset(rightPosition, 0)
-            return true
+
+        val position = plan.columnPositionForSourceIndex(sourceIndex) ?: return false
+        when (position.first) {
+            WebtoonSplitScrollPlan.Column.LEFT ->
+                (host.leftRecycler.layoutManager as? WebtoonLayoutManager)
+                    ?.scrollToPositionWithOffset(position.second, 0)
+            WebtoonSplitScrollPlan.Column.RIGHT ->
+                (host.rightRecycler.layoutManager as? WebtoonLayoutManager)
+                    ?.scrollToPositionWithOffset(position.second, 0)
+            WebtoonSplitScrollPlan.Column.FULL_WIDTH -> return false
         }
-        return false
+        return true
     }
 
     /** Invalidate callbacks and detach both column adapters before host teardown. */
