@@ -84,8 +84,9 @@ class PagerTransitionHolder(
         stateJob = null
         scope.cancel()
         // Drop transient loading/error controls (including retry listeners that capture
-        // the viewer) as soon as the holder is permanently removed.
+        // the viewer), then detach the transition view and its bound chapter/manga state.
         pagesContainer.removeAllViews()
+        removeAllViews()
     }
 
     /**
