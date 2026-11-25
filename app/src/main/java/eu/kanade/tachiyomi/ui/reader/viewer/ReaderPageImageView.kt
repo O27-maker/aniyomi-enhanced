@@ -326,6 +326,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
         data: Any,
         config: Config,
     ) = (pageView as? SubsamplingScaleImageView)?.apply {
+        val requestGeneration = beginImageRequest()
         setDoubleTapZoomDuration(config.zoomDuration.getSystemScaledDuration())
         setMinimumScaleType(config.minimumScaleType)
         setMinimumDpi(1) // Just so that very small image will be fit for initial load
@@ -333,13 +334,17 @@ open class ReaderPageImageView @JvmOverloads constructor(
         setOnImageEventListener(
             object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
                 override fun onReady() {
-                    setupZoom(config)
-                    if (isVisibleOnScreen()) landscapeZoom(true)
-                    this@ReaderPageImageView.onImageLoaded()
+                    if (imageRequestGeneration == requestGeneration) {
+                        setupZoom(config)
+                        if (isVisibleOnScreen()) landscapeZoom(true)
+                        this@ReaderPageImageView.onImageLoaded()
+                    }
                 }
 
                 override fun onImageLoadError(e: Exception) {
-                    this@ReaderPageImageView.onImageLoadError()
+                    if (imageRequestGeneration == requestGeneration) {
+                        this@ReaderPageImageView.onImageLoadError()
+                    }
                 }
             },
         )
@@ -357,7 +362,6 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     return@apply
                 }
 
-                val requestGeneration = beginImageRequest()
                 ImageRequest.Builder(context)
                     .data(data)
                     .memoryCachePolicy(CachePolicy.DISABLED)
