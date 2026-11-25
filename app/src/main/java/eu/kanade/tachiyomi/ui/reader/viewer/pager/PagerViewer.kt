@@ -152,6 +152,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         // instantiated items here, allowing PagerViewerAdapter to permanently dispose
         // both direct holders and holders nested inside presentation containers.
         pager.adapter = null
+        // Pager's gesture detector owns these callbacks independently of its adapter.
+        // Clear them so a detached pager cannot retain this viewer and its activity.
+        pager.tapListener = null
+        pager.longTapListener = null
         super.destroy()
         scope.cancel()
     }
