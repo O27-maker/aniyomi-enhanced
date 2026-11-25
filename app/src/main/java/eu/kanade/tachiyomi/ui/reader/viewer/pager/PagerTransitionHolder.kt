@@ -35,6 +35,7 @@ class PagerTransitionHolder(
 
     private val scope = MainScope()
     private var stateJob: Job? = null
+    private var disposed = false
 
     /**
      * Item that identifies this view. Needed by the adapter to not recreate views.
@@ -64,15 +65,38 @@ class PagerTransitionHolder(
 
         transitionView.bind(transition, viewer.downloadManager, viewer.activity.viewModel.manga)
 
-        transition.to?.let(::observeStatus)
+        startObservingStatus()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        startObservingStatus()
     }
 
     /**
-     * Called when this view is detached from the window. Unsubscribes any active subscription.
+     * Permanently releases this holder when its pager item is destroyed.
+     */
+    fun dispose() {
+        if (disposed) return
+        disposed = true
+        stateJob?.cancel()
+        stateJob = null
+        scope.cancel()
+    }
+
+    /**
+     * Detachment pauses observation; attachment resumes it while the holder remains reusable.
      */
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         stateJob?.cancel()
+        stateJob = null
+    }
+
+    private fun startObservingStatus() {
+        if (!disposed && stateJob?.isActive != true) {
+            transition.to?.let(::observeStatus)
+        }
     }
 
     /**
@@ -81,6 +105,7 @@ class PagerTransitionHolder(
      */
     private fun observeStatus(chapter: ReaderChapter) {
         stateJob?.cancel()
+        if (disposed) return
         stateJob = scope.launch {
             chapter.stateFlow
                 .collectLatest { state ->
