@@ -114,8 +114,8 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                 NavigationRegion.MENU -> activity.toggleMenu()
                 NavigationRegion.NEXT -> moveToNext()
                 NavigationRegion.PREV -> moveToPrevious()
-                NavigationRegion.RIGHT -> moveRight()
-                NavigationRegion.LEFT -> moveLeft()
+                NavigationRegion.RIGHT -> moveRightAt(event.rawX, event.rawY)
+                NavigationRegion.LEFT -> moveLeftAt(event.rawX, event.rawY)
             }
         }
         pager.longTapListener = f@{
@@ -330,6 +330,45 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     open fun moveToPrevious() {
         moveLeft()
+    }
+
+    /**
+     * For tap-based pan navigation, use the page actually under the tap. This matters
+     * when a Spread item contains two independent page holders.
+     */
+    private fun moveRightAt(rawX: Float, rawY: Float) {
+        val holder = pager.findPageHolderAt(rawX, rawY)
+            ?: (currentPage as? ReaderPage)?.let(::getPageHolder)
+        if (config.navigateToPan && holder?.canPanRight() == true) {
+            holder.panRight()
+        } else {
+            moveRight()
+        }
+    }
+
+    private fun moveLeftAt(rawX: Float, rawY: Float) {
+        val holder = pager.findPageHolderAt(rawX, rawY)
+            ?: (currentPage as? ReaderPage)?.let(::getPageHolder)
+        if (config.navigateToPan && holder?.canPanLeft() == true) {
+            holder.panLeft()
+        } else {
+            moveLeft()
+        }
+    }
+
+    private fun android.view.ViewGroup.findPageHolderAt(rawX: Float, rawY: Float): PagerPageHolder? {
+        for (child in children) {
+            val location = IntArray(2)
+            child.getLocationOnScreen(location)
+            val x = rawX - location[0]
+            val y = rawY - location[1]
+            if (x < 0 || y < 0 || x >= child.width || y >= child.height) continue
+            if (child is PagerPageHolder) return child
+            if (child is android.view.ViewGroup) {
+                child.findPageHolderAt(rawX, rawY)?.let { return it }
+            }
+        }
+        return null
     }
 
     /**
