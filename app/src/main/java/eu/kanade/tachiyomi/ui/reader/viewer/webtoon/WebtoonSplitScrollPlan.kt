@@ -53,18 +53,30 @@ internal data class WebtoonSplitScrollPlan<T>(
      */
     fun matchesSource(items: List<T>): Boolean {
         if (items.size != sourceSize) return false
-        if (segments.any { segment ->
-                segment.left.any { it.column != Column.LEFT } ||
-                    segment.right.any { it.column != Column.RIGHT } ||
-                    segment.boundaryAfter?.column?.let { it != Column.FULL_WIDTH } == true
-            }
-        ) return false
+        var nextSourceIndex = 0
+        for ((segmentIndex, segment) in segments.withIndex()) {
+            val isLastSegment = segmentIndex == segments.lastIndex
+            if (isLastSegment == (segment.boundaryAfter != null)) return false
 
-        val placements = inSourceOrder()
-        if (placements.size != items.size) return false
-        return placements.withIndex().all { (index, placement) ->
-            placement.originalIndex == index && items[index] === placement.item
+            var nextColumn = Column.LEFT
+            val pagesInSourceOrder = (segment.left + segment.right).sortedBy { it.originalIndex }
+            for (placement in pagesInSourceOrder) {
+                if (placement.originalIndex != nextSourceIndex) return false
+                if (placement.column != nextColumn) return false
+                if (items.getOrNull(nextSourceIndex) !== placement.item) return false
+
+                nextSourceIndex++
+                nextColumn = if (nextColumn == Column.LEFT) Column.RIGHT else Column.LEFT
+            }
+
+            segment.boundaryAfter?.let { boundary ->
+                if (boundary.originalIndex != nextSourceIndex) return false
+                if (boundary.column != Column.FULL_WIDTH) return false
+                if (items.getOrNull(nextSourceIndex) !== boundary.item) return false
+                nextSourceIndex++
+            }
         }
+        return nextSourceIndex == items.size
     }
 
     /** A stable source-order view for progress and selection mapping. */
