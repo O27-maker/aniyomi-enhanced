@@ -55,8 +55,8 @@ internal data class WebtoonSplitScrollPlan<T>(
         if (items.size != sourceSize) return false
         val placements = inSourceOrder()
         if (placements.size != items.size) return false
-        return placements.all { placement ->
-            items.getOrNull(placement.originalIndex) === placement.item
+        return placements.withIndex().all { (index, placement) ->
+            placement.originalIndex == index && items[index] === placement.item
         }
     }
 
