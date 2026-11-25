@@ -37,7 +37,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * Context that has been wrapped to use the correct theme values based on the
      * current app theme and reader background color
      */
-    private var readerThemedContext = viewer.activity.createReaderThemeContext()
+    private var readerThemedContext: android.content.Context? = viewer.activity.createReaderThemeContext()
 
     /**
      * Updates this adapter with the given [chapters]. It handles setting a few pages of the
@@ -160,8 +160,8 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      */
     override fun createView(container: ViewGroup, position: Int): View {
         return when (val item = items[position]) {
-            is ReaderPage -> PagerPageHolder(readerThemedContext, viewer, item)
-            is ChapterTransition -> PagerTransitionHolder(readerThemedContext, viewer, item)
+            is ReaderPage -> PagerPageHolder(requireNotNull(readerThemedContext), viewer, item)
+            is ChapterTransition -> PagerTransitionHolder(requireNotNull(readerThemedContext), viewer, item)
             else -> throw NotImplementedError("Holder for ${item.javaClass} not implemented")
         }
     }
@@ -236,5 +236,6 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         preprocessed.clear()
         nextTransition = null
         currentChapter = null
+        readerThemedContext = null
     }
 }
