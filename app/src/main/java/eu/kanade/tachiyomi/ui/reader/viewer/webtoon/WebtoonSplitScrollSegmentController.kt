@@ -79,6 +79,8 @@ internal class WebtoonSplitScrollSegmentController(
     fun advancePastBoundary(): Boolean {
         if (disposed) return false
         val next = coordinator.advancePastBoundary(state) ?: return false
+        // Remove the full-width transition before attaching the next segment's columns.
+        host.hideBoundary()
         detachBindings()
         state = next
         bindSegment()
