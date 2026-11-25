@@ -251,7 +251,22 @@ open class ReaderPageImageView @JvmOverloads constructor(
      */
     fun disposePermanently() {
         recycle()
-        pageView?.let(::removeView)
+        pageView?.apply {
+            setOnClickListener(null)
+            when (this) {
+                is SubsamplingScaleImageView -> {
+                    setOnImageEventListener(null)
+                    setOnStateChangedListener(null)
+                }
+                is PhotoView -> {
+                    setOnScaleChangeListener(null)
+                    setOnDoubleTapListener(null)
+                    setImageDrawable(null)
+                }
+                is AppCompatImageView -> setImageDrawable(null)
+            }
+            removeView(this)
+        }
         pageView = null
         config = null
         pageBackground = null
