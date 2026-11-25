@@ -291,7 +291,13 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         result: WebtoonSplitScrollSelectionCoordinator.Result,
     ) {
         if (!result.accepted) return
-        val item = result.selection?.item ?: return
+        val selection = result.selection ?: return
+
+        // A segment plan is only a projection. Before forwarding progress or preload,
+        // verify that its original index still resolves to the same authoritative item.
+        // This rejects callbacks made stale by chapter replacement or inserted split pages.
+        val item = adapter.items.getOrNull(selection.sourceIndex) ?: return
+        if (item != selection.item) return
         if (currentPage == item) return
 
         val allowPreload = checkAllowPreload(item as? ReaderPage)
