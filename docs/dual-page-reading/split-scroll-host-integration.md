@@ -2,8 +2,11 @@
 
 ## Status
 
-Architecture contract only. The experimental reader still renders through the existing single
-`WebtoonFrame` and single `WebtoonRecyclerView`. This document does not activate Split Scroll.
+`WebtoonSplitScrollHostView` now provides a standalone structural container with two independent
+`WebtoonFrame` / `WebtoonRecyclerView` pairs, independent `WebtoonLayoutManager` instances, weighted
+column widths, and a full-screen boundary slot. It is not installed by `WebtoonViewer`; both column
+adapters remain unset until the viewer can supply correctly segmented adapters and lifecycle-safe holders.
+The existing single-column reader remains the active rendering path.
 
 ## Required host structure
 
@@ -41,7 +44,7 @@ The host must capture the binding token in each listener. It must not derive a s
 
 ## Required integration sequence
 
-1. Create a dedicated Split Scroll container without replacing the existing single-column frame.
+1. Connect the standalone `WebtoonSplitScrollHostView` to a dedicated viewer path without replacing the existing single-column frame.
 2. Give each column its own RecyclerView, LayoutManager and holder lifecycle.
 3. Add a full-width transition row controlled by `WebtoonSplitScrollBarrierCoordinator`.
 4. Map visible column items through `WebtoonSplitScrollSelection` to the original `WebtoonAdapter.items` index.
@@ -51,6 +54,8 @@ The host must capture the binding token in each listener. It must not derive a s
 
 ## Non-goals for this stage
 
+- No activation from the reader mode selector.
+- No adapter/holder binding yet; the host is structural only.
 - No active holder reparenting.
 - No mutation/reordering of `WebtoonAdapter.items`.
 - No synchronization of ordinary column scrolling.
