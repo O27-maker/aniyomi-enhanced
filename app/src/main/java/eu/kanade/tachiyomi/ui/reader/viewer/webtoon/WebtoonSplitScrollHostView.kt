@@ -52,7 +52,7 @@ internal class WebtoonSplitScrollHostView(
             )
         }
         rightFrame = WebtoonFrame(context).apply {
-            layoutParams = LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
             addView(
                 rightRecycler,
                 FrameLayout.LayoutParams(
