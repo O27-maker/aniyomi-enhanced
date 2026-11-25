@@ -92,7 +92,7 @@ class PagerPageHolder(
         loadJob?.cancel()
         loadJob = null
         scope.cancel()
-        recycle()
+        disposePermanently()
 
         // Drop transient controls that can retain the viewer/activity through click listeners
         // or custom view properties after the adapter permanently destroys this holder.
