@@ -245,6 +245,23 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     /**
+     * Permanently release this wrapper when its owning pager holder is destroyed.
+     * Unlike [recycle], this also drops the child view and callbacks that may retain
+     * the wrapper or its owning viewer.
+     */
+    fun disposePermanently() {
+        recycle()
+        pageView?.let(::removeView)
+        pageView = null
+        config = null
+        pageBackground = null
+        onImageLoaded = null
+        onImageLoadError = null
+        onScaleChanged = null
+        onViewClicked = null
+    }
+
+    /**
      * Check if the image can be panned to the left
      */
     fun canPanLeft(): Boolean = canPan { it.left }
