@@ -76,6 +76,18 @@ internal class WebtoonSplitScrollSelectionCoordinator(
         return Result(updatedState, finalSelection, boundaryReady, accepted = true)
     }
 
+    /**
+     * Resolve a boundary that is already ready when a segment is initialized.
+     * This is important for leading/consecutive boundaries where one or both
+     * columns are empty and therefore will never emit a scroll callback.
+     */
+    fun readyBoundary(state: State): Result? {
+        if (!barriers.isBoundaryReady(state.barrier)) return null
+        val selection = WebtoonSplitScrollSelection.boundary(plan, state.barrier) ?: return null
+        val updatedState = state.copy(selectedSourceIndex = selection.sourceIndex)
+        return Result(updatedState, selection, boundaryReady = true, accepted = true)
+    }
+
     /** Advance only after the active segment's full-width boundary is ready. */
     fun advancePastBoundary(state: State): State? {
         val nextBarrier = barriers.advance(state.barrier) ?: return null
