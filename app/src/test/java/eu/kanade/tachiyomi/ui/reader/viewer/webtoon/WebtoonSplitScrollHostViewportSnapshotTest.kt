@@ -144,4 +144,39 @@ class WebtoonSplitScrollHostViewportSnapshotTest {
         assertEquals(1, WebtoonSplitScrollHostViewportSnapshot.resolveSegmentIndex(rebuilt, snapshot))
         assertTrue(WebtoonSplitScrollHostViewportSnapshot.restore(rebuilt, snapshot) != null)
     }
+    @Test
+    fun `capture and restore reject malformed source projections`() {
+        val first = Item("first")
+        val second = Item("second")
+        val valid = WebtoonSplitScrollPlan.create(listOf(first, second)) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostViewportSnapshot.capture(
+            valid,
+            0,
+            WebtoonSplitScrollHostState(),
+        )!!
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, first, WebtoonSplitScrollPlan.Column.LEFT),
+                        WebtoonSplitScrollPlan.Placement(1, second, WebtoonSplitScrollPlan.Column.LEFT),
+                    ),
+                    right = emptyList(),
+                    boundaryAfter = null,
+                ),
+            ),
+            sourceSize = 2,
+        )
+
+        assertNull(
+            WebtoonSplitScrollHostViewportSnapshot.capture(
+                malformed,
+                0,
+                WebtoonSplitScrollHostState(),
+            ),
+        )
+        assertNull(WebtoonSplitScrollHostViewportSnapshot.resolveSegmentIndex(malformed, snapshot))
+        assertNull(WebtoonSplitScrollHostViewportSnapshot.restore(malformed, snapshot))
+    }
+
 }
