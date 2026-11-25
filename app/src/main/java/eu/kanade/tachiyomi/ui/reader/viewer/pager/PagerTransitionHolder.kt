@@ -83,6 +83,9 @@ class PagerTransitionHolder(
         stateJob?.cancel()
         stateJob = null
         scope.cancel()
+        // Drop transient loading/error controls (including retry listeners that capture
+        // the viewer) as soon as the holder is permanently removed.
+        pagesContainer.removeAllViews()
     }
 
     /**
