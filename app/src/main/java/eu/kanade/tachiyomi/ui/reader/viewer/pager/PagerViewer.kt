@@ -42,6 +42,23 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     val pager = createPager()
 
     /**
+     * Stored separately so it can be detached during viewer teardown. The listener captures
+     * this viewer and its activity through onPageChange and is otherwise retained by ViewPager.
+     */
+    private val pageChangeListener = object : ViewPager.SimpleOnPageChangeListener() {
+        override fun onPageSelected(position: Int) {
+            if (!activity.isScrollingThroughPages) {
+                activity.hideMenu()
+            }
+            onPageChange(position)
+        }
+
+        override fun onPageScrollStateChanged(state: Int) {
+            isIdle = state == ViewPager.SCROLL_STATE_IDLE
+        }
+    }
+
+    /**
      * Configuration used by the pager, like allow taps, scale mode on images, page transitions...
      */
     val config = PagerConfig(this, scope)
@@ -87,20 +104,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pager.offscreenPageLimit = 1
         pager.id = R.id.reader_pager
         pager.adapter = adapter
-        pager.addOnPageChangeListener(
-            object : ViewPager.SimpleOnPageChangeListener() {
-                override fun onPageSelected(position: Int) {
-                    if (!activity.isScrollingThroughPages) {
-                        activity.hideMenu()
-                    }
-                    onPageChange(position)
-                }
-
-                override fun onPageScrollStateChanged(state: Int) {
-                    isIdle = state == ViewPager.SCROLL_STATE_IDLE
-                }
-            },
-        )
+        pager.addOnPageChangeListener(pageChangeListener)
         pager.tapListener = { event ->
             val viewPosition = IntArray(2)
             pager.getLocationOnScreen(viewPosition)
@@ -152,6 +156,8 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         // instantiated items here, allowing PagerViewerAdapter to permanently dispose
         // both direct holders and holders nested inside presentation containers.
         pager.adapter = null
+        // ViewPager retains page-change listeners independently of its adapter.
+        pager.removeOnPageChangeListener(pageChangeListener)
         // Pager's gesture detector owns these callbacks independently of its adapter.
         // Clear them so a detached pager cannot retain this viewer and its activity.
         pager.tapListener = null
