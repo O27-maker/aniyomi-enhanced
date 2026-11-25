@@ -242,7 +242,12 @@ open class ReaderPageImageView @JvmOverloads constructor(
     private fun releasePageView() {
         pageView?.let {
             when (it) {
-                is SubsamplingScaleImageView -> it.recycle()
+                is SubsamplingScaleImageView -> {
+                    // Image-event listeners capture this wrapper and the page request that
+                    // installed them. Drop them before recycling or reusing the child view.
+                    it.setOnImageEventListener(null)
+                    it.recycle()
+                }
                 is AppCompatImageView -> it.dispose()
             }
             it.isVisible = false
