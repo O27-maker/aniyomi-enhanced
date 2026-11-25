@@ -138,7 +138,10 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * Ordinary detach/reattach remains reusable for nested Spread containers.
      */
     override fun destroyView(container: ViewGroup, position: Int, view: View) {
-        (view as? PagerPageHolder)?.dispose()
+        when (view) {
+            is PagerPageHolder -> view.dispose()
+            is PagerTransitionHolder -> view.dispose()
+        }
     }
 
     /**
