@@ -148,6 +148,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     }
 
     override fun destroy() {
+        // Detach the adapter while the pager is still alive. ViewPager destroys its
+        // instantiated items here, allowing PagerViewerAdapter to permanently dispose
+        // both direct holders and holders nested inside presentation containers.
+        pager.adapter = null
         super.destroy()
         scope.cancel()
     }
