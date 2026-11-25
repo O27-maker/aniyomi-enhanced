@@ -72,6 +72,16 @@ class WebtoonSplitScrollHostStateTest {
     }
 
     @Test
+    fun `non finite zoom values reset to the default`() {
+        val state = WebtoonSplitScrollHostState()
+            .setZoom(Column.LEFT, Float.NaN)
+            .setZoom(Column.RIGHT, Float.POSITIVE_INFINITY)
+
+        assertEquals(WebtoonSplitScrollHostState.DEFAULT_ZOOM, state.left.zoom)
+        assertEquals(WebtoonSplitScrollHostState.DEFAULT_ZOOM, state.right.zoom)
+    }
+
+    @Test
     fun `scroll offset cannot become negative`() {
         val (attached, binding) = WebtoonSplitScrollHostState().attach(Column.RIGHT)
         val result = attached.recordScroll(binding, -10)
