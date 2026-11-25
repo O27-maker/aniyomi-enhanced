@@ -173,4 +173,46 @@ class WebtoonSplitScrollHostRebuildSnapshotTest {
         assertEquals(125, restored.left.scrollOffsetPx)
         assertEquals(875, restored.right.scrollOffsetPx)
     }
+    @Test
+    fun `restored host rejects both old bindings until each column reattaches`() {
+        val selected = Item("selected")
+        val original = WebtoonSplitScrollPlan.create(listOf(selected, Item("sibling"))) { it.boundary }
+        val (leftAttached, oldLeft) = WebtoonSplitScrollHostState().attach(
+            WebtoonSplitScrollHostState.Column.LEFT,
+        )
+        val (bothAttached, oldRight) = leftAttached.attach(
+            WebtoonSplitScrollHostState.Column.RIGHT,
+        )
+        val snapshot = WebtoonSplitScrollHostRebuildSnapshot.capture(
+            original,
+            selected,
+            bothAttached,
+        )!!
+        val rebuild = WebtoonSplitScrollRebuildTargetResolver.rebuild(
+            listOf(selected, Item("sibling")),
+            selected,
+        ) { it.boundary }
+        val restored = WebtoonSplitScrollHostRebuildSnapshot.restore(rebuild, snapshot)!!.viewportState
+
+        val afterOldCallbacks = restored
+            .recordScroll(oldLeft, 300)
+            .recordScroll(oldRight, 700)
+        assertSame(restored, afterOldCallbacks)
+
+        val (leftReattached, newLeft) = afterOldCallbacks.attach(
+            WebtoonSplitScrollHostState.Column.LEFT,
+        )
+        val (bothReattached, newRight) = leftReattached.attach(
+            WebtoonSplitScrollHostState.Column.RIGHT,
+        )
+        val afterNewCallbacks = bothReattached
+            .recordScroll(newLeft, 300)
+            .recordScroll(newRight, 700)
+
+        assertEquals(300, afterNewCallbacks.left.scrollOffsetPx)
+        assertEquals(700, afterNewCallbacks.right.scrollOffsetPx)
+        assertEquals(true, afterNewCallbacks.left.attached)
+        assertEquals(true, afterNewCallbacks.right.attached)
+    }
+
 }
