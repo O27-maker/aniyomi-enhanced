@@ -60,7 +60,22 @@ class PagerPageHolder(
     private var loadJob: Job? = null
 
     init {
-        loadJob = scope.launch { loadPageAndProcessStatus() }
+        startLoading()
+    }
+
+    /**
+     * A spread container may detach and later reattach an existing holder. Restart its
+     * page-state collector in that case; detaching must not permanently disable the holder.
+     */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        startLoading()
+    }
+
+    private fun startLoading() {
+        if (loadJob?.isActive != true) {
+            loadJob = scope.launch { loadPageAndProcessStatus() }
+        }
     }
 
     /**
