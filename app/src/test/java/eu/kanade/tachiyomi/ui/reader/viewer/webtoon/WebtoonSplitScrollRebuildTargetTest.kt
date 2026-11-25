@@ -49,4 +49,35 @@ class WebtoonSplitScrollRebuildTargetTest {
         assertNull(WebtoonSplitScrollRebuildTargetResolver.resolve(plan, selected))
         assertNull(WebtoonSplitScrollRebuildTargetResolver.resolve(plan, null))
     }
+    @Test
+    fun `rebuild creates a fresh projection and resolves selection against its new indices`() {
+        val selected = Item("selected")
+        val items = listOf(Item("new"), Item("first"), selected)
+
+        val rebuild = WebtoonSplitScrollRebuildTargetResolver.rebuild(
+            currentItems = items,
+            selectedItem = selected,
+            isBoundary = { it.boundary },
+        )
+
+        assertEquals(true, rebuild.plan.matchesSource(items))
+        assertEquals(2, rebuild.target?.sourceIndex)
+        assertEquals(Column.LEFT, rebuild.target?.column)
+        assertEquals(1, rebuild.target?.columnPosition)
+    }
+
+    @Test
+    fun `rebuild with empty source has empty plan and no restore target`() {
+        val rebuild = WebtoonSplitScrollRebuildTargetResolver.rebuild(
+            currentItems = emptyList<Item>(),
+            selectedItem = Item("removed"),
+            isBoundary = { it.boundary },
+        )
+
+        assertEquals(0, rebuild.plan.sourceSize)
+        assertEquals(1, rebuild.plan.segments.size)
+        assertEquals(emptyList<Item>(), rebuild.plan.inSourceOrder().map { it.item })
+        assertNull(rebuild.target)
+    }
+
 }
