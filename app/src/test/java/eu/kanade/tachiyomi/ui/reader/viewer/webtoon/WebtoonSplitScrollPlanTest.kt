@@ -51,6 +51,33 @@ class WebtoonSplitScrollPlanTest {
     }
 
     @Test
+    fun `resume source index resolves segment and independent column position`() {
+        val items = listOf("before-a", "before-b", "transition", "after-a", "after-b", "after-c")
+        val plan = WebtoonSplitScrollPlan.create(items) { it == "transition" }
+
+        assertEquals(1, plan.segmentIndexForSourceIndex(3))
+        assertEquals(Column.LEFT to 0, plan.columnPositionForSourceIndex(3))
+        assertEquals(1, plan.segmentIndexForSourceIndex(4))
+        assertEquals(Column.RIGHT to 0, plan.columnPositionForSourceIndex(4))
+        assertEquals(1, plan.segmentIndexForSourceIndex(5))
+        assertEquals(Column.LEFT to 1, plan.columnPositionForSourceIndex(5))
+    }
+
+    @Test
+    fun `boundaries and invalid source indices have no page column position`() {
+        val plan = WebtoonSplitScrollPlan.create(listOf("page", "transition", "next")) {
+            it == "transition"
+        }
+
+        assertEquals(-1, plan.segmentIndexForSourceIndex(1))
+        assertNull(plan.columnPositionForSourceIndex(1))
+        assertEquals(-1, plan.segmentIndexForSourceIndex(-1))
+        assertNull(plan.columnPositionForSourceIndex(-1))
+        assertEquals(-1, plan.segmentIndexForSourceIndex(3))
+        assertNull(plan.columnPositionForSourceIndex(3))
+    }
+
+    @Test
     fun `source snapshot validation rejects changed identities and sizes`() {
         data class Item(val id: String)
 
