@@ -229,8 +229,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
         }
     }
 
-    fun recycle() {
-        beginImageRequest()
+    private fun releasePageView() {
         pageView?.let {
             when (it) {
                 is SubsamplingScaleImageView -> it.recycle()
@@ -238,6 +237,11 @@ open class ReaderPageImageView @JvmOverloads constructor(
             }
             it.isVisible = false
         }
+    }
+
+    fun recycle() {
+        beginImageRequest()
+        releasePageView()
     }
 
     /**
@@ -296,6 +300,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private fun prepareNonAnimatedImageView() {
         if (pageView is SubsamplingScaleImageView) return
+        releasePageView()
         removeView(pageView)
 
         pageView = if (isWebtoon) {
@@ -412,6 +417,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private fun prepareAnimatedImageView() {
         if (pageView is AppCompatImageView) return
+        releasePageView()
         removeView(pageView)
 
         pageView = if (isWebtoon) {
