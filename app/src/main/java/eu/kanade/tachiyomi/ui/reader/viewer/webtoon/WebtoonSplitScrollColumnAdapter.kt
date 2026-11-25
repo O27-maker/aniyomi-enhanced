@@ -50,6 +50,10 @@ internal class WebtoonSplitScrollColumnAdapter(
     fun originalIndexAt(columnPosition: Int): Int? =
         placements.getOrNull(columnPosition)?.originalIndex
 
+    /** Resolve a visible local row to its original ReaderPage identity. */
+    fun pageAt(columnPosition: Int): ReaderPage? =
+        placements.getOrNull(columnPosition)?.item as? ReaderPage
+
     /** Replace one segment snapshot after chapter/split-page mutations. */
     fun submitPlacements(next: List<WebtoonSplitScrollPlan.Placement<Any>>) {
         require(next.all { it.column == column }) {
