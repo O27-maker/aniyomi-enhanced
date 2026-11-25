@@ -12,6 +12,7 @@ class SplitScrollPageDistributorTest {
         val result = SplitScrollPageDistributor.distribute(emptyList<Int>())
         assertTrue(result.left.isEmpty())
         assertTrue(result.right.isEmpty())
+        assertTrue(result.fullWidth.isEmpty())
     }
 
     @Test
@@ -43,7 +44,7 @@ class SplitScrollPageDistributorTest {
 
         assertEquals(source, placements.map { it.item })
         assertEquals(source.indices.toList(), placements.map { it.originalIndex })
-        assertEquals(source.size, result.left.size + result.right.size)
+        assertEquals(source.size, result.left.size + result.right.size + result.fullWidth.size)
     }
 
     @Test
@@ -55,5 +56,25 @@ class SplitScrollPageDistributorTest {
         )
         assertNull(result.placementForOriginalIndex(-1))
         assertNull(result.placementForOriginalIndex(99))
+    }
+
+    @Test
+    fun boundariesRemainFullWidthAndRestartAlternation() {
+        val result = SplitScrollPageDistributor.distribute(
+            listOf("p0", "p1", "transition", "p2", "p3", "insert"),
+            isBoundary = { it == "transition" || it == "insert" },
+        )
+
+        assertEquals(listOf("p0", "p2"), result.left.map { it.item })
+        assertEquals(listOf("p1", "p3"), result.right.map { it.item })
+        assertEquals(listOf("transition", "insert"), result.fullWidth.map { it.item })
+        assertEquals(
+            listOf("p0", "p1", "transition", "p2", "p3", "insert"),
+            result.inSourceOrder().map { it.item },
+        )
+        assertEquals(
+            SplitScrollPageDistributor.Column.FULL_WIDTH,
+            result.placementForOriginalIndex(2)?.column,
+        )
     }
 }
