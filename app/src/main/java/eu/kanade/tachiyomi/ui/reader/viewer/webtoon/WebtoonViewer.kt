@@ -221,7 +221,14 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
                         bind(transition, downloadManager, activity.viewModel.manga)
                     }
                     host.showBoundary(transitionView) {
-                        splitScrollController?.advancePastBoundary()
+                        // The trailing "no next chapter" transition is terminal. Advancing
+                        // would enter the deliberately retained empty trailing segment and
+                        // leave the reader blank; keep the final transition visible instead.
+                        if (transition is ChapterTransition.Next && transition.to == null) {
+                            activity.showMenu()
+                        } else {
+                            splitScrollController?.advancePastBoundary()
+                        }
                     }
                 }
             },
