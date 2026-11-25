@@ -5,8 +5,8 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.widget.FrameLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -18,8 +18,8 @@ import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
-import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
 import kotlinx.coroutines.MainScope
@@ -386,9 +386,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Forward a source-index-resolved Split Scroll selection through the same
      * activity callbacks used by the standard Webtoon viewer.
      *
-     * This is an integration seam only: the experimental host is not installed
-     * by this viewer yet. The selection's original source index is retained by
-     * the coordinator; this method dispatches the actual item identity.
+     * The experimental host reports original source indices through the coordinator.
+     * This method validates the authoritative item identity before dispatching the
+     * same page/progress/preload callbacks as the standard Webtoon viewer.
      */
     internal fun onSplitScrollSelection(
         result: WebtoonSplitScrollSelectionCoordinator.Result,
