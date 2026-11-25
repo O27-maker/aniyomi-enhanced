@@ -341,7 +341,7 @@ class PagerPageHolder(
      * Removes the decode error layout from the holder, if found.
      */
     private fun removeErrorLayout() {
-        errorLayout?.root?.isVisible = false
+        errorLayout?.root?.let(::removeView)
         errorLayout = null
     }
 }
