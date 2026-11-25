@@ -72,6 +72,39 @@ class WebtoonSplitScrollHostViewportSnapshotTest {
     }
 
     @Test
+    fun `restore clamps invalid viewport dimensions and offsets`() {
+        val items = listOf(Item("one"), Item("two"))
+        val plan = WebtoonSplitScrollPlan.create(items) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostViewportSnapshot.capture(
+            plan,
+            0,
+            WebtoonSplitScrollHostState(),
+        )!!.copy(
+            left = WebtoonSplitScrollHostViewportSnapshot.Viewport(
+                widthPercent = Int.MIN_VALUE,
+                zoom = 1f,
+                scrollOffsetPx = Int.MIN_VALUE,
+                generation = 5,
+            ),
+            right = WebtoonSplitScrollHostViewportSnapshot.Viewport(
+                widthPercent = Int.MAX_VALUE,
+                zoom = 1f,
+                scrollOffsetPx = Int.MAX_VALUE,
+                generation = 7,
+            ),
+        )
+
+        val restored = WebtoonSplitScrollHostViewportSnapshot.restore(plan, snapshot)
+
+        assertEquals(WebtoonSplitScrollHostState.MIN_WIDTH_PERCENT, restored?.left?.widthPercent)
+        assertEquals(WebtoonSplitScrollHostState.MAX_WIDTH_PERCENT, restored?.right?.widthPercent)
+        assertEquals(0, restored?.left?.scrollOffsetPx)
+        assertEquals(Int.MAX_VALUE, restored?.right?.scrollOffsetPx)
+        assertEquals(6L, restored?.left?.generation)
+        assertEquals(8L, restored?.right?.generation)
+    }
+
+    @Test
     fun `restored generation rejects callbacks from previous host`() {
         val items = listOf(Item("one"), Item("two"))
         val plan = WebtoonSplitScrollPlan.create(items) { it.boundary }
