@@ -152,12 +152,12 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     }
 
     override fun destroy() {
+        // Stop selection callbacks before adapter detachment can trigger pager updates.
+        pager.removeOnPageChangeListener(pageChangeListener)
         // Detach the adapter while the pager is still alive. ViewPager destroys its
         // instantiated items here, allowing PagerViewerAdapter to permanently dispose
         // both direct holders and holders nested inside presentation containers.
         pager.adapter = null
-        // ViewPager retains page-change listeners independently of its adapter.
-        pager.removeOnPageChangeListener(pageChangeListener)
         // Pager's gesture detector owns these callbacks independently of its adapter.
         // Clear them so a detached pager cannot retain this viewer and its activity.
         pager.tapListener = null
