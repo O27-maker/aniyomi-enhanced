@@ -68,6 +68,25 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private var config: Config? = null
 
+    /**
+     * Keep animated pages from running while their pager holder is detached.
+     * The drawable itself remains attached to the image view so zoom and decoded
+     * image state are preserved when a Spread holder is reattached.
+     */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        (pageView as? AppCompatImageView)?.drawable
+            ?.let { it as? Animatable }
+            ?.start()
+    }
+
+    override fun onDetachedFromWindow() {
+        (pageView as? AppCompatImageView)?.drawable
+            ?.let { it as? Animatable }
+            ?.stop()
+        super.onDetachedFromWindow()
+    }
+
     var onImageLoaded: (() -> Unit)? = null
     var onImageLoadError: (() -> Unit)? = null
     var onScaleChanged: ((newScale: Float) -> Unit)? = null
@@ -404,7 +423,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 onSuccess = { result ->
                     val drawable = result.asDrawable(context.resources)
                     setImageDrawable(drawable)
-                    (drawable as? Animatable)?.start()
+                    if (isAttachedToWindow) (drawable as? Animatable)?.start()
                     isVisible = true
                     this@ReaderPageImageView.onImageLoaded()
                 },
