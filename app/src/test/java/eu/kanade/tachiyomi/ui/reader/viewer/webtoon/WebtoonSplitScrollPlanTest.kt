@@ -51,6 +51,21 @@ class WebtoonSplitScrollPlanTest {
     }
 
     @Test
+    fun `source snapshot validation rejects changed identities and sizes`() {
+        data class Item(val id: String)
+
+        val first = Item("same")
+        val second = Item("other")
+        val source = listOf(first, second)
+        val plan = WebtoonSplitScrollPlan.create(source) { false }
+
+        assertEquals(true, plan.matchesSource(source))
+        assertEquals(false, plan.matchesSource(listOf(Item("same"), second)))
+        assertEquals(false, plan.matchesSource(listOf(first)))
+        assertEquals(false, plan.matchesSource(listOf(first, second, Item("extra"))))
+    }
+
+    @Test
     fun `empty input retains a trailing empty segment and invalid indices are safe`() {
         val plan = WebtoonSplitScrollPlan.create(emptyList<String>()) { false }
 
