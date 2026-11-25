@@ -4,8 +4,10 @@
 
 `WebtoonSplitScrollHostView` provides two independent `WebtoonFrame` / `WebtoonRecyclerView` pairs,
 independent `WebtoonLayoutManager` instances, weighted column widths, and a full-screen boundary slot.
-`WebtoonSplitScrollColumnAdapter` now projects page-only segment placements into either column while
-retaining original source indices. `WebtoonPageHolder` can now size its progress/error UI and side margins
+`WebtoonSplitScrollColumnAdapter` projects page-only segment placements into either column while
+retaining original source indices. `WebtoonSplitScrollSelectionCoordinator` accepts per-column callbacks
+only for the active segment and current lifecycle generation, maps visible pages back to original adapter
+indices, records independent offsets, and selects a full-width transition only after both columns finish. `WebtoonPageHolder` can now size its progress/error UI and side margins
 against its owning recycler instead of always using the legacy viewer recycler. These pieces remain
 standalone: `WebtoonViewer` does not install the host, and the existing single-column reader is still active.
 
@@ -48,8 +50,8 @@ The host must capture the binding token in each listener. It must not derive a s
 1. Connect the standalone `WebtoonSplitScrollHostView` to a dedicated viewer path without replacing the existing single-column frame.
 2. Give each column its own RecyclerView, LayoutManager, `WebtoonSplitScrollColumnAdapter`, and holder lifecycle. The adapter accepts only `ReaderPage` placements and retains original indices.
 3. Add a full-width transition row controlled by `WebtoonSplitScrollBarrierCoordinator`.
-4. Map visible column items through `WebtoonSplitScrollSelection` to the original `WebtoonAdapter.items` index.
-5. Route only accepted current-generation selection events to the existing activity page-selection/progress APIs.
+4. Route each column scroll callback through `WebtoonSplitScrollSelectionCoordinator`; it validates the active segment and generation, records that column's offset, and maps selection to the original `WebtoonAdapter.items` index.
+5. Route only accepted current-generation selection events to the existing activity page-selection/progress APIs. Advance past a boundary only after both columns report their segment end.
 6. Restore by resolving the persisted original page identity/index into the current segment and column; do not restore from a column-local adapter position.
 7. Verify gestures, pinch zoom, long press, image loading, split-page insertion, chapter transitions, resume and rotation before enabling the mode.
 
