@@ -29,6 +29,7 @@ internal data class WebtoonSplitScrollHostViewportSnapshot<T : Any>(
             segmentIndex: Int,
             state: WebtoonSplitScrollHostState,
         ): WebtoonSplitScrollHostViewportSnapshot<T>? {
+            if (!plan.hasValidProjection()) return null
             val segment = plan.segments.getOrNull(segmentIndex) ?: return null
             return WebtoonSplitScrollHostViewportSnapshot(
                 segmentIndex = segmentIndex,
@@ -51,6 +52,7 @@ internal data class WebtoonSplitScrollHostViewportSnapshot<T : Any>(
             plan: WebtoonSplitScrollPlan<T>,
             snapshot: WebtoonSplitScrollHostViewportSnapshot<T>,
         ): Int? {
+            if (!plan.hasValidProjection()) return null
             val matches = plan.segments.mapIndexedNotNull { index, segment ->
                 val boundaryBefore = plan.segments.getOrNull(index - 1)?.boundaryAfter?.item
                 val boundaryAfter = segment.boundaryAfter?.item
@@ -78,6 +80,9 @@ internal data class WebtoonSplitScrollHostViewportSnapshot<T : Any>(
                 right = snapshot.right.toColumnState(snapshot.right.generation),
             )
         }
+        private fun <T : Any> WebtoonSplitScrollPlan<T>.hasValidProjection(): Boolean =
+            matchesSource(inSourceOrder().map { it.item })
+
         private fun WebtoonSplitScrollHostState.ColumnState.toViewport() =
             Viewport(widthPercent, zoom, scrollOffsetPx, generation)
 
