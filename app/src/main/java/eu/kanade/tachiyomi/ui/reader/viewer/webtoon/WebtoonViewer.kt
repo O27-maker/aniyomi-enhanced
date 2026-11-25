@@ -280,6 +280,29 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     }
 
     /**
+     * Forward a source-index-resolved Split Scroll selection through the same
+     * activity callbacks used by the standard Webtoon viewer.
+     *
+     * This is an integration seam only: the experimental host is not installed
+     * by this viewer yet. The selection's original source index is retained by
+     * the coordinator; this method dispatches the actual item identity.
+     */
+    internal fun onSplitScrollSelection(
+        result: WebtoonSplitScrollSelectionCoordinator.Result,
+    ) {
+        if (!result.accepted) return
+        val item = result.selection?.item ?: return
+        if (currentPage == item) return
+
+        val allowPreload = checkAllowPreload(item as? ReaderPage)
+        currentPage = item
+        when (item) {
+            is ReaderPage -> onPageSelected(item, allowPreload)
+            is ChapterTransition -> onTransitionSelected(item)
+        }
+    }
+
+    /**
      * Scrolls up by [scrollDistance].
      */
     private fun scrollUp() {
