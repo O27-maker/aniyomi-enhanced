@@ -92,10 +92,10 @@ internal data class WebtoonSplitScrollHostViewportSnapshot<T : Any>(
                     WebtoonSplitScrollHostState.MIN_WIDTH_PERCENT,
                     WebtoonSplitScrollHostState.MAX_WIDTH_PERCENT,
                 ),
-                zoom = zoom.coerceIn(
+                zoom = zoom.takeIf { it.isFinite() }?.coerceIn(
                     WebtoonSplitScrollHostState.MIN_ZOOM,
                     WebtoonSplitScrollHostState.MAX_ZOOM,
-                ),
+                ) ?: WebtoonSplitScrollHostState.DEFAULT_ZOOM,
                 scrollOffsetPx = scrollOffsetPx.coerceAtLeast(0),
                 generation = previousGeneration + 1,
                 attached = false,
