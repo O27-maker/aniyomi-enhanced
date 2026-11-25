@@ -27,6 +27,7 @@ internal object WebtoonSplitScrollSelection {
         column: WebtoonSplitScrollPlan.Column,
         endVisibleSourceIndex: Int,
     ): Selection<T>? {
+        if (!plan.hasValidProjection()) return null
         if (column == WebtoonSplitScrollPlan.Column.FULL_WIDTH) return null
         val segment = plan.segments.getOrNull(callbackSegmentIndex) ?: return null
         val placements = when (column) {
@@ -47,6 +48,7 @@ internal object WebtoonSplitScrollSelection {
         plan: WebtoonSplitScrollPlan<T>,
         state: WebtoonSplitScrollBarrierCoordinator.State,
     ): Selection<T>? {
+        if (!plan.hasValidProjection()) return null
         if (!WebtoonSplitScrollBarrierCoordinator(plan).isBoundaryReady(state)) return null
         val boundary = plan.segments.getOrNull(state.segmentIndex)?.boundaryAfter ?: return null
         return Selection(
@@ -55,4 +57,6 @@ internal object WebtoonSplitScrollSelection {
             isBoundary = true,
         )
     }
+    private fun <T> WebtoonSplitScrollPlan<T>.hasValidProjection(): Boolean =
+        matchesSource(inSourceOrder().map { it.item })
 }
