@@ -34,6 +34,22 @@ class SpreadAdapterNavigationMapTest {
     }
 
     @Test
+    fun malformedUnitsWithGapsOrDuplicateIndicesAreRejected() {
+        val gap = listOf(
+            SpreadAdapterItemMapper.Unit.Pair("a", 4, "c", 6),
+        )
+        val duplicate = listOf(
+            SpreadAdapterItemMapper.Unit.Single("a", 4),
+            SpreadAdapterItemMapper.Unit.Single("b", 4),
+        )
+
+        assertEquals(-1, SpreadAdapterNavigationMap.displayIndexForAdapter(gap, 4))
+        assertNull(SpreadAdapterNavigationMap.anchorForAdapter(gap, 6))
+        assertEquals(-1, SpreadAdapterNavigationMap.displayIndexForAdapter(duplicate, 4))
+        assertNull(SpreadAdapterNavigationMap.anchorForAdapter(duplicate, 4))
+    }
+
+    @Test
     fun invalidAdapterIndexReturnsNoAnchor() {
         assertEquals(-1, SpreadAdapterNavigationMap.displayIndexForAdapter(units, -1))
         assertNull(SpreadAdapterNavigationMap.anchorForAdapter(units, -1))
