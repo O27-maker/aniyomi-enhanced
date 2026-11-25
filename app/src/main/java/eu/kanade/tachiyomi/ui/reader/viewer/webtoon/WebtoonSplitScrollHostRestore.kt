@@ -47,6 +47,8 @@ internal data class WebtoonSplitScrollHostRestore<T : Any>(
                 }
                 WebtoonSplitScrollPlan.Column.FULL_WIDTH -> {
                     if (!target.isBoundary || target.columnPosition != null) return null
+                    val segment = rebuild.plan.segments.getOrNull(target.segmentIndex) ?: return null
+                    if (segment.boundaryAfter?.item !== target.item) return null
                     Destination.FullWidthBoundary
                 }
             }
