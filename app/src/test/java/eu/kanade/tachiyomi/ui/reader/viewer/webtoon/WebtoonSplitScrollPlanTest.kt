@@ -75,4 +75,26 @@ class WebtoonSplitScrollPlanTest {
         assertNull(plan.placementForSourceIndex(-1))
         assertNull(plan.placementForSourceIndex(0))
     }
+    @Test
+    fun `source snapshot validation rejects duplicate and missing original indices`() {
+        val first = "first"
+        val second = "second"
+        val malformed = WebtoonSplitScrollPlan(
+            segments = listOf(
+                WebtoonSplitScrollPlan.Segment(
+                    left = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, first, Column.LEFT),
+                    ),
+                    right = listOf(
+                        WebtoonSplitScrollPlan.Placement(0, first, Column.RIGHT),
+                    ),
+                    boundaryAfter = null,
+                ),
+            ),
+            sourceSize = 2,
+        )
+
+        assertEquals(false, malformed.matchesSource(listOf(first, second)))
+    }
+
 }
