@@ -226,4 +226,15 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     fun refresh() {
         readerThemedContext = viewer.activity.createReaderThemeContext()
     }
+
+    /**
+     * Drop chapter/page references after the pager has detached this adapter and destroyed
+     * its instantiated holder trees.
+     */
+    fun clear() {
+        items.clear()
+        preprocessed.clear()
+        nextTransition = null
+        currentChapter = null
+    }
 }
