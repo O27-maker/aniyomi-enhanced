@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.WebtoonLayoutManager
  * The two adapters remain projections of the authoritative WebtoonAdapter.items sequence.
  */
 internal class WebtoonSplitScrollScrollBridge(
-    plan: WebtoonSplitScrollPlan<Any>,
+    private val plan: WebtoonSplitScrollPlan<Any>,
     private val leftRecycler: WebtoonRecyclerView,
     private val rightRecycler: WebtoonRecyclerView,
     private val leftAdapter: WebtoonSplitScrollColumnAdapter,
