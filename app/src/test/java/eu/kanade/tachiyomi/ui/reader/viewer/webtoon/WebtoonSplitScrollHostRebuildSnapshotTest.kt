@@ -111,7 +111,6 @@ class WebtoonSplitScrollHostRebuildSnapshotTest {
             ),
         )
     }
-}
 
     @Test
     fun `rejects atomic restore when selected item moves across a chapter boundary`() {
