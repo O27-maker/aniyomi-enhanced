@@ -104,6 +104,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     override fun onDetachedFromWindow() {
+        cancelLandscapeZoom()
         (pageView as? AppCompatImageView)?.drawable
             ?.let { it as? Animatable }
             ?.stop()
