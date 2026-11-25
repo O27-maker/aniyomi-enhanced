@@ -97,4 +97,51 @@ class WebtoonSplitScrollHostViewportSnapshotTest {
 
         assertNull(WebtoonSplitScrollHostViewportSnapshot.capture(plan, 1, WebtoonSplitScrollHostState()))
     }
+    @Test
+    fun `restores segment after earlier chapter boundary shifts its index`() {
+        val firstBoundary = Item("chapter-one", boundary = true)
+        val secondBoundary = Item("chapter-two", boundary = true)
+        val selectedSegmentPages = listOf(Item("three"), Item("four"))
+        val originalItems = listOf(Item("one"), firstBoundary) + selectedSegmentPages + listOf(secondBoundary, Item("five"))
+        val original = WebtoonSplitScrollPlan.create(originalItems) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostViewportSnapshot.capture(
+            original,
+            1,
+            WebtoonSplitScrollHostState().resize(Column.LEFT, 42),
+        )!!
+
+        val insertedBoundary = Item("new-earlier-chapter", boundary = true)
+        val rebuilt = WebtoonSplitScrollPlan.create(
+            listOf(Item("new-page"), insertedBoundary) + originalItems,
+        ) { it.boundary }
+
+        assertEquals(2, WebtoonSplitScrollHostViewportSnapshot.resolveSegmentIndex(rebuilt, snapshot))
+        assertEquals(42, WebtoonSplitScrollHostViewportSnapshot.restore(rebuilt, snapshot)?.left?.widthPercent)
+    }
+
+    @Test
+    fun `rejects viewport restore when adjacent chapter boundary is replaced`() {
+        val before = Item("before", boundary = true)
+        val after = Item("after", boundary = true)
+        val pages = listOf(Item("page-one"), Item("page-two"))
+        val original = WebtoonSplitScrollPlan.create(listOf(before) + pages + listOf(after)) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostViewportSnapshot.capture(original, 1, WebtoonSplitScrollHostState())!!
+        val replacement = Item("replacement", boundary = true)
+        val changed = WebtoonSplitScrollPlan.create(listOf(before) + pages + listOf(replacement)) { it.boundary }
+
+        assertNull(WebtoonSplitScrollHostViewportSnapshot.resolveSegmentIndex(changed, snapshot))
+        assertNull(WebtoonSplitScrollHostViewportSnapshot.restore(changed, snapshot))
+    }
+
+    @Test
+    fun `preserves empty segment between consecutive chapter boundaries`() {
+        val firstBoundary = Item("first", boundary = true)
+        val secondBoundary = Item("second", boundary = true)
+        val original = WebtoonSplitScrollPlan.create(listOf(firstBoundary, secondBoundary)) { it.boundary }
+        val snapshot = WebtoonSplitScrollHostViewportSnapshot.capture(original, 1, WebtoonSplitScrollHostState())!!
+        val rebuilt = WebtoonSplitScrollPlan.create(listOf(firstBoundary, secondBoundary)) { it.boundary }
+
+        assertEquals(1, WebtoonSplitScrollHostViewportSnapshot.resolveSegmentIndex(rebuilt, snapshot))
+        assertTrue(WebtoonSplitScrollHostViewportSnapshot.restore(rebuilt, snapshot) != null)
+    }
 }
