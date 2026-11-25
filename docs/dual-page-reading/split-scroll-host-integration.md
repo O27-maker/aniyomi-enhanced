@@ -2,11 +2,12 @@
 
 ## Status
 
-`WebtoonSplitScrollHostView` now provides a standalone structural container with two independent
-`WebtoonFrame` / `WebtoonRecyclerView` pairs, independent `WebtoonLayoutManager` instances, weighted
-column widths, and a full-screen boundary slot. It is not installed by `WebtoonViewer`; both column
-adapters remain unset until the viewer can supply correctly segmented adapters and lifecycle-safe holders.
-The existing single-column reader remains the active rendering path.
+`WebtoonSplitScrollHostView` provides two independent `WebtoonFrame` / `WebtoonRecyclerView` pairs,
+independent `WebtoonLayoutManager` instances, weighted column widths, and a full-screen boundary slot.
+`WebtoonSplitScrollColumnAdapter` now projects page-only segment placements into either column while
+retaining original source indices. `WebtoonPageHolder` can now size its progress/error UI and side margins
+against its owning recycler instead of always using the legacy viewer recycler. These pieces remain
+standalone: `WebtoonViewer` does not install the host, and the existing single-column reader is still active.
 
 ## Required host structure
 
@@ -26,7 +27,7 @@ The full-width chapter transition is a separate host row spanning both columns. 
 Do not move or reparent a live `PagerPageHolder` or `WebtoonPageHolder`.
 
 - `PagerPageHolder` starts its page/status collection during initialization and cancels it on detach. There is no attach-time restart path.
-- `WebtoonPageHolder` starts loading from `bind(page)` and cancels/reset state from `recycle()`. Its current parent-height lookup uses `viewer.recycler.height`, and its side margins are based on screen width. A two-column implementation must make holder sizing depend on the actual owning column, not the legacy single recycler.
+- `WebtoonPageHolder` starts loading from `bind(page)` and cancels/reset state from `recycle()`. It now accepts an optional owning `WebtoonRecyclerView`; the Split Scroll adapter passes its column recycler so parent-height and side-margin calculations use that column's dimensions.
 - `WebtoonFrame` currently delegates all scale and fling gestures to its first child recycler. It cannot host both columns as-is.
 - `WebtoonViewer.onScrolled()` currently selects the last end-visible item from one adapter. Two independent adapters must report through a shared selection/progress coordinator using original source indices.
 
@@ -45,7 +46,7 @@ The host must capture the binding token in each listener. It must not derive a s
 ## Required integration sequence
 
 1. Connect the standalone `WebtoonSplitScrollHostView` to a dedicated viewer path without replacing the existing single-column frame.
-2. Give each column its own RecyclerView, LayoutManager and holder lifecycle.
+2. Give each column its own RecyclerView, LayoutManager, `WebtoonSplitScrollColumnAdapter`, and holder lifecycle. The adapter accepts only `ReaderPage` placements and retains original indices.
 3. Add a full-width transition row controlled by `WebtoonSplitScrollBarrierCoordinator`.
 4. Map visible column items through `WebtoonSplitScrollSelection` to the original `WebtoonAdapter.items` index.
 5. Route only accepted current-generation selection events to the existing activity page-selection/progress APIs.
@@ -55,7 +56,7 @@ The host must capture the binding token in each listener. It must not derive a s
 ## Non-goals for this stage
 
 - No activation from the reader mode selector.
-- No adapter/holder binding yet; the host is structural only.
+- No installation of the standalone host into `WebtoonViewer` yet.
 - No active holder reparenting.
 - No mutation/reordering of `WebtoonAdapter.items`.
 - No synchronization of ordinary column scrolling.
