@@ -76,6 +76,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     /** Experimental two-column host; the normal reader remains the fallback. */
     private var splitScrollHost: WebtoonSplitScrollHostView? = null
     private var splitScrollController: WebtoonSplitScrollSegmentController? = null
+    private var activeSplitRecycler: WebtoonRecyclerView? = null
 
     /**
      * Currently active item. It can be a chapter page or a chapter transition.
@@ -223,7 +224,81 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
                 }
             },
         )
+        bindSplitScrollInteractions(host)
         initialSourceIndex?.let { splitScrollController?.moveToSourceIndex(it) }
+    }
+
+
+    /**
+     * Install the same tap/long-press navigation semantics as the standard
+     * continuous reader, scoped to whichever independent column was touched.
+     */
+    private fun bindSplitScrollInteractions(host: WebtoonSplitScrollHostView) {
+        fun bindColumn(
+            recycler: WebtoonRecyclerView,
+            column: WebtoonSplitScrollHostState.Column,
+        ) {
+            recycler.tapListener = { event ->
+                activeSplitRecycler = recycler
+                val width = recycler.width.coerceAtLeast(1)
+                val height = recycler.originalHeight.coerceAtLeast(recycler.height).coerceAtLeast(1)
+                val point = PointF(event.x / width, event.y / height)
+                when (config.navigator.getAction(point)) {
+                    NavigationRegion.MENU -> activity.toggleMenu()
+                    NavigationRegion.NEXT, NavigationRegion.RIGHT -> recycler.scrollBy(0, scrollDistance)
+                    NavigationRegion.PREV, NavigationRegion.LEFT -> recycler.scrollBy(0, -scrollDistance)
+                }
+            }
+            recycler.longTapListener = { event ->
+                if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
+                    val child = recycler.findChildViewUnder(event.x, event.y)
+                    val position = child?.let(recycler::getChildAdapterPosition)
+                        ?: RecyclerView.NO_POSITION
+                    val page = splitScrollController?.pageAt(column, position)
+                    if (page != null) {
+                        activeSplitRecycler = recycler
+                        activity.onPageLongTap(page)
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            }
+            recycler.addOnScrollListener(
+                object : RecyclerView.OnScrollListener() {
+                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                        if ((dy > threshold || dy < -threshold) && activity.viewModel.state.value.menuVisible) {
+                            activity.hideMenu()
+                        }
+                        if (dy < 0) {
+                            val first = (recyclerView.layoutManager as? WebtoonLayoutManager)
+                                ?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
+                            val page = splitScrollController?.pageAt(column, first)
+                            if (page != null && page.number <= 2) {
+                                val previous = adapter.items.firstOrNull() as? ChapterTransition.Prev
+                                previous?.to?.let(activity::requestPreloadChapter)
+                            }
+                        }
+                        val manager = recyclerView.layoutManager as? WebtoonLayoutManager
+                        val last = manager?.findLastEndVisibleItemPosition() ?: RecyclerView.NO_POSITION
+                        val page = splitScrollController?.pageAt(column, last)
+                        if (page != null && page.chapter == adapter.currentChapter) {
+                            val pages = page.chapter.pages.orEmpty()
+                            if (pages.size - page.number < 5) {
+                                val next = adapter.items.lastOrNull()
+                                val chapter = (next as? ChapterTransition.Next)?.to
+                                    ?: (next as? ReaderPage)?.chapter
+                                chapter?.let(activity::requestPreloadChapter)
+                            }
+                        }
+                    }
+                },
+            )
+        }
+        bindColumn(host.leftRecycler, WebtoonSplitScrollHostState.Column.LEFT)
+        bindColumn(host.rightRecycler, WebtoonSplitScrollHostState.Column.RIGHT)
     }
 
     private fun checkAllowPreload(page: ReaderPage?): Boolean {
@@ -272,8 +347,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
         splitScrollController?.dispose()
         splitScrollController = null
+        splitScrollHost?.leftRecycler?.apply { tapListener = null; longTapListener = null }
+        splitScrollHost?.rightRecycler?.apply { tapListener = null; longTapListener = null }
         splitScrollHost?.setColumnAdapters(null, null)
         splitScrollHost?.let(root::removeView)
+        activeSplitRecycler = null
         splitScrollHost = null
 
         // Detach first so RecyclerView recycles its holders while the adapter is still valid.
@@ -415,6 +493,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Scrolls up by [scrollDistance].
      */
     private fun scrollUp() {
+        val target = activeSplitRecycler
+        if (target != null && config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
+            target.scrollBy(0, -scrollDistance)
+            return
+        }
         if (config.usePageTransitions) {
             recycler.smoothScrollBy(0, -scrollDistance)
         } else {
@@ -426,6 +509,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Scrolls down by [scrollDistance].
      */
     private fun scrollDown() {
+        val target = activeSplitRecycler
+        if (target != null && config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
+            target.scrollBy(0, scrollDistance)
+            return
+        }
         if (config.usePageTransitions) {
             recycler.smoothScrollBy(0, scrollDistance)
         } else {
