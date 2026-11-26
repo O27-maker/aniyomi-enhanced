@@ -349,6 +349,59 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     }
 
     /**
+     * Rebuild the display projection from the authoritative effective adapter sequence.
+     * Only decoded portrait pages can pair; unknown pages remain single until their own
+     * orientation callback arrives. The active ReaderPage is retained by identity.
+     */
+    private fun rebuildSpreadProjection() {
+        if (config.dualPagePresentationMode != eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPREAD) {
+            return
+        }
+        if (adapter.items.isEmpty()) return
+
+        val selectedItem = currentPage ?: adapter.sourceItemAtDisplay(pager.currentItem)
+        val projection = SpreadAdapterProjection.buildReaderPagesAnchoredToItem(
+            adapterItems = adapter.items,
+            selectedItem = selectedItem,
+            isPortraitPage = ::isPortraitPageForSpread,
+        )
+        if (projection.units.isEmpty()) return
+
+        if (!adapter.setSpreadProjection(projection, this is R2LPagerViewer)) return
+        activeSpreadProjection = projection
+
+        val selectedSourceIndex = adapter.items.indexOfFirst { it === selectedItem }
+            .takeIf { it >= 0 }
+            ?: projection.units.firstOrNull()?.let {
+                when (it) {
+                    is SpreadAdapterItemMapper.Unit.Single -> it.adapterIndex
+                    is SpreadAdapterItemMapper.Unit.Pair -> it.firstAdapterIndex
+                }
+            }
+        val displayIndex = selectedSourceIndex?.let(projection::let {
+            { sourceIndex: Int -> SpreadAdapterNavigationMap.displayIndexForAdapter(it.units, sourceIndex) }
+        }) ?: -1
+        if (displayIndex >= 0 && displayIndex != pager.currentItem) {
+            pager.setCurrentItem(displayIndex, false)
+            onPageChange(displayIndex)
+        }
+    }
+
+    /** Return to one adapter item per page without changing the active source-page identity. */
+    private fun clearSpreadPresentation() {
+        val selectedSourceIndex = currentPage?.let { selected ->
+            adapter.items.indexOfFirst { it === selected }
+        } ?: -1
+        activeSpreadProjection = null
+        adapter.clearSpreadProjection()
+        if (selectedSourceIndex >= 0 && selectedSourceIndex < adapter.items.size) {
+            if (pager.currentItem != selectedSourceIndex) {
+                pager.setCurrentItem(selectedSourceIndex, false)
+            }
+        }
+    }
+
+    /**
      * Tells this viewer to set the given [chapters] as active. If the pager is currently idle,
      * it sets the chapters immediately, otherwise they are saved and set when it becomes idle.
      */
