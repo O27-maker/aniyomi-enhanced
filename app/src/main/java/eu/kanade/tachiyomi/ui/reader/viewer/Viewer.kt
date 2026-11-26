@@ -5,6 +5,7 @@ import android.view.MotionEvent
 import android.view.View
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
+import java.util.IdentityHashMap
 
 /**
  * Interface for implementing a viewer.
@@ -42,4 +43,14 @@ interface Viewer {
      * return true if the event was handled, false otherwise.
      */
     fun handleGenericMotionEvent(event: MotionEvent): Boolean
+}
+
+/**
+ * Transfers per-page zoom and pan state when ReaderActivity replaces a viewer.
+ * Identity-based keys keep distinct ReaderPage instances separate.
+ */
+interface ReaderPageZoomStateOwner {
+    fun exportPageZoomStates(): IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>
+
+    fun importPageZoomStates(states: IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>)
 }
