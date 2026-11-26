@@ -268,6 +268,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                 val position = when (val identity = view.item) {
                     is SpreadAdapterItemMapper.Unit<*> ->
                         projection.units.indexOfFirst { it === identity }
+                    is PagerPageHolder -> -1 // Recreate source holders inside their SpreadFrame.
                     else -> {
                         val sourceIndex = items.indexOfFirst { it === identity }
                         if (sourceIndex == -1) -1 else
