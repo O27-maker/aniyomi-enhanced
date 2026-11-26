@@ -297,6 +297,9 @@ class PagerPageHolder(
     override fun onImageLoaded() {
         super.onImageLoaded()
         progressIndicator?.hide()
+        // Decoded dimensions are now available to a Spread projection. The listener
+        // decides whether a safe, anchor-preserving projection rebuild is possible.
+        viewer.onSpreadPageOrientationReady(page)
     }
 
     /**
