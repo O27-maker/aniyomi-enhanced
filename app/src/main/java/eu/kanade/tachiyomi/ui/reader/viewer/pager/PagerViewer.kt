@@ -757,7 +757,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
         val plan = PagerSplitScrollPlan.create(
             source = adapter.items.toList(),
             isBoundary = { it is ChapterTransition },
-            firstColumn = if (config.dualPageInvert) {
+            firstColumn = if (this is R2LPagerViewer) {
                 PagerSplitScrollPlan.Column.RIGHT
             } else {
                 PagerSplitScrollPlan.Column.LEFT
