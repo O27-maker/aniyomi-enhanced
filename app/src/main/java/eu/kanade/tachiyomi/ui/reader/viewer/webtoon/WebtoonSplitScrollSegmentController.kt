@@ -109,6 +109,8 @@ internal class WebtoonSplitScrollSegmentController(
      * Position the active segment at an original reader index without confusing
      * a column-local adapter position with the authoritative source sequence.
      */
+    fun segmentIndexForSourceIndex(sourceIndex: Int): Int = plan.segmentIndexForSourceIndex(sourceIndex)
+
     fun moveToSourceIndex(sourceIndex: Int, offsetPx: Int = 0): Boolean {
         if (disposed) return false
         val targetSegmentIndex = plan.segmentIndexForSourceIndex(sourceIndex)
