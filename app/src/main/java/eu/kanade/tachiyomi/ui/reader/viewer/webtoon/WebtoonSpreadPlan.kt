@@ -84,6 +84,7 @@ internal data class WebtoonSpreadPlan<T>(
             isPortrait: (T) -> Boolean?,
             canPair: (T) -> Boolean = { true },
             firstPageSingle: Boolean = false,
+            firstPageIndex: Int = 0,
         ): WebtoonSpreadPlan<T> {
             val units = mutableListOf<Unit<T>>()
             var index = 0
@@ -94,7 +95,7 @@ internal data class WebtoonSpreadPlan<T>(
                     index++
                     continue
                 }
-                if (firstPageSingle && index == 0) {
+                if (firstPageSingle && index == firstPageIndex) {
                     units += Unit.Single(index, item)
                     index++
                     continue
