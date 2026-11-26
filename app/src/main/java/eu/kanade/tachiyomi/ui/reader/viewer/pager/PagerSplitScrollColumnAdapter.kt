@@ -45,6 +45,14 @@ internal class PagerSplitScrollColumnAdapter(
     override fun onBindViewHolder(holder: PageHolder, position: Int) {
         val placement = placements[position]
         val page = placement.item as ReaderPage
+        holder.container.setOnLongClickListener {
+            if (viewer.activity.viewModel.state.value.menuVisible || viewer.config.longTapEnabled) {
+                viewer.activity.onPageLongTap(page)
+                true
+            } else {
+                false
+            }
+        }
         if (holder.pageHolder?.page !== page) {
             holder.clearPageHolder()
             val pageHolder = PagerPageHolder(
@@ -80,6 +88,7 @@ internal class PagerSplitScrollColumnAdapter(
         var pageHolder: PagerPageHolder? = null
 
         fun clearPageHolder() {
+            container.setOnLongClickListener(null)
             pageHolder?.dispose()
             pageHolder = null
             container.removeAllViews()
