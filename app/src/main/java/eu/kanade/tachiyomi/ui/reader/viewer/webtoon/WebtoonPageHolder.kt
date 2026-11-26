@@ -152,7 +152,7 @@ class WebtoonPageHolder(
                             progressIndicator.setProgress(value)
                         }
                     }
-                    Page.State.READY -> setImage()
+                    Page.State.READY -> setImage(page)
                     Page.State.ERROR -> setError()
                 }
             }
@@ -189,10 +189,10 @@ class WebtoonPageHolder(
     /**
      * Called when the page is ready.
      */
-    private suspend fun setImage() {
+    private suspend fun setImage(expectedPage: ReaderPage) {
         progressIndicator.setProgress(0)
 
-        val streamFn = page?.stream ?: return
+        val streamFn = expectedPage.stream ?: return
 
         try {
             val (source, isAnimated) = withIOContext {
@@ -203,7 +203,7 @@ class WebtoonPageHolder(
             withUIContext {
                 // A holder may be recycled and rebound while image processing is running
                 // off the UI thread. Never let an old page replace the newly bound image.
-                if (this.page !== page) return@withUIContext
+                if (this.page !== expectedPage) return@withUIContext
                 frame.setImage(
                     source,
                     isAnimated,
@@ -221,7 +221,7 @@ class WebtoonPageHolder(
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
-                if (this.page === page) setError()
+                if (this.page === expectedPage) setError()
             }
         }
     }
