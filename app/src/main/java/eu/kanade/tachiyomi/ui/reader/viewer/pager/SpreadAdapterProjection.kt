@@ -43,7 +43,9 @@ internal data class SpreadAdapterProjection<T>(
                 firstPage != null && secondPage != null && sameChapterIfAvailable(firstPage, secondPage)
             },
             firstPageSingle = firstPageSingle,
-            firstPageIndex = firstPageIndex,
+            // A missing chapter cover must not fall back to source index zero: that
+            // position can be a previous-chapter page or a transition barrier.
+            firstPageIndex = firstPageIndex ?: if (firstPageSingle) -1 else null,
         )
 
         /**
