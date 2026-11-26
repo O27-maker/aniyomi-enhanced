@@ -219,6 +219,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         host.isFocusable = false
         host.layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         host.layoutManager = manager
+        spreadOrientations.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
         spreadPlan = createSpreadPlan()
         val projection = spreadAdapter ?: WebtoonSpreadAdapter(
             viewer = this,
@@ -291,7 +292,12 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             items = adapter.items,
             isBoundary = { it is ChapterTransition },
             isPortrait = { item -> (item as? ReaderPage)?.let { spreadOrientations[it] } },
-            canPair = { it is ReaderPage },
+            canPair = { item ->
+                val page = item as? ReaderPage
+                val index = page?.let(adapter.items::indexOf) ?: -1
+                val next = adapter.items.getOrNull(index + 1) as? ReaderPage
+                page != null && next?.chapter == page.chapter
+            },
             firstPageSingle = config.firstPageSingle,
             firstPageIndex = firstPageIndex,
         )
@@ -542,6 +548,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         splitScrollHost?.let(root::removeView)
         activeSplitRecycler = null
         splitScrollHost = null
+        disposeSpreadHost()
 
         // Detach first so RecyclerView recycles its holders while the adapter is still valid.
         recycler.adapter = null
