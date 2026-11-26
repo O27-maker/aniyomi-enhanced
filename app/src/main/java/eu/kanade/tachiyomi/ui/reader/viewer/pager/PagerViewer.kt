@@ -366,6 +366,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             isPortraitPage = ::isPortraitPageForSpread,
         )
         if (projection.units.isEmpty()) return
+        if (activeSpreadProjection?.let { sameSpreadUnits(it.units, projection.units) } == true) return
 
         if (!adapter.setSpreadProjection(projection, this is R2LPagerViewer)) return
         activeSpreadProjection = projection
@@ -378,12 +379,35 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                     is SpreadAdapterItemMapper.Unit.Pair -> it.firstAdapterIndex
                 }
             }
-        val displayIndex = selectedSourceIndex?.let(projection::let {
-            { sourceIndex: Int -> SpreadAdapterNavigationMap.displayIndexForAdapter(it.units, sourceIndex) }
-        }) ?: -1
+        val displayIndex = selectedSourceIndex?.let {
+            SpreadAdapterNavigationMap.displayIndexForAdapter(projection.units, it)
+        } ?: -1
         if (displayIndex >= 0 && displayIndex != pager.currentItem) {
             pager.setCurrentItem(displayIndex, false)
             onPageChange(displayIndex)
+        }
+    }
+
+    private fun sameSpreadUnits(
+        first: List<SpreadAdapterItemMapper.Unit<Any>>,
+        second: List<SpreadAdapterItemMapper.Unit<Any>>,
+    ): Boolean {
+        if (first.size != second.size) return false
+        return first.indices.all { index ->
+            when (val left = first[index]) {
+                is SpreadAdapterItemMapper.Unit.Single -> {
+                    val right = second[index] as? SpreadAdapterItemMapper.Unit.Single<Any>
+                    right != null && left.adapterIndex == right.adapterIndex && left.item === right.item
+                }
+                is SpreadAdapterItemMapper.Unit.Pair -> {
+                    val right = second[index] as? SpreadAdapterItemMapper.Unit.Pair<Any>
+                    right != null &&
+                        left.firstAdapterIndex == right.firstAdapterIndex &&
+                        left.secondAdapterIndex == right.secondAdapterIndex &&
+                        left.first === right.first &&
+                        left.second === right.second
+                }
+            }
         }
     }
 
@@ -422,6 +446,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                 pager.currentItem,
             ) is ChapterTransition
         adapter.setChapters(chapters, forceTransition)
+        rebuildSpreadProjection()
 
         // Layout the pager once a chapter is being set
         if (pager.isGone) {
