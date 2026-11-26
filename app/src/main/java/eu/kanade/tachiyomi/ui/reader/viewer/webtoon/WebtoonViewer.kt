@@ -31,6 +31,7 @@ import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
 import kotlin.math.max
 import kotlin.math.min
+import java.util.IdentityHashMap
 
 /**
  * Implementation of a [Viewer] to display pages with a [RecyclerView].
@@ -79,7 +80,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     private var spreadLayoutManager: WebtoonLayoutManager? = null
     private var spreadAdapter: WebtoonSpreadAdapter? = null
     private var spreadPlan: WebtoonSpreadPlan<Any>? = null
-    private val spreadOrientations = mutableMapOf<ReaderPage, Boolean?>()
+    private val spreadOrientations = IdentityHashMap<ReaderPage, Boolean?>()
     private var spreadPreferredSourceIndex: Int? = null
 
     /** Experimental two-column host; the normal reader remains the fallback. */
@@ -100,7 +101,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     )
 
     /** Preserve page zoom when RecyclerView recycles a holder or a presentation is rebuilt. */
-    private val pageZoomStates = mutableMapOf<ReaderPage, ReaderPageImageView.ImageZoomState>()
+    private val pageZoomStates = IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>()
 
     private val threshold: Int =
         Injekt.get<ReaderPreferences>()
@@ -180,7 +181,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
                 }
                 DualPagePresentationMode.SPREAD -> {
                     if (adapter.items.isNotEmpty()) {
-                        spreadOrientations.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
+                        spreadOrientations.keys.removeAll { cachedPage -> adapter.items.none { it === cachedPage } }
                         installSpreadHost(adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 })
                     }
                 }
@@ -245,7 +246,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         host.zoomOutDisabled = config.zoomOutDisabled
         host.layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         host.layoutManager = manager
-        spreadOrientations.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
+        spreadOrientations.keys.removeAll { cachedPage -> adapter.items.none { it === cachedPage } }
         spreadPlan = createSpreadPlan()
         val projection = spreadAdapter ?: WebtoonSpreadAdapter(
             viewer = this,
@@ -685,7 +686,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val firstLayout = recycler.isGone
         val forceTransition = config.alwaysShowChapterTransition || currentPage is ChapterTransition
         adapter.setChapters(chapters, forceTransition)
-        pageZoomStates.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
+        pageZoomStates.keys.removeAll { cachedPage -> adapter.items.none { it === cachedPage } }
 
         val requestedPage = chapters.currChapter.pages?.let { pages ->
             pages.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0)) ?: pages.lastOrNull()
