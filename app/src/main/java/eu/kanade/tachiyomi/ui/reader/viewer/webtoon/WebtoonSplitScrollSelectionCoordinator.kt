@@ -60,7 +60,7 @@ internal class WebtoonSplitScrollSelectionCoordinator(
         val updatedBarrier = if (reachedSegmentEnd) {
             barriers.markColumnAtEnd(state.barrier, segmentIndex, hostColumn)
         } else {
-            state.barrier
+            barriers.markColumnNotAtEnd(state.barrier, segmentIndex, hostColumn)
         }
         val boundaryReady = barriers.isBoundaryReady(updatedBarrier)
         val finalSelection = if (boundaryReady) {
