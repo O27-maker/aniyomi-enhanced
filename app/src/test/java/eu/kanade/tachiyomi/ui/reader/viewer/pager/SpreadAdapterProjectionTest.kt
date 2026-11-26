@@ -40,6 +40,52 @@ class SpreadAdapterProjectionTest {
     }
 
     @Test
+    fun firstPageCanBeKeptAloneWithoutChangingFollowingPairingOrSourceIndices() {
+        val source = listOf("cover", "p1", "p2", "p3")
+        val projection = SpreadAdapterProjection.build(
+            adapterItems = source,
+            selectedAdapterIndex = 0,
+            firstPageSingle = true,
+        )
+
+        assertEquals(
+            listOf(
+                SpreadAdapterItemMapper.Unit.Single("cover", 0),
+                SpreadAdapterItemMapper.Unit.Pair("p1", 1, "p2", 2),
+                SpreadAdapterItemMapper.Unit.Single("p3", 3),
+            ),
+            projection.units,
+        )
+        assertEquals(SpreadAdapterNavigationMap.Anchor(0, 0), projection.selectedAnchor)
+        assertEquals(source, projection.units.flatMap { unit ->
+            when (unit) {
+                is SpreadAdapterItemMapper.Unit.Single -> listOf(unit.item)
+                is SpreadAdapterItemMapper.Unit.Pair -> listOf(unit.first, unit.second)
+            }
+        })
+    }
+
+    @Test
+    fun firstPageSingleDoesNotConsumeOrPairAcrossBoundary() {
+        val projection = SpreadAdapterProjection.build(
+            adapterItems = listOf("cover", "transition", "p1", "p2"),
+            selectedAdapterIndex = 2,
+            isBoundary = { it == "transition" },
+            firstPageSingle = true,
+        )
+
+        assertEquals(
+            listOf(
+                SpreadAdapterItemMapper.Unit.Single("cover", 0),
+                SpreadAdapterItemMapper.Unit.Single("transition", 1),
+                SpreadAdapterItemMapper.Unit.Pair("p1", 2, "p2", 3),
+            ),
+            projection.units,
+        )
+        assertEquals(SpreadAdapterNavigationMap.Anchor(2, 2), projection.selectedAnchor)
+    }
+
+    @Test
     fun projectionRejectsMutatedOrReplacedSourceItems() {
         val original = listOf(Any(), Any())
         val projection = SpreadAdapterProjection.build(
