@@ -129,8 +129,44 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     /**
      * Returns the amount of items of the adapter.
      */
-    override fun getCount(): Int {
-        return items.size
+    private var spreadProjection: SpreadAdapterProjection<Any>? = null
+    private var spreadIsR2L: Boolean = false
+
+    override fun getCount(): Int = spreadProjection?.units?.size ?: items.size
+
+    /**
+     * Install an immutable display projection only while it describes the current source
+     * sequence. The source list remains authoritative for chapter and page operations.
+     */
+    internal fun setSpreadProjection(
+        projection: SpreadAdapterProjection<Any>,
+        isR2L: Boolean,
+    ): Boolean {
+        if (!projection.matchesSource(items)) return false
+        spreadProjection = projection
+        spreadIsR2L = isR2L
+        notifyDataSetChanged()
+        return true
+    }
+
+    internal fun clearSpreadProjection() {
+        if (spreadProjection == null) return
+        spreadProjection = null
+        notifyDataSetChanged()
+    }
+
+    internal fun sourceItemAtDisplay(displayIndex: Int): Any? {
+        val projection = spreadProjection ?: return items.getOrNull(displayIndex)
+        return SpreadAdapterNavigationMap.adapterIndexForDisplay(
+            projection.units,
+            displayIndex,
+        )?.let(items::getOrNull)
+    }
+
+    internal fun displayIndexForSource(sourceIndex: Int): Int {
+        val projection = spreadProjection ?: return sourceIndex.takeIf { it in items.indices } ?: -1
+        if (!projection.matchesSource(items)) return -1
+        return SpreadAdapterNavigationMap.displayIndexForAdapter(projection.units, sourceIndex)
     }
 
     /**
@@ -158,8 +194,16 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     /**
      * Creates a new view for the item at the given [position].
      */
-    override fun createView(container: ViewGroup, position: Int): View =
-        createItemView(items[position])
+    override fun createView(container: ViewGroup, position: Int): View {
+        val projection = spreadProjection
+        if (projection != null) {
+            check(projection.matchesSource(items)) {
+                "Spread projection no longer matches the source adapter sequence"
+            }
+            return createSpreadView(container, projection.units[position], spreadIsR2L)
+        }
+        return createItemView(items[position])
+    }
 
     private fun createItemView(item: Any): View {
         return when (item) {
@@ -212,12 +256,23 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      */
     override fun getItemPosition(view: Any): Int {
         if (view is PositionableView) {
-            val position = items.indexOf(view.item)
-            if (position != -1) {
-                return position
+            val projection = spreadProjection
+            if (projection != null) {
+                val position = when (val identity = view.item) {
+                    is SpreadAdapterItemMapper.Unit<*> ->
+                        projection.units.indexOfFirst { it === identity }
+                    else -> {
+                        val sourceIndex = items.indexOfFirst { it === identity }
+                        if (sourceIndex == -1) -1 else
+                            SpreadAdapterNavigationMap.displayIndexForAdapter(projection.units, sourceIndex)
+                    }
+                }
+                if (position != -1) return position
             } else {
-                logcat { "Position for ${view.item} not found" }
+                val position = items.indexOfFirst { it === view.item }
+                if (position != -1) return position
             }
+            logcat { "Position for ${view.item} not found" }
         }
         return POSITION_NONE
     }
