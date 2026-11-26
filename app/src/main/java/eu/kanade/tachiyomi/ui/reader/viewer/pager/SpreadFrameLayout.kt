@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
 import android.content.Context
 import android.view.ViewGroup
+import eu.kanade.tachiyomi.widget.ViewPagerAdapter
 
 /**
  * Lightweight display container for a Spread item.
@@ -11,7 +12,14 @@ import android.view.ViewGroup
  * original page-holder views. More than two children are rejected to prevent
  * accidental misuse while the feature is experimental.
  */
-internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
+internal class SpreadFrameLayout(context: Context) : ViewGroup(context), ViewPagerAdapter.PositionableView {
+
+    private var projectedUnit: SpreadAdapterItemMapper.Unit<Any>? = null
+
+    /** Stable source identity used by ViewPagerAdapter when it repositions instantiated frames. */
+    override val item: Any
+        get() = requireNotNull(projectedUnit) { "Spread frame has not been bound" }
+
 
     var isR2L: Boolean = false
         set(value) {
@@ -35,6 +43,9 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
         second: PagerPageHolder? = null,
         isR2L: Boolean = false,
     ) {
+        check(projectedUnit == null || projectedUnit === unit) {
+            "A Spread frame cannot be rebound to a different display unit"
+        }
         when (unit) {
             is SpreadAdapterItemMapper.Unit.Single -> {
                 require(unit.item === first.item) {
@@ -61,6 +72,7 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
         // Detach existing children first. PagerPageHolder treats this as a reusable
         // detach, not permanent disposal, and resumes its state collector on reattach.
         removeAllViews()
+        projectedUnit = unit
         this.isR2L = isR2L
         addView(first)
         if (second != null) addView(second)
@@ -69,6 +81,12 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
     /** Remove children without disposing their reusable page holders. */
     fun detachPageHolders() {
         removeAllViews()
+    }
+
+    /** Release the adapter identity after the pager permanently destroys this frame. */
+    fun clearBinding() {
+        removeAllViews()
+        projectedUnit = null
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
