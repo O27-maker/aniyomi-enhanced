@@ -26,6 +26,36 @@ internal object SpreadAdapterNavigationMap {
     }
 
     /**
+     * Returns the original adapter indices represented by a display unit.
+     * A single page maps to one index; a spread maps to both pages in source order.
+     */
+    fun <T> adapterIndicesForDisplay(
+        units: List<SpreadAdapterItemMapper.Unit<T>>,
+        displayIndex: Int,
+    ): List<Int> {
+        if (displayIndex !in units.indices || !hasValidUnits(units)) return emptyList()
+        return when (val unit = units[displayIndex]) {
+            is SpreadAdapterItemMapper.Unit.Single -> listOf(unit.adapterIndex)
+            is SpreadAdapterItemMapper.Unit.Pair -> listOf(unit.firstAdapterIndex, unit.secondAdapterIndex)
+        }
+    }
+
+    /**
+     * Resolves the active original item when a display unit becomes selected.
+     * Keep the current page when it belongs to the selected spread; otherwise use
+     * the first page in effective adapter order.
+     */
+    fun <T> adapterIndexForDisplay(
+        units: List<SpreadAdapterItemMapper.Unit<T>>,
+        displayIndex: Int,
+        preferredAdapterIndex: Int? = null,
+    ): Int? {
+        val indices = adapterIndicesForDisplay(units, displayIndex)
+        if (indices.isEmpty()) return null
+        return preferredAdapterIndex?.takeIf { it in indices } ?: indices.first()
+    }
+
+    /**
      * Returns a display-unit anchor that retains the requested adapter item.
      * Invalid adapter indices return null rather than silently selecting a page.
      */
