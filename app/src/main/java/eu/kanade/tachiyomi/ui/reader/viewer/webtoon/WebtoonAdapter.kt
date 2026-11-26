@@ -179,7 +179,10 @@ class WebtoonAdapter(val viewer: WebtoonViewer) : RecyclerView.Adapter<RecyclerV
             val oldItem = oldItems[oldItemPosition]
             val newItem = newItems[newItemPosition]
 
-            return oldItem == newItem
+            // ReaderPage and ChapterTransition instances are the authoritative source identities.
+            // Structural transition equality is intentionally symmetric, so it can otherwise
+            // confuse a Prev transition with a reversed Next transition during chapter swaps.
+            return oldItem === newItem
         }
 
         /**
