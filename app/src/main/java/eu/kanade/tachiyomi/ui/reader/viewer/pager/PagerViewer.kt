@@ -171,6 +171,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         // Preference observers are scoped, while these callbacks are explicit viewer references.
         config.dualPageSplitChangedListener = null
         config.dualPagePresentationModeChangedListener = null
+        spreadPageOrientationChangedListener = null
         config.imagePropertyChangedListener = null
         config.navigationModeChangedListener = null
 
@@ -195,6 +196,22 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private fun getPageHolder(page: ReaderPage): PagerPageHolder? =
         pager.findPageHolder(page)
+
+    /**
+     * Optional signal for a future live Spread projection. Orientation is only reliable
+     * after the holder reports a successfully decoded image; consumers must preserve the
+     * current source-page anchor before rebuilding display units.
+     */
+    internal var spreadPageOrientationChangedListener: ((ReaderPage) -> Unit)? = null
+        private set
+
+    internal fun onSpreadPageOrientationReady(page: ReaderPage) {
+        spreadPageOrientationChangedListener?.invoke(page)
+    }
+
+    internal fun setSpreadPageOrientationChangedListener(listener: ((ReaderPage) -> Unit)?) {
+        spreadPageOrientationChangedListener = listener
+    }
 
     /**
      * Returns decoded orientation only for an instantiated page holder.
