@@ -5,15 +5,16 @@ import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
+import java.util.IdentityHashMap
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 
 /**
  * RecyclerView projection adapter for continuous-reader Spread.
  *
- * It consumes the immutable plan while retaining the original page objects and
- * delegates each image to the existing WebtoonPageHolder implementation. The
- * source WebtoonAdapter remains authoritative and is never reordered or modified.
+ * The original WebtoonAdapter remains authoritative. Page holders are cached by
+ * ReaderPage identity and moved between projected rows when orientation changes,
+ * preserving decoded images, zoom, pan, gestures, and in-flight page state.
  */
 internal class WebtoonSpreadAdapter(
     private val viewer: WebtoonViewer,
@@ -21,20 +22,21 @@ internal class WebtoonSpreadAdapter(
     private val plan: () -> WebtoonSpreadPlan<Any>,
 ) : RecyclerView.Adapter<WebtoonSpreadAdapter.RowHolder>() {
 
+    private val pageHolderCache = IdentityHashMap<ReaderPage, WebtoonPageHolder>()
+
     internal class RowHolder(
         val container: LinearLayout,
-        private val viewer: WebtoonViewer,
+        private val adapter: WebtoonSpreadAdapter,
     ) : RecyclerView.ViewHolder(container) {
-        private val pageHolders = mutableListOf<WebtoonPageHolder>()
         private var transitionHolder: WebtoonTransitionHolder? = null
 
         fun bind(unit: WebtoonSpreadPlan.Unit<Any>) {
-            recycleChildren()
+            clearRow()
             container.orientation = LinearLayout.HORIZONTAL
             when (unit) {
                 is WebtoonSpreadPlan.Unit.Single -> addPage(unit.item as ReaderPage, paired = false)
                 is WebtoonSpreadPlan.Unit.Pair -> {
-                    val ordered = if (viewer.config.dualPageInvert) {
+                    val ordered = if (adapter.viewer.config.dualPageInvert) {
                         listOf(unit.second, unit.first)
                     } else {
                         listOf(unit.first, unit.second)
@@ -45,7 +47,7 @@ internal class WebtoonSpreadAdapter(
                     container.orientation = LinearLayout.VERTICAL
                     val transition = LinearLayout(container.context)
                     transition.layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-                    val holder = WebtoonTransitionHolder(transition, viewer)
+                    val holder = WebtoonTransitionHolder(transition, adapter.viewer)
                     holder.bind(unit.item as ChapterTransition)
                     transitionHolder = holder
                     container.addView(transition)
@@ -54,24 +56,48 @@ internal class WebtoonSpreadAdapter(
         }
 
         private fun addPage(page: ReaderPage, paired: Boolean) {
-            val holder = viewer.createSpreadPageHolder()
-            holder.bind(page)
+            val holder = adapter.obtainPageHolder(page)
+            (holder.itemView.parent as? ViewGroup)?.removeView(holder.itemView)
             holder.itemView.layoutParams = LinearLayout.LayoutParams(
                 if (paired) 0 else MATCH_PARENT,
                 WRAP_CONTENT,
                 if (paired) 1f else 0f,
             )
-            pageHolders += holder
             container.addView(holder.itemView)
         }
 
-        fun recycleChildren() {
-            pageHolders.forEach(WebtoonPageHolder::recycle)
-            pageHolders.clear()
+        private fun clearRow() {
             transitionHolder?.recycle()
             transitionHolder = null
             container.removeAllViews()
         }
+
+        fun recycleChildren() = clearRow()
+    }
+
+    private fun obtainPageHolder(page: ReaderPage): WebtoonPageHolder {
+        return pageHolderCache[page] ?: viewer.createSpreadPageHolder().also {
+            it.bind(page)
+            pageHolderCache[page] = it
+        }
+    }
+
+    /** Release cached holders only when their source pages leave the authoritative sequence. */
+    fun retainSourcePages(items: List<Any>) {
+        val retained = items.filterIsInstance<ReaderPage>().toSet()
+        val iterator = pageHolderCache.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (entry.key !in retained) {
+                entry.value.recycle()
+                iterator.remove()
+            }
+        }
+    }
+
+    fun clear() {
+        pageHolderCache.values.forEach(WebtoonPageHolder::recycle)
+        pageHolderCache.clear()
     }
 
     override fun getItemCount(): Int = plan().units.size
@@ -81,7 +107,7 @@ internal class WebtoonSpreadAdapter(
             layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
             orientation = LinearLayout.HORIZONTAL
         }
-        return RowHolder(row, viewer)
+        return RowHolder(row, this)
     }
 
     override fun onBindViewHolder(holder: RowHolder, position: Int) {
