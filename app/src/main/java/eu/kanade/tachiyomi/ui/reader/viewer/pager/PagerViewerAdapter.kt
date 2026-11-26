@@ -81,6 +81,10 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                 // Insert preprocessed pages into current page list
                 preprocessed.keys.sortedDescending()
                     .forEach { key ->
+                        // A preprocessed split can outlive a source refresh. Ignore its
+                        // old index instead of inserting beyond the refreshed page list.
+                        if (key !in pages.indices) return@forEach
+
                         if (lastPage.index == key) {
                             insertPageLastPage = preprocessed[key]
                         }
