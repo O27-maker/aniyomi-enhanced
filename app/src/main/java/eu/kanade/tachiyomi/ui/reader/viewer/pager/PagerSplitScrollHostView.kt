@@ -121,6 +121,8 @@ internal class PagerSplitScrollHostView(
      */
     private fun installTapListener(recycler: RecyclerView) {
         val detector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(event: MotionEvent): Boolean = true
+
             override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
                 onTap?.invoke(event)
                 return true
