@@ -36,6 +36,11 @@ internal data class SpreadAdapterProjection<T>(
             selectedAdapterIndex = selectedAdapterIndex,
             isBoundary = { it is ChapterTransition },
             canPair = { item -> item is ReaderPage && item !is InsertPage && isPortraitPage(item) == true },
+            canPairTogether = { first, second ->
+                val firstPage = first as? ReaderPage
+                val secondPage = second as? ReaderPage
+                firstPage != null && secondPage != null && sameChapterIfAvailable(firstPage, secondPage)
+            },
             firstPageSingle = firstPageSingle,
         )
 
@@ -63,17 +68,27 @@ internal data class SpreadAdapterProjection<T>(
             )
         }
 
+        private fun sameChapterIfAvailable(first: ReaderPage, second: ReaderPage): Boolean {
+            val firstChapter = runCatching { first.chapter }.getOrNull()
+            val secondChapter = runCatching { second.chapter }.getOrNull()
+            // ReaderPage instances created without a chapter occur in projection-only tests.
+            // Live reader pages always have chapters, and must never pair across chapters.
+            return firstChapter == null || secondChapter == null || firstChapter == secondChapter
+        }
+
         fun <T> build(
             adapterItems: List<T>,
             selectedAdapterIndex: Int,
             isBoundary: (T) -> Boolean = { false },
             canPair: (T) -> Boolean = { true },
+            canPairTogether: (T, T) -> Boolean = { _, _ -> true },
             firstPageSingle: Boolean = false,
         ): SpreadAdapterProjection<T> {
             val units = SpreadAdapterItemMapper.map(
                 items = adapterItems,
                 isBoundary = isBoundary,
                 canPair = canPair,
+                canPairTogether = canPairTogether,
                 firstPageSingle = firstPageSingle,
             )
             return SpreadAdapterProjection(
