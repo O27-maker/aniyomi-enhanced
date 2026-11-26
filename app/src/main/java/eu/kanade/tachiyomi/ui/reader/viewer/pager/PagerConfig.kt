@@ -33,6 +33,8 @@ class PagerConfig(
 
     var dualPageSplitChangedListener: ((Boolean) -> Unit)? = null
 
+    var spreadLayoutChangedListener: (() -> Unit)? = null
+
     var imageScaleType = 1
         private set
 
@@ -87,7 +89,7 @@ class PagerConfig(
             .launchIn(scope)
 
         readerPreferences.dualPageFirstPageSingle()
-            .register({ firstPageSingle = it }, { imagePropertyChangedListener?.invoke() })
+            .register({ firstPageSingle = it }, { spreadLayoutChangedListener?.invoke() })
 
         readerPreferences.dualPageSplitPaged()
             .register(
