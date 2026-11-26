@@ -299,7 +299,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     fun onPageSplit(currentPage: Any?, newPage: InsertPage) {
         if (currentPage !is ReaderPage) return
 
-        val currentIndex = items.indexOf(currentPage)
+        val currentIndex = items.indexOfFirst { it === currentPage }
         // A page may finish decoding after its chapter has been replaced. Never insert
         // a split page for an item that is no longer part of the effective adapter sequence.
         if (currentIndex == -1) return
