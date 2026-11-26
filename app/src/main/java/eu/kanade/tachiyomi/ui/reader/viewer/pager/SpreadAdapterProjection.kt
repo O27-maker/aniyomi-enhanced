@@ -22,8 +22,14 @@ internal data class SpreadAdapterProjection<T>(
             selectedAdapterIndex: Int,
             isBoundary: (T) -> Boolean = { false },
             canPair: (T) -> Boolean = { true },
+            firstPageSingle: Boolean = false,
         ): SpreadAdapterProjection<T> {
-            val units = SpreadAdapterItemMapper.map(adapterItems, isBoundary, canPair)
+            val units = SpreadAdapterItemMapper.map(
+                items = adapterItems,
+                isBoundary = isBoundary,
+                canPair = canPair,
+                firstPageSingle = firstPageSingle,
+            )
             return SpreadAdapterProjection(
                 units = units.toList(),
                 selectedAnchor = SpreadAdapterNavigationMap.anchorForAdapter(units, selectedAdapterIndex),
