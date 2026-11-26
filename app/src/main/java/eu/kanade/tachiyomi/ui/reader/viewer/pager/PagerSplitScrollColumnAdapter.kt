@@ -44,7 +44,9 @@ internal class PagerSplitScrollColumnAdapter(
         // PagerPageHolder is a FrameLayout whose image child fills its bounds. Unlike
         // ViewPager, a vertical RecyclerView cannot infer a useful WRAP_CONTENT height
         // for it, so give each page one column viewport of vertical reading space.
-        val pageHeight = parent.height.coerceAtLeast(1)
+        val pageHeight = parent.measuredHeight
+            .takeIf { it > 0 }
+            ?: parent.resources.displayMetrics.heightPixels
         val container = FrameLayout(parent.context).apply {
             layoutParams = RecyclerView.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
