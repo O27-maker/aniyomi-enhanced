@@ -68,6 +68,7 @@ internal class PagerSplitScrollColumnAdapter(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                 ),
             )
+            viewer.onSplitScrollPageHolderBound(page, pageHolder)
         }
         onPageBound(page, placement.sourceIndex)
     }
