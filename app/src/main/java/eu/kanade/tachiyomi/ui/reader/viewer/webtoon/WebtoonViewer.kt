@@ -440,11 +440,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val plan = WebtoonSplitScrollPlan.create(
             items = adapter.items,
             isBoundary = { it is ChapterTransition },
-            firstColumn = if (config.dualPageInvert) {
-                WebtoonSplitScrollPlan.Column.RIGHT
-            } else {
-                WebtoonSplitScrollPlan.Column.LEFT
-            },
+            firstColumn = WebtoonSplitScrollPlan.Column.LEFT,
         )
         splitScrollController = WebtoonSplitScrollSegmentController(
             viewer = this,
