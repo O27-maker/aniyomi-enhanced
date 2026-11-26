@@ -79,6 +79,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     private var spreadAdapter: WebtoonSpreadAdapter? = null
     private var spreadPlan: WebtoonSpreadPlan<Any>? = null
     private val spreadOrientations = mutableMapOf<ReaderPage, Boolean?>()
+    private var spreadPreferredSourceIndex: Int? = null
 
     /** Experimental two-column host; the normal reader remains the fallback. */
     private var splitScrollHost: WebtoonSplitScrollHostView? = null
@@ -160,10 +161,17 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         }
 
         config.imagePropertyChangedListener = {
-            if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL && adapter.items.isNotEmpty()) {
-                installSplitScrollHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
-            } else {
-                refreshAdapter()
+            when (config.dualPagePresentationMode) {
+                DualPagePresentationMode.SPLIT_SCROLL -> {
+                    if (adapter.items.isNotEmpty()) installSplitScrollHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
+                }
+                DualPagePresentationMode.SPREAD -> {
+                    if (adapter.items.isNotEmpty()) {
+                        spreadOrientations.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
+                        installSpreadHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
+                    }
+                }
+                DualPagePresentationMode.NONE -> refreshAdapter()
             }
         }
 
@@ -269,18 +277,23 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         initialSourceIndex?.let { source ->
             val display = projection.displayIndexForSource(source)
             if (display >= 0) {
+                spreadPreferredSourceIndex = source
                 manager.scrollToPositionWithOffset(display, 0)
-                onSpreadScrolled(display)
+                onSpreadScrolled(display, source)
             }
         }
     }
 
     private fun createSpreadPlan(): WebtoonSpreadPlan<Any> {
+        val firstPage = adapter.currentChapter?.pages?.firstOrNull()
+        val firstPageIndex = firstPage?.let(adapter.items::indexOf) ?: -1
         return WebtoonSpreadPlan.create(
             items = adapter.items,
             isBoundary = { it is ChapterTransition },
             isPortrait = { item -> (item as? ReaderPage)?.let { spreadOrientations[it] } },
             canPair = { it is ReaderPage },
+            firstPageSingle = config.firstPageSingle,
+            firstPageIndex = firstPageIndex,
         )
     }
 
@@ -294,19 +307,24 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val projection = spreadAdapter ?: return
         val firstVisible = manager.findFirstVisibleItemPosition()
         val sourceAnchor = projection.sourceIndexAt(firstVisible)
+        val selectedSource = adapter.items.indexOf(currentPage).takeIf { it >= 0 }
         val anchorView = manager.findViewByPosition(firstVisible)
         val offset = anchorView?.top ?: 0
         spreadPlan = createSpreadPlan()
         projection.notifyDataSetChanged()
         val newDisplay = sourceAnchor?.let(projection::displayIndexForSource) ?: firstVisible
         if (newDisplay >= 0) manager.scrollToPositionWithOffset(newDisplay, offset)
+        selectedSource?.let { onSpreadScrolled(projection.displayIndexForSource(it), it) }
     }
 
-    private fun onSpreadScrolled(displayPosition: Int? = null) {
+    private fun onSpreadScrolled(displayPosition: Int? = null, preferredSourceIndex: Int? = null) {
         val manager = spreadLayoutManager ?: return
         val projection = spreadAdapter ?: return
         val position = displayPosition ?: manager.findLastEndVisibleItemPosition()
-        val item = projection.sourceItemAt(position) ?: return
+        val preferred = preferredSourceIndex ?: spreadPreferredSourceIndex
+            ?.takeIf { projection.displayIndexForSource(it) == position }
+        spreadPreferredSourceIndex = null
+        val item = projection.sourceItemAt(position, preferred) ?: return
         if (currentPage == item) return
         val allowPreload = checkAllowPreload(item as? ReaderPage)
         currentPage = item
@@ -620,8 +638,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         if (position != -1 && config.dualPagePresentationMode == DualPagePresentationMode.SPREAD) {
             val displayPosition = spreadAdapter?.displayIndexForSource(position) ?: -1
             if (displayPosition >= 0) {
+                spreadPreferredSourceIndex = position
                 spreadLayoutManager?.scrollToPositionWithOffset(displayPosition, 0)
-                if (spreadLayoutManager?.findLastEndVisibleItemPosition() == -1) onSpreadScrolled(displayPosition)
+                if (spreadLayoutManager?.findLastEndVisibleItemPosition() == -1) onSpreadScrolled(displayPosition, position)
             }
             return
         }
