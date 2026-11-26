@@ -1,6 +1,9 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
 import android.content.Context
+import android.graphics.Color
+import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -31,6 +34,9 @@ internal class WebtoonSplitScrollHostView(
     private val rightFrame: WebtoonFrame
     private val columnsRow: LinearLayout
     private val boundarySlot: FrameLayout
+    private val resizeHandle: FrameLayout
+
+    var onLeftWidthChanged: ((Int) -> Unit)? = null
 
     var leftWidthPercent: Int = DEFAULT_LEFT_WIDTH_PERCENT
         private set
@@ -86,6 +92,41 @@ internal class WebtoonSplitScrollHostView(
             ),
         )
 
+        resizeHandle = FrameLayout(context).apply {
+            isClickable = true
+            setOnTouchListener { view, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                        val location = IntArray(2)
+                        columnsRow.getLocationOnScreen(location)
+                        val availableWidth = columnsRow.width.coerceAtLeast(1)
+                        val percent = ((event.rawX - location[0]) * 100f / availableWidth).toInt()
+                        setLeftWidthPercent(percent)
+                        onLeftWidthChanged?.invoke(leftWidthPercent)
+                        true
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        view.performClick()
+                        true
+                    }
+                    else -> true
+                }
+            }
+            val line = View(context).apply {
+                setBackgroundColor(Color.GRAY)
+                alpha = 0.65f
+            }
+            addView(line, FrameLayout.LayoutParams(
+                (2 * resources.displayMetrics.density).toInt().coerceAtLeast(2),
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER,
+            ))
+        }
+        addView(resizeHandle, FrameLayout.LayoutParams(
+            (32 * resources.displayMetrics.density).toInt().coerceAtLeast(32),
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            Gravity.START,
+        ))
         setLeftWidthPercent(DEFAULT_LEFT_WIDTH_PERCENT)
     }
 
@@ -115,6 +156,12 @@ internal class WebtoonSplitScrollHostView(
             (100 - leftWidthPercent).toFloat(),
         )
         columnsRow.requestLayout()
+        resizeHandle.translationX = columnsRow.width * leftWidthPercent / 100f - resizeHandle.width / 2f
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        resizeHandle.translationX = columnsRow.width * leftWidthPercent / 100f - resizeHandle.width / 2f
     }
 
     fun setDoubleTapZoomEnabled(enabled: Boolean) {
@@ -145,6 +192,7 @@ internal class WebtoonSplitScrollHostView(
             ),
         )
         columnsRow.visibility = GONE
+        resizeHandle.visibility = GONE
         boundarySlot.visibility = VISIBLE
     }
 
@@ -153,6 +201,7 @@ internal class WebtoonSplitScrollHostView(
         boundarySlot.removeAllViews()
         boundarySlot.visibility = GONE
         columnsRow.visibility = VISIBLE
+        resizeHandle.visibility = VISIBLE
     }
 
     /** Attach independent adapters supplied by the future segmented viewer. */
