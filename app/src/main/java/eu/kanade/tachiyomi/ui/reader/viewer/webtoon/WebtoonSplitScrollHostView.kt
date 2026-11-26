@@ -213,7 +213,7 @@ internal class WebtoonSplitScrollHostView(
         resizeHandle.visibility = VISIBLE
     }
 
-    /** Attach independent adapters supplied by the future segmented viewer. */
+    /** Attach the independent page adapters for the active segment. */
     fun setColumnAdapters(
         left: RecyclerView.Adapter<out RecyclerView.ViewHolder>?,
         right: RecyclerView.Adapter<out RecyclerView.ViewHolder>?,
