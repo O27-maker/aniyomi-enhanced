@@ -324,10 +324,12 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             val anchorView = manager.findViewByPosition(firstVisible)
             val offset = anchorView?.top ?: 0
             spreadPlan = createSpreadPlan()
+            projection.beginProjectionRefresh()
             projection.notifyDataSetChanged()
             val newDisplay = sourceAnchor?.let(projection::displayIndexForSource) ?: firstVisible
             if (newDisplay >= 0) manager.scrollToPositionWithOffset(newDisplay, offset)
             selectedSource?.let { onSpreadScrolled(projection.displayIndexForSource(it), it) }
+            host.post { projection.endProjectionRefreshAndPrune() }
         }
     }
 
