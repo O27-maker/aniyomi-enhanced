@@ -63,6 +63,20 @@ internal class PagerSplitScrollSegmentController(
             PagerSplitScrollPlan.Column.FULL_WIDTH -> null
         }
 
+    /** Return the currently attached native page holder for activity callbacks. */
+    fun holderFor(page: ReaderPage): PagerPageHolder? {
+        val leftPosition = leftAdapter?.let { adapter ->
+            (0 until adapter.itemCount).firstOrNull { adapter.pageAt(it) === page }
+        }
+        if (leftPosition != null) {
+            return (host.leftRecycler.findViewHolderForAdapterPosition(leftPosition) as? PagerSplitScrollColumnAdapter.PageHolder)?.pageHolder
+        }
+        val rightPosition = rightAdapter?.let { adapter ->
+            (0 until adapter.itemCount).firstOrNull { adapter.pageAt(it) === page }
+        } ?: return null
+        return (host.rightRecycler.findViewHolderForAdapterPosition(rightPosition) as? PagerSplitScrollColumnAdapter.PageHolder)?.pageHolder
+    }
+
     fun advancePastBoundary(): Boolean {
         if (disposed || !boundaryNotified) return false
         val next = segmentIndex + 1
