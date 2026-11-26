@@ -120,20 +120,11 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
 
     val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
     SettingsChipRow(MR.strings.pager_viewer) {
-        DualPagePresentationMode.entries.forEach { mode ->
-            FilterChip(
-                selected = dualPageMode == mode.preferenceValue,
-                onClick = { screenModel.preferences.dualPageMode().set(mode.preferenceValue) },
-                label = {
-                    Text(
-                        when (mode) {
-                            DualPagePresentationMode.SPREAD -> "Spread"
-                            DualPagePresentationMode.SPLIT_SCROLL -> "Split Scroll"
-                        },
-                    )
-                },
-            )
-        }
+        FilterChip(
+            selected = dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue,
+            onClick = { screenModel.preferences.dualPageMode().set(DualPagePresentationMode.SPREAD.preferenceValue) },
+            label = { Text("Spread") },
+        )
     }
 
     if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
@@ -175,6 +166,15 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
     val numberFormat = remember { NumberFormat.getPercentInstance() }
 
     HeadingItem(MR.strings.webtoon_viewer)
+
+    val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
+    SettingsChipRow(MR.strings.webtoon_viewer) {
+        FilterChip(
+            selected = dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue,
+            onClick = { screenModel.preferences.dualPageMode().set(DualPagePresentationMode.SPLIT_SCROLL.preferenceValue) },
+            label = { Text("Split Scroll") },
+        )
+    }
 
     val navigationModeWebtoon by screenModel.preferences.navigationModeWebtoon().collectAsState()
     val webtoonNavInverted by screenModel.preferences.webtoonNavInverted().collectAsState()
