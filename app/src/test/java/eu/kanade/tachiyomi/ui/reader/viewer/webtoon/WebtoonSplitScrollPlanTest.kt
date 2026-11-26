@@ -31,6 +31,7 @@ class WebtoonSplitScrollPlanTest {
         assertEquals(listOf(0, 2), plan.segments.single().right.map { it.originalIndex })
         assertEquals(Column.RIGHT, plan.placementForSourceIndex(0)?.column)
         assertEquals(Column.LEFT, plan.placementForSourceIndex(1)?.column)
+        assertEquals(true, plan.matchesSource(listOf("p0", "p1", "p2", "p3")))
     }
 
     @Test
@@ -46,6 +47,7 @@ class WebtoonSplitScrollPlanTest {
         assertEquals(Column.FULL_WIDTH, plan.placementForSourceIndex(1)?.column)
         assertEquals(Column.RIGHT, plan.placementForSourceIndex(2)?.column)
         assertEquals(items, plan.inSourceOrder().map { it.item })
+        assertEquals(true, plan.matchesSource(items))
     }
     @Test
     fun `chapter transition closes segment and starts following segment at left`() {
