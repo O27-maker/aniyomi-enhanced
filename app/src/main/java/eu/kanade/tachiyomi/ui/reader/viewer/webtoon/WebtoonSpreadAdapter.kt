@@ -34,14 +34,14 @@ internal class WebtoonSpreadAdapter(
             recycleChildren()
             container.orientation = LinearLayout.HORIZONTAL
             when (unit) {
-                is WebtoonSpreadPlan.Unit.Single -> addPage(unit.item as ReaderPage, 1f)
+                is WebtoonSpreadPlan.Unit.Single -> addPage(unit.item as ReaderPage, paired = false)
                 is WebtoonSpreadPlan.Unit.Pair -> {
                     val ordered = if (viewer.config.dualPageInvert) {
                         listOf(unit.second, unit.first)
                     } else {
                         listOf(unit.first, unit.second)
                     }
-                    ordered.forEach { addPage(it as ReaderPage, 1f) }
+                    ordered.forEach { addPage(it as ReaderPage, paired = true) }
                 }
                 is WebtoonSpreadPlan.Unit.Boundary -> {
                     container.orientation = LinearLayout.VERTICAL
@@ -55,14 +55,14 @@ internal class WebtoonSpreadAdapter(
             }
         }
 
-        private fun addPage(page: ReaderPage, weight: Float) {
+        private fun addPage(page: ReaderPage, paired: Boolean) {
             val image = ReaderPageImageView(container.context, isWebtoon = true)
             val holder = WebtoonPageHolder(image, viewer, viewer.recycler)
             holder.bind(page)
             image.layoutParams = LinearLayout.LayoutParams(
-                if (weight == 1f && container.childCount > 0) 0 else MATCH_PARENT,
+                if (paired) 0 else MATCH_PARENT,
                 WRAP_CONTENT,
-                if (container.childCount > 0) weight else 0f,
+                if (paired) 1f else 0f,
             )
             pageHolders += holder
             container.addView(image)
@@ -75,8 +75,6 @@ internal class WebtoonSpreadAdapter(
             transitionHolder = null
             container.removeAllViews()
         }
-
-        fun sourceItems(): List<ReaderPage> = pageHolders.mapNotNull { it.itemView.tag as? ReaderPage }
     }
 
     override fun getItemCount(): Int = plan().units.size
