@@ -28,4 +28,48 @@ class WebtoonSplitScrollColumnWidthsTest {
             assert(right in 20f..80f)
         }
     }
+    @Test
+    fun dividerPositionUsesContainerCoordinatesAndClampsToLimits() {
+        assertEquals(
+            50,
+            WebtoonSplitScrollColumnWidths.percentAtPosition(
+                positionX = 250f,
+                containerLeft = 100f,
+                containerWidth = 300f,
+                currentPercent = 50,
+            ),
+        )
+        assertEquals(
+            20,
+            WebtoonSplitScrollColumnWidths.percentAtPosition(
+                positionX = -100f,
+                containerLeft = 100f,
+                containerWidth = 300f,
+                currentPercent = 50,
+            ),
+        )
+        assertEquals(
+            80,
+            WebtoonSplitScrollColumnWidths.percentAtPosition(
+                positionX = 1000f,
+                containerLeft = 100f,
+                containerWidth = 300f,
+                currentPercent = 50,
+            ),
+        )
+    }
+
+    @Test
+    fun dividerPositionRetainsCurrentWidthBeforeLayout() {
+        assertEquals(
+            63,
+            WebtoonSplitScrollColumnWidths.percentAtPosition(
+                positionX = 100f,
+                containerLeft = 100f,
+                containerWidth = 0f,
+                currentPercent = 63,
+            ),
+        )
+    }
+
 }
