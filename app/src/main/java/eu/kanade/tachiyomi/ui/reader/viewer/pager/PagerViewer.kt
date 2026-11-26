@@ -544,7 +544,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             moveToPage(page)
             pager.isVisible = true
         } else if (splitScrollHost != null && currentPage == null) {
-            chapters.currChapter.pages?.getOrNull(chapters.currChapter.requestedPage)?.let(::moveToPage)
+            chapters.currChapter.pages
+                ?.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0))
+                ?.let(::moveToPage)
         }
     }
 
