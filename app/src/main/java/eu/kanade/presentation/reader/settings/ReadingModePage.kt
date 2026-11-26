@@ -122,11 +122,9 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
             selected = dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue,
             onClick = {
                 screenModel.preferences.dualPageMode().set(
-                    if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
-                        DualPagePresentationMode.NONE.preferenceValue
-                    } else {
-                        DualPagePresentationMode.SPREAD.preferenceValue
-                    },
+                    DualPagePresentationMode.fromPreference(dualPageMode)
+                        .toggleTo(DualPagePresentationMode.SPREAD)
+                        .preferenceValue,
                 )
             },
             label = { Text("Spread") },
@@ -177,11 +175,9 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
             selected = dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue,
             onClick = {
                 screenModel.preferences.dualPageMode().set(
-                    if (dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue) {
-                        DualPagePresentationMode.NONE.preferenceValue
-                    } else {
-                        DualPagePresentationMode.SPLIT_SCROLL.preferenceValue
-                    },
+                    DualPagePresentationMode.fromPreference(dualPageMode)
+                        .toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
+                        .preferenceValue,
                 )
             },
             label = { Text("Split Scroll") },
