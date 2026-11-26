@@ -32,6 +32,7 @@ class PagerSplitScrollPlanTest {
         val plan = PagerSplitScrollPlan.create(source, { it == "transition" }, PagerSplitScrollPlan.Column.LEFT)
 
         assertEquals("transition", plan.segments[0].boundaryAfter?.item)
+        assertEquals(0, plan.segmentIndexForSourceIndex(2))
         assertEquals("c", plan.segments[1].left.single().item)
         assertEquals("d", plan.segments[1].right.single().item)
         assertTrue(plan.matchesSource(source))
