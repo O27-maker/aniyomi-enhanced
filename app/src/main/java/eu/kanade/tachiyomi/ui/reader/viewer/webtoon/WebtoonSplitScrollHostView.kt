@@ -89,18 +89,26 @@ internal class WebtoonSplitScrollHostView(
         resizeHandle = FrameLayout(context).apply {
             isClickable = true
             setOnTouchListener { view, event ->
+                fun updateWidth() {
+                    val location = IntArray(2)
+                    columnsRow.getLocationOnScreen(location)
+                    val availableWidth = columnsRow.width.coerceAtLeast(1)
+                    val percent = ((event.rawX - location[0]) * 100f / availableWidth).toInt()
+                    setLeftWidthPercent(percent)
+                }
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-                        val location = IntArray(2)
-                        columnsRow.getLocationOnScreen(location)
-                        val availableWidth = columnsRow.width.coerceAtLeast(1)
-                        val percent = ((event.rawX - location[0]) * 100f / availableWidth).toInt()
-                        setLeftWidthPercent(percent)
-                        onLeftWidthChanged?.invoke(leftWidthPercent)
+                        updateWidth()
                         true
                     }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    MotionEvent.ACTION_UP -> {
+                        updateWidth()
+                        onLeftWidthChanged?.invoke(leftWidthPercent)
                         view.performClick()
+                        true
+                    }
+                    MotionEvent.ACTION_CANCEL -> {
+                        onLeftWidthChanged?.invoke(leftWidthPercent)
                         true
                     }
                     else -> true
