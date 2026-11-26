@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
 /**
- * Immutable, source-index-preserving projection for a future Split Scroll host.
+ * Immutable, source-index-preserving projection for the Split Scroll reader.
  *
  * Each segment owns two independently scrollable page sequences. A chapter
  * transition is attached to the segment before it as a full-width barrier.
