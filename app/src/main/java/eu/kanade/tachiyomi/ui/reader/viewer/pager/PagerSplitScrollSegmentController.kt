@@ -106,6 +106,12 @@ internal class PagerSplitScrollSegmentController(
         leftAdapter = PagerSplitScrollColumnAdapter(viewer, segment.left)
         rightAdapter = PagerSplitScrollColumnAdapter(viewer, segment.right)
         host.setColumnAdapters(leftAdapter, rightAdapter)
+        // A newly entered chapter/segment becomes the active progress anchor immediately,
+        // even if RecyclerView's initial layout does not dispatch an onScrolled callback.
+        (segment.left + segment.right)
+            .minByOrNull { it.sourceIndex }
+            ?.sourceIndex
+            ?.let(onSelection)
         leftAtEnd = segment.left.isEmpty()
         rightAtEnd = segment.right.isEmpty()
         if (leftAtEnd && rightAtEnd) notifyBoundary(segment.boundaryAfter)
