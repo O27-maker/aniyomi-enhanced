@@ -37,7 +37,8 @@ internal data class WebtoonSplitScrollPlan<T>(
         if (index !in 0 until sourceSize) return -1
         return segments.indexOfFirst { segment ->
             segment.left.any { it.originalIndex == index } ||
-                segment.right.any { it.originalIndex == index }
+                segment.right.any { it.originalIndex == index } ||
+                segment.boundaryAfter?.originalIndex == index
         }
     }
 
