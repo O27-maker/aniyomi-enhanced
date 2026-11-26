@@ -20,6 +20,34 @@ class DualPagePresentationModeTest {
     }
 
     @Test
+    fun selectingAnActivePresentationDisablesDualPageMode() {
+        assertEquals(
+            DualPagePresentationMode.NONE,
+            DualPagePresentationMode.SPREAD.toggleTo(DualPagePresentationMode.SPREAD),
+        )
+        assertEquals(
+            DualPagePresentationMode.NONE,
+            DualPagePresentationMode.SPLIT_SCROLL.toggleTo(DualPagePresentationMode.SPLIT_SCROLL),
+        )
+    }
+
+    @Test
+    fun selectingAnotherPresentationSwitchesDirectly() {
+        assertEquals(
+            DualPagePresentationMode.SPLIT_SCROLL,
+            DualPagePresentationMode.SPREAD.toggleTo(DualPagePresentationMode.SPLIT_SCROLL),
+        )
+        assertEquals(
+            DualPagePresentationMode.SPREAD,
+            DualPagePresentationMode.SPLIT_SCROLL.toggleTo(DualPagePresentationMode.SPREAD),
+        )
+        assertEquals(
+            DualPagePresentationMode.SPREAD,
+            DualPagePresentationMode.NONE.toggleTo(DualPagePresentationMode.SPREAD),
+        )
+    }
+
+    @Test
     fun enumValuesPreservePersistedPreferenceNumbers() {
         assertEquals(0, DualPagePresentationMode.SPREAD.preferenceValue)
         assertEquals(1, DualPagePresentationMode.SPLIT_SCROLL.preferenceValue)
