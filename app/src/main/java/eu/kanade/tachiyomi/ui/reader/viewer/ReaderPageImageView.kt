@@ -241,6 +241,43 @@ open class ReaderPageImageView @JvmOverloads constructor(
         return imageWidth < imageHeight
     }
 
+    /** Captures user zoom and pan before a page holder is recycled. */
+    fun captureZoomState(): ImageZoomState? = when (val view = pageView) {
+        is SubsamplingScaleImageView -> {
+            if (!view.isReady || view.scale <= view.minScale) {
+                null
+            } else {
+                val center = view.center ?: return null
+                ImageZoomState(view.scale, center.x, center.y)
+            }
+        }
+        is PhotoView -> {
+            if (view.scale <= 1F) null else ImageZoomState(view.scale)
+        }
+        else -> null
+    }
+
+    /** Restores a previously captured zoom state after the image has decoded. */
+    fun restoreZoomState(state: ImageZoomState) {
+        when (val view = pageView) {
+            is SubsamplingScaleImageView -> {
+                if (view.isReady && state.centerX != null && state.centerY != null) {
+                    view.setScaleAndCenter(
+                        state.scale.coerceIn(view.minScale, view.maxScale),
+                        PointF(state.centerX, state.centerY),
+                    )
+                }
+            }
+            is PhotoView -> view.setScale(state.scale.coerceAtLeast(1F), true)
+        }
+    }
+
+    data class ImageZoomState(
+        val scale: Float,
+        val centerX: Float? = null,
+        val centerY: Float? = null,
+    )
+
     fun setImage(drawable: Drawable, config: Config) {
         this.config = config
         if (drawable is Animatable) {
