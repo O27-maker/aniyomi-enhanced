@@ -309,18 +309,23 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         if (adapter.items.none { it === page }) return
         if (spreadOrientations[page] == isPortrait) return
         spreadOrientations[page] = isPortrait
-        val manager = spreadLayoutManager ?: return
-        val projection = spreadAdapter ?: return
-        val firstVisible = manager.findFirstVisibleItemPosition()
-        val sourceAnchor = projection.sourceIndexAt(firstVisible)
-        val selectedSource = adapter.items.indexOf(currentPage).takeIf { it >= 0 }
-        val anchorView = manager.findViewByPosition(firstVisible)
-        val offset = anchorView?.top ?: 0
-        spreadPlan = createSpreadPlan()
-        projection.notifyDataSetChanged()
-        val newDisplay = sourceAnchor?.let(projection::displayIndexForSource) ?: firstVisible
-        if (newDisplay >= 0) manager.scrollToPositionWithOffset(newDisplay, offset)
-        selectedSource?.let { onSpreadScrolled(projection.displayIndexForSource(it), it) }
+        val host = spreadRecycler ?: return
+        host.post {
+            if (config.dualPagePresentationMode != DualPagePresentationMode.SPREAD) return@post
+            if (adapter.items.none { it === page } || spreadOrientations[page] != isPortrait) return@post
+            val manager = spreadLayoutManager ?: return@post
+            val projection = spreadAdapter ?: return@post
+            val firstVisible = manager.findFirstVisibleItemPosition()
+            val sourceAnchor = projection.sourceIndexAt(firstVisible)
+            val selectedSource = adapter.items.indexOf(currentPage).takeIf { it >= 0 }
+            val anchorView = manager.findViewByPosition(firstVisible)
+            val offset = anchorView?.top ?: 0
+            spreadPlan = createSpreadPlan()
+            projection.notifyDataSetChanged()
+            val newDisplay = sourceAnchor?.let(projection::displayIndexForSource) ?: firstVisible
+            if (newDisplay >= 0) manager.scrollToPositionWithOffset(newDisplay, offset)
+            selectedSource?.let { onSpreadScrolled(projection.displayIndexForSource(it), it) }
+        }
     }
 
     private fun onSpreadScrolled(displayPosition: Int? = null, preferredSourceIndex: Int? = null) {
