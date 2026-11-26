@@ -20,6 +20,34 @@ class WebtoonSplitScrollPlanTest {
     }
 
     @Test
+    fun `inverted placement starts on right and alternates toward left`() {
+        val plan = WebtoonSplitScrollPlan.create(
+            items = listOf("p0", "p1", "p2", "p3"),
+            isBoundary = { false },
+            firstColumn = Column.RIGHT,
+        )
+
+        assertEquals(listOf(1, 3), plan.segments.single().left.map { it.originalIndex })
+        assertEquals(listOf(0, 2), plan.segments.single().right.map { it.originalIndex })
+        assertEquals(Column.RIGHT, plan.placementForSourceIndex(0)?.column)
+        assertEquals(Column.LEFT, plan.placementForSourceIndex(1)?.column)
+    }
+
+    @Test
+    fun `inverted placement restarts on right after chapter boundary`() {
+        val items = listOf("before", "transition", "after")
+        val plan = WebtoonSplitScrollPlan.create(
+            items = items,
+            isBoundary = { it == "transition" },
+            firstColumn = Column.RIGHT,
+        )
+
+        assertEquals(Column.RIGHT, plan.placementForSourceIndex(0)?.column)
+        assertEquals(Column.FULL_WIDTH, plan.placementForSourceIndex(1)?.column)
+        assertEquals(Column.RIGHT, plan.placementForSourceIndex(2)?.column)
+        assertEquals(items, plan.inSourceOrder().map { it.item })
+    }
+    @Test
     fun `chapter transition closes segment and starts following segment at left`() {
         val items = listOf("before-a", "before-b", "transition", "after-a", "after-b")
         val plan = WebtoonSplitScrollPlan.create(items) { it == "transition" }
