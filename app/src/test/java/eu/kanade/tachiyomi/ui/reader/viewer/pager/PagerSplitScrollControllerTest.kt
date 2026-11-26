@@ -48,6 +48,7 @@ class PagerSplitScrollControllerTest {
         assertTrue(controller.rebuild(listOf(Source("a"), boundary, Source("b"))))
 
         assertNull(controller.columnPositionForSourceIndex(1))
+        assertEquals(0, controller.segmentAtSourceIndex(1)?.index)
         assertNotNull(controller.boundaryAfterSegment(0))
         assertEquals(1, controller.nextSegmentIndex(0))
         assertNull(controller.nextSegmentIndex(1))
