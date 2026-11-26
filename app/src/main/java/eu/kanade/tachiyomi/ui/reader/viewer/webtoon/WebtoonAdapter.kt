@@ -121,14 +121,19 @@ class WebtoonAdapter(val viewer: WebtoonViewer) : RecyclerView.Adapter<RecyclerV
         }
     }
 
+    /** Create a themed page holder hosted by an alternate continuous-reader RecyclerView. */
+    internal fun createPageHolder(hostRecycler: WebtoonRecyclerView): WebtoonPageHolder {
+        val view = ReaderPageImageView(requireNotNull(readerThemedContext), isWebtoon = true)
+        return WebtoonPageHolder(view, viewer, hostRecycler)
+    }
+
     /**
      * Creates a new view holder for an item with the given [viewType].
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             PAGE_VIEW -> {
-                val view = ReaderPageImageView(requireNotNull(readerThemedContext), isWebtoon = true)
-                WebtoonPageHolder(view, viewer)
+                createPageHolder(viewer.recycler)
             }
             TRANSITION_VIEW -> {
                 val view = LinearLayout(requireNotNull(readerThemedContext))
