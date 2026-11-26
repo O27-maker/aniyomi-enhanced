@@ -12,6 +12,13 @@ enum class DualPagePresentationMode(val preferenceValue: Int) {
     NONE(2),
     ;
 
+    /**
+     * Selecting the active presentation again disables dual-page presentation.
+     * Selecting a different presentation switches directly to that mode.
+     */
+    fun toggleTo(selected: DualPagePresentationMode): DualPagePresentationMode =
+        if (this == selected) NONE else selected
+
     companion object {
         /**
          * Converts the persisted preference value safely. Unknown values fall back to Spread,
