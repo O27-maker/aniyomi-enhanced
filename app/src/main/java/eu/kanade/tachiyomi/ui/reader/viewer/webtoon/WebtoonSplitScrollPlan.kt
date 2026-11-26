@@ -12,6 +12,7 @@ package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 internal data class WebtoonSplitScrollPlan<T>(
     val segments: List<Segment<T>>,
     val sourceSize: Int,
+    val firstColumn: Column = Column.LEFT,
 ) {
     internal enum class Column {
         LEFT,
@@ -80,7 +81,7 @@ internal data class WebtoonSplitScrollPlan<T>(
             val isLastSegment = segmentIndex == segments.lastIndex
             if (isLastSegment == (segment.boundaryAfter != null)) return false
 
-            var nextColumn = Column.LEFT
+            var nextColumn = firstColumn
             val pagesInSourceOrder = (segment.left + segment.right).sortedBy { it.originalIndex }
             for (placement in pagesInSourceOrder) {
                 if (placement.originalIndex != nextSourceIndex) return false
@@ -120,11 +121,12 @@ internal data class WebtoonSplitScrollPlan<T>(
         fun <T> create(
             items: List<T>,
             isBoundary: (T) -> Boolean,
+            firstColumn: Column = Column.LEFT,
         ): WebtoonSplitScrollPlan<T> {
             val segments = mutableListOf<Segment<T>>()
             var left = mutableListOf<Placement<T>>()
             var right = mutableListOf<Placement<T>>()
-            var nextColumn = Column.LEFT
+            var nextColumn = firstColumn
 
             fun closeSegment(boundary: Placement<T>?) {
                 segments += Segment(
@@ -134,7 +136,7 @@ internal data class WebtoonSplitScrollPlan<T>(
                 )
                 left = mutableListOf()
                 right = mutableListOf()
-                nextColumn = Column.LEFT
+                nextColumn = firstColumn
             }
 
             items.forEachIndexed { index, item ->
@@ -153,7 +155,7 @@ internal data class WebtoonSplitScrollPlan<T>(
             }
 
             closeSegment(null)
-            return WebtoonSplitScrollPlan(segments = segments, sourceSize = items.size)
+            return WebtoonSplitScrollPlan(segments = segments, sourceSize = items.size, firstColumn = firstColumn)
         }
     }
 }
