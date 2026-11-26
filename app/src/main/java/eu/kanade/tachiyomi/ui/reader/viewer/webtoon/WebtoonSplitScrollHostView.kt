@@ -161,8 +161,15 @@ internal class WebtoonSplitScrollHostView(
         resizeHandle.translationX = columnsRow.width * leftWidthPercent / 100f - resizeHandle.width / 2f
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
+    override fun onLayout(
+        changed: Boolean,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+    ) {
+        super.onLayout(changed, left, top, right, bottom)
+        // The row's width is only reliable after its first layout pass.
         resizeHandle.translationX = columnsRow.width * leftWidthPercent / 100f - resizeHandle.width / 2f
     }
 
