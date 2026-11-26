@@ -230,6 +230,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             sourceItems = { adapter.items },
             plan = { requireNotNull(spreadPlan) },
         ).also { spreadAdapter = it }
+        projection.retainSourcePages(adapter.items)
         host.adapter = projection
         host.clearOnScrollListeners()
         host.addOnScrollListener(
@@ -354,6 +355,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             adapter = null
             clearOnScrollListeners()
         }
+        spreadAdapter?.clear()
         spreadRecycler?.let(root::removeView)
         spreadAdapter = null
         spreadPlan = null
