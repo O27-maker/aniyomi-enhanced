@@ -338,7 +338,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     fun cleanupPageSplit() {
         val insertPages = items.filterIsInstance(InsertPage::class.java)
         if (insertPages.isNotEmpty()) invalidateSpreadProjection()
-        items.removeAll(insertPages)
+        items.removeAll { item -> insertPages.any { it === item } }
         notifyDataSetChanged()
     }
 
