@@ -39,7 +39,8 @@ internal class PagerSplitScrollSegmentController(
         if (disposed) return false
         val targetSegment = plan.segmentIndexForSourceIndex(sourceIndex)
         if (targetSegment < 0) return false
-        if (targetSegment != segmentIndex) {
+        if (targetSegment != segmentIndex || boundaryNotified) {
+            // A direct navigation request can move back from a displayed chapter barrier.
             host.hideBoundary()
             segmentIndex = targetSegment
             bindSegment()
