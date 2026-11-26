@@ -154,6 +154,10 @@ internal class WebtoonSpreadAdapter(
     fun sourceIndexAt(displayIndex: Int): Int? =
         plan().units.getOrNull(displayIndex)?.sourceIndices?.firstOrNull()
 
+    /** Last source page in a visible row, used for continuous reading progress. */
+    fun lastSourceIndexAt(displayIndex: Int): Int? =
+        plan().units.getOrNull(displayIndex)?.sourceIndices?.lastOrNull()
+
     fun displayIndexForSource(sourceIndex: Int): Int =
         plan().unitIndexForSourceIndex(sourceIndex)
 
