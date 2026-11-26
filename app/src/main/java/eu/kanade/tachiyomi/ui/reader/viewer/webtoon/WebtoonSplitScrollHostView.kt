@@ -90,6 +90,8 @@ internal class WebtoonSplitScrollHostView(
 
         resizeHandle = FrameLayout(context).apply {
             isClickable = true
+            isFocusable = true
+            contentDescription = "Resize reader columns"
             setOnTouchListener { view, event ->
                 fun updateWidth() {
                     val location = IntArray(2)
@@ -137,7 +139,7 @@ internal class WebtoonSplitScrollHostView(
             ))
         }
         addView(resizeHandle, FrameLayout.LayoutParams(
-            (32 * resources.displayMetrics.density).toInt().coerceAtLeast(32),
+            (48 * resources.displayMetrics.density).toInt().coerceAtLeast(48),
             ViewGroup.LayoutParams.MATCH_PARENT,
             Gravity.LEFT,
         ))
