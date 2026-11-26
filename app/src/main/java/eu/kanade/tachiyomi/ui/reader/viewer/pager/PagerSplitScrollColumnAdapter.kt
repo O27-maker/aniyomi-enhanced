@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
+import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.recyclerview.widget.RecyclerView
@@ -45,7 +46,7 @@ internal class PagerSplitScrollColumnAdapter(
     override fun onBindViewHolder(holder: PageHolder, position: Int) {
         val placement = placements[position]
         val page = placement.item as ReaderPage
-        holder.container.setOnLongClickListener {
+        val longClickListener = View.OnLongClickListener {
             if (viewer.activity.viewModel.state.value.menuVisible || viewer.config.longTapEnabled) {
                 viewer.activity.onPageLongTap(page)
                 true
@@ -53,6 +54,7 @@ internal class PagerSplitScrollColumnAdapter(
                 false
             }
         }
+        holder.container.setOnLongClickListener(longClickListener)
         if (holder.pageHolder?.page !== page) {
             holder.clearPageHolder()
             val pageHolder = PagerPageHolder(
@@ -61,6 +63,7 @@ internal class PagerSplitScrollColumnAdapter(
                 page,
             )
             holder.pageHolder = pageHolder
+            pageHolder.setOnLongClickListener(longClickListener)
             holder.container.addView(
                 pageHolder,
                 FrameLayout.LayoutParams(
@@ -90,6 +93,7 @@ internal class PagerSplitScrollColumnAdapter(
 
         fun clearPageHolder() {
             container.setOnLongClickListener(null)
+            pageHolder?.setOnLongClickListener(null)
             pageHolder?.dispose()
             pageHolder = null
             container.removeAllViews()
