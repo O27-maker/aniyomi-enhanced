@@ -499,7 +499,6 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     private fun setChaptersInternal(chapters: ViewerChapters) {
         val forceTransition = config.alwaysShowChapterTransition ||
             currentPage is ChapterTransition
-        pageZoomStates.clear()
         // Invalidate column placements before the authoritative source list is mutated.
         if (splitScrollHost != null) {
             splitScrollController?.dispose()
@@ -507,6 +506,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         }
         activeSpreadProjection = null
         adapter.setChapters(chapters, forceTransition)
+        // Old holders capture their final zoom as they are disposed; discard those states
+        // after the source sequence changes so a previous chapter cannot leak into the next.
+        pageZoomStates.clear()
 
         // Layout the active presentation once a chapter is being set
         if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
