@@ -1,5 +1,9 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
+import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
+import eu.kanade.tachiyomi.ui.reader.model.InsertPage
+import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
+
 /**
  * Immutable derived snapshot for a spread-capable adapter.
  *
