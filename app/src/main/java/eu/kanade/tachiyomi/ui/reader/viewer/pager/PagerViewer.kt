@@ -20,6 +20,7 @@ import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
+import eu.kanade.tachiyomi.util.system.createReaderThemeContext
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import tachiyomi.core.common.util.system.logcat
@@ -478,8 +479,13 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         rebuildSpreadProjection()
 
         // Layout the pager once a chapter is being set
-        if (splitScrollHost != null) {
-            rebuildSplitScrollPresentation()
+        if (config.dualPagePresentationMode == eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPLIT_SCROLL) {
+            val requestedPage = chapters.currChapter.pages
+                ?.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0))
+            val requestedIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }
+                ?.takeIf { it >= 0 }
+            if (splitScrollHost == null) installSplitScrollPresentation(requestedIndex)
+            else rebuildSplitScrollPresentation(requestedIndex)
         } else {
             rebuildSpreadProjection()
         }
@@ -641,9 +647,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
 
     /** Build the independent columns from the pager adapter's exact effective source order. */
-    private fun installSplitScrollPresentation() {
+    private fun installSplitScrollPresentation(preferredSourceIndex: Int? = null) {
         if (adapter.items.isEmpty() || splitScrollHost != null) return
-        val selectedIndex = currentPage?.let { selected ->
+        val selectedIndex = preferredSourceIndex ?: currentPage?.let { selected ->
             adapter.items.indexOfFirst { it === selected }
         }?.takeIf { it >= 0 } ?: pager.currentItem.coerceIn(0, adapter.items.lastIndex.coerceAtLeast(0))
 
