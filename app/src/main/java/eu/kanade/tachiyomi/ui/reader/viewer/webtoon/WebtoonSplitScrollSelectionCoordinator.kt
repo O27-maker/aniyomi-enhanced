@@ -88,6 +88,23 @@ internal class WebtoonSplitScrollSelectionCoordinator(
         return Result(updatedState, selection, boundaryReady = true, accepted = true)
     }
 
+    /** Mark both independent columns complete for an explicit transition-page navigation. */
+    fun selectBoundary(state: State): Result? {
+        val segmentIndex = state.barrier.segmentIndex
+        val left = barriers.markColumnAtEnd(
+            state.barrier,
+            segmentIndex,
+            WebtoonSplitScrollPlan.Column.LEFT,
+        )
+        val ready = barriers.markColumnAtEnd(
+            left,
+            segmentIndex,
+            WebtoonSplitScrollPlan.Column.RIGHT,
+        )
+        val updatedState = state.copy(barrier = ready)
+        return readyBoundary(updatedState)
+    }
+
     /** Advance only after the active segment's full-width boundary is ready. */
     fun advancePastBoundary(state: State): State? {
         val nextBarrier = barriers.advance(state.barrier) ?: return null
