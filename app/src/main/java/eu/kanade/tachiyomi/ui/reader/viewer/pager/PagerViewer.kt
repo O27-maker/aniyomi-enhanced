@@ -736,7 +736,14 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                     host.showBoundary(holder) {
                         activeBoundaryHolder?.dispose()
                         activeBoundaryHolder = null
-                        splitScrollController?.advancePastBoundary()
+                        if (transition is ChapterTransition.Next && transition.to == null) {
+                            // The terminal transition has no following segment. Keep it
+                            // visible and return to the reader menu instead of advancing
+                            // into the deliberately empty trailing segment.
+                            activity.showMenu()
+                        } else {
+                            splitScrollController?.advancePastBoundary()
+                        }
                     }
                 }
             },
