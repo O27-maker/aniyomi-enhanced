@@ -118,7 +118,9 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         }
 
         // Resets double-page splits, else insert pages get misplaced
-        items.filterIsInstance<InsertPage>().also { items.removeAll(it) }
+        items.filterIsInstance<InsertPage>().also { oldInsertPages ->
+            items.removeAll { item -> oldInsertPages.any { it === item } }
+        }
 
         if (viewer is R2LPagerViewer) {
             newItems.reverse()
