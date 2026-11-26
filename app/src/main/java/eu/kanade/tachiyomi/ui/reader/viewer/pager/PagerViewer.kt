@@ -323,7 +323,13 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                     page.number > (currentPage as ReaderPage).number
                 }
             }
-            currentPage is ChapterTransition.Prev && page is ReaderPage -> false
+            currentPage is ChapterTransition && page is ReaderPage -> {
+                val transition = currentPage as ChapterTransition
+                when (transition) {
+                    is ChapterTransition.Prev -> page.chapter == transition.from
+                    is ChapterTransition.Next -> page.chapter == transition.to
+                }
+            }
             else -> true
         }
         currentPage = page
