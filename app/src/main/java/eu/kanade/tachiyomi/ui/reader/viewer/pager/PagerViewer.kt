@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.ui.reader.model.InsertPage
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
 import eu.kanade.tachiyomi.util.system.createReaderThemeContext
@@ -85,6 +86,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private var currentPage: Any? = null
     private var currentPageForward = true
+
+    /** Zoom state survives holder disposal while switching reader presentations. */
+    private val pageZoomStates = mutableMapOf<ReaderPage, ReaderPageImageView.ImageZoomState>()
 
     /** Original source index requested by moveToPage while the pager changes display units. */
     private var pendingSourceSelectionIndex: Int? = null
@@ -193,6 +197,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
         // The adapter has now disposed instantiated holders; release its remaining page models.
         adapter.clear()
+        pageZoomStates.clear()
         currentPage = null
         awaitingIdleViewerChapters = null
 
@@ -349,6 +354,14 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * activity of the change and requests the preload of the next chapter if this is the last page.
      */
     /** A Split Scroll row can bind after its source page was already selected. */
+    internal fun savePageZoomState(page: ReaderPage, state: ReaderPageImageView.ImageZoomState) {
+        pageZoomStates[page] = state
+    }
+
+    internal fun restorePageZoomState(page: ReaderPage, holder: PagerPageHolder) {
+        pageZoomStates.remove(page)?.let(holder::restoreZoomState)
+    }
+
     internal fun onSplitScrollPageHolderBound(page: ReaderPage, holder: PagerPageHolder) {
         if (currentPage === page) holder.onPageSelected(currentPageForward)
     }
@@ -486,6 +499,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     private fun setChaptersInternal(chapters: ViewerChapters) {
         val forceTransition = config.alwaysShowChapterTransition ||
             currentPage is ChapterTransition
+        pageZoomStates.clear()
         // Invalidate column placements before the authoritative source list is mutated.
         if (splitScrollHost != null) {
             splitScrollController?.dispose()
