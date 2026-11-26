@@ -685,7 +685,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         pageZoomStates.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
 
         val requestedPage = chapters.currChapter.pages
-            ?.getOrNull(chapters.currChapter.requestedPage)
+            ?.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0))
         val requestedSourceIndex = requestedPage?.let(adapter.items::indexOf)?.takeIf { it >= 0 }
         when (config.dualPagePresentationMode) {
             DualPagePresentationMode.SPLIT_SCROLL -> {
@@ -711,7 +711,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         if (firstLayout) {
             logcat { "Recycler first layout" }
             val pages = chapters.currChapter.pages ?: return
-            moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
+            val requestedPage = chapters.currChapter.requestedPage.coerceAtLeast(0)
+            val page = pages.getOrNull(requestedPage) ?: pages.lastOrNull() ?: return
+            moveToPage(page)
             recycler.isVisible = true
         }
     }
