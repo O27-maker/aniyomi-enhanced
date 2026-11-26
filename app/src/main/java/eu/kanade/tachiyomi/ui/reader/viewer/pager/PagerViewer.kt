@@ -262,8 +262,13 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private fun onPageChange(position: Int) {
         val projection = activeSpreadProjection
-        val pendingIndex = pendingSourceSelectionIndex
-            ?.takeIf { adapter.displayIndexForSource(it) == position }
+        // A pending exact-page request is valid only for the display unit it targeted.
+        // Clear it on every selection callback, including interrupted smooth-scrolls, so a
+        // later visit to the same spread cannot unexpectedly reselect an old second page.
+        val pendingIndex = pendingSourceSelectionIndex?.let { requestedIndex ->
+            pendingSourceSelectionIndex = null
+            requestedIndex.takeIf { adapter.displayIndexForSource(it) == position }
+        }
         val sourceIndex = if (projection != null) {
             SpreadAdapterNavigationMap.adapterIndexForDisplay(
                 projection.units,
@@ -273,7 +278,6 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         } else {
             position
         }
-        if (pendingIndex != null) pendingSourceSelectionIndex = null
         val page = sourceIndex?.let(adapter.items::getOrNull)
         if (page != null && currentPage != page) {
             val allowPreload = checkAllowPreload(page as? ReaderPage)
