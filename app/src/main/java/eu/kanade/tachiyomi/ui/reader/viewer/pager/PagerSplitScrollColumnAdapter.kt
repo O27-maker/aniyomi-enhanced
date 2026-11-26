@@ -40,8 +40,19 @@ internal class PagerSplitScrollColumnAdapter(
 
     override fun getItemId(position: Int): Long = placements[position].sourceIndex.toLong()
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder =
-        PageHolder(FrameLayout(parent.context))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
+        // PagerPageHolder is a FrameLayout whose image child fills its bounds. Unlike
+        // ViewPager, a vertical RecyclerView cannot infer a useful WRAP_CONTENT height
+        // for it, so give each page one column viewport of vertical reading space.
+        val pageHeight = parent.height.coerceAtLeast(1)
+        val container = FrameLayout(parent.context).apply {
+            layoutParams = RecyclerView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                pageHeight,
+            )
+        }
+        return PageHolder(container)
+    }
 
     override fun onBindViewHolder(holder: PageHolder, position: Int) {
         val placement = placements[position]
@@ -68,7 +79,7 @@ internal class PagerSplitScrollColumnAdapter(
                 pageHolder,
                 FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
                 ),
             )
             viewer.onSplitScrollPageHolderBound(page, pageHolder)
