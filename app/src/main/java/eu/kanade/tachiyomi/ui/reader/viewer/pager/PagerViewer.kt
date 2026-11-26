@@ -151,6 +151,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             refreshAdapter()
         }
 
+        config.spreadLayoutChangedListener = {
+            rebuildSpreadProjection()
+        }
+
         config.dualPagePresentationModeChangedListener = {
             if (config.dualPagePresentationMode == eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPREAD) {
                 rebuildSpreadProjection()
@@ -189,6 +193,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         // Preference observers are scoped, while these callbacks are explicit viewer references.
         config.dualPageSplitChangedListener = null
         config.dualPagePresentationModeChangedListener = null
+        config.spreadLayoutChangedListener = null
         spreadPageOrientationChangedListener = null
         activeSpreadProjection = null
         config.imagePropertyChangedListener = null
@@ -370,6 +375,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             adapterItems = adapter.items,
             selectedItem = selectedItem,
             isPortraitPage = ::isPortraitPageForSpread,
+            firstPageSingle = config.firstPageSingle,
         )
         if (projection.units.isEmpty()) return
         if (activeSpreadProjection?.let { sameSpreadUnits(it.units, projection.units) } == true) return
