@@ -26,6 +26,25 @@ internal data class PagerSplitScrollPlan<T>(
         val boundaryAfter: Placement<T>?,
     )
 
+    fun segmentIndexForSourceIndex(index: Int): Int {
+        if (index !in 0 until sourceSize) return -1
+        return segments.indexOfFirst { segment ->
+            segment.left.any { it.sourceIndex == index } ||
+                segment.right.any { it.sourceIndex == index }
+        }
+    }
+
+    fun columnPositionForSourceIndex(index: Int): Pair<Column, Int>? {
+        if (index !in 0 until sourceSize) return null
+        segments.forEach { segment ->
+            val leftPosition = segment.left.indexOfFirst { it.sourceIndex == index }
+            if (leftPosition >= 0) return Column.LEFT to leftPosition
+            val rightPosition = segment.right.indexOfFirst { it.sourceIndex == index }
+            if (rightPosition >= 0) return Column.RIGHT to rightPosition
+        }
+        return null
+    }
+
     fun placementForSourceIndex(index: Int): Placement<T>? {
         if (index !in 0 until sourceSize) return null
         return segments.asSequence().flatMap { segment ->
