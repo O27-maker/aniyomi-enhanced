@@ -72,14 +72,14 @@ internal class PagerSplitScrollSegmentController(
         }
         if (leftPosition != null) {
             val holder = host.leftRecycler.findViewHolderForAdapterPosition(leftPosition)
-                as? PagerSplitScrollColumnAdapter.PageHolder
+                ?.let { it as? PagerSplitScrollColumnAdapter.PageHolder }
             return holder?.pageHolder
         }
         val rightPosition = rightAdapter?.let { adapter ->
             (0 until adapter.itemCount).firstOrNull { adapter.pageAt(it) === page }
         } ?: return null
         val holder = host.rightRecycler.findViewHolderForAdapterPosition(rightPosition)
-            as? PagerSplitScrollColumnAdapter.PageHolder
+            ?.let { it as? PagerSplitScrollColumnAdapter.PageHolder }
         return holder?.pageHolder
     }
 
