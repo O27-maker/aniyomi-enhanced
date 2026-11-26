@@ -758,10 +758,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         val controller = splitScrollController ?: return
         var index = currentPage?.let { selected -> adapter.items.indexOfFirst { it === selected } } ?: -1
         if (index < 0) index = 0
-        var target = index + delta
-        while (target in adapter.items.indices && adapter.items[target] is ChapterTransition) {
-            target += delta
-        }
+        val target = index + delta
         if (target in adapter.items.indices) controller.moveToSourceIndex(target)
     }
 
