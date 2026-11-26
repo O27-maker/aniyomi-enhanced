@@ -487,7 +487,10 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val host = splitScrollHost ?: return null
         val controller = splitScrollController ?: return null
 
-        fun capture(recycler: WebtoonRecyclerView, column: WebtoonSplitScrollHostState.Column): SplitScrollViewportAnchor? {
+        fun capture(
+            recycler: WebtoonRecyclerView,
+            column: WebtoonSplitScrollHostState.Column,
+        ): SplitScrollViewportAnchor? {
             val manager = recycler.layoutManager as? WebtoonLayoutManager ?: return null
             val position = manager.findFirstVisibleItemPosition()
             if (position == RecyclerView.NO_POSITION) return null
@@ -501,7 +504,6 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             right = capture(host.rightRecycler, WebtoonSplitScrollHostState.Column.RIGHT),
         ).takeIf { it.left != null || it.right != null }
     }
-
 
     /**
      * Install the same tap/long-press navigation semantics as the standard
