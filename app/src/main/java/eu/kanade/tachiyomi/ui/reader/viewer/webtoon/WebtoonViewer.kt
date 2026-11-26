@@ -366,7 +366,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             ?: projection.lastSourceIndexAt(position)
         spreadPreferredSourceIndex = null
         val item = projection.sourceItemAt(position, preferred) ?: return
-        if (currentPage == item) return
+        if (currentPage === item) return
         val allowPreload = checkAllowPreload(item as? ReaderPage)
         currentPage = item
         when (item) {
@@ -690,7 +690,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val requestedPage = chapters.currChapter.pages?.let { pages ->
             pages.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0)) ?: pages.lastOrNull()
         }
-        val requestedSourceIndex = requestedPage?.let(adapter.items::indexOf)?.takeIf { it >= 0 }
+        val requestedSourceIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }?.takeIf { it >= 0 }
         when (config.dualPagePresentationMode) {
             DualPagePresentationMode.SPLIT_SCROLL -> {
                 disposeSpreadHost()
@@ -754,7 +754,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val position = pos ?: layoutManager.findLastEndVisibleItemPosition()
         val item = adapter.items.getOrNull(position)
         val allowPreload = checkAllowPreload(item as? ReaderPage)
-        if (item != null && currentPage != item) {
+        if (item != null && currentPage !== item) {
             currentPage = item
             when (item) {
                 is ReaderPage -> onPageSelected(item, allowPreload)
