@@ -217,6 +217,30 @@ open class ReaderPageImageView @JvmOverloads constructor(
         }
     }
 
+    /**
+     * Returns the decoded page orientation for Spread eligibility.
+     *
+     * A null result means the image is not decoded yet or has no reliable intrinsic
+     * dimensions. Callers must treat that state as ineligible until a later layout pass;
+     * never guess from the screen bounds or the reader page index.
+     */
+    fun isPortraitImage(): Boolean? {
+        val dimensions = when (val view = pageView) {
+            is SubsamplingScaleImageView -> {
+                if (!view.isReady) return null
+                view.sWidth to view.sHeight
+            }
+            is AppCompatImageView -> {
+                val drawable = view.drawable ?: return null
+                drawable.intrinsicWidth to drawable.intrinsicHeight
+            }
+            else -> return null
+        }
+        val (imageWidth, imageHeight) = dimensions
+        if (imageWidth <= 0 || imageHeight <= 0) return null
+        return imageWidth < imageHeight
+    }
+
     fun setImage(drawable: Drawable, config: Config) {
         this.config = config
         if (drawable is Animatable) {
