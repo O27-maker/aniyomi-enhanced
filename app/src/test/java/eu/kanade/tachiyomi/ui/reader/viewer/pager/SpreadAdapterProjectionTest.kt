@@ -161,6 +161,42 @@ class SpreadAdapterProjectionTest {
     }
 
     @Test
+    fun readerProjectionCanReanchorToActiveItemAfterOrientationChanges() {
+        val first = ReaderPage(0)
+        val active = ReaderPage(1)
+        val last = ReaderPage(2)
+        val source = listOf(first, active, last)
+
+        val beforeDecode = SpreadAdapterProjection.buildReaderPagesAnchoredToItem(
+            adapterItems = source,
+            selectedItem = active,
+            isPortraitPage = { null },
+        )
+        val afterDecode = SpreadAdapterProjection.buildReaderPagesAnchoredToItem(
+            adapterItems = source,
+            selectedItem = active,
+            isPortraitPage = { true },
+        )
+
+        assertEquals(SpreadAdapterNavigationMap.Anchor(1, 1), beforeDecode.selectedAnchor)
+        assertEquals(SpreadAdapterNavigationMap.Anchor(0, 1), afterDecode.selectedAnchor)
+        assertEquals(1, afterDecode.selectedAnchor?.adapterIndex)
+    }
+
+    @Test
+    fun readerProjectionDoesNotAnchorToAnEqualButDifferentItem() {
+        val sourceItem = ReaderPage(1)
+        val equalLookingItem = ReaderPage(1)
+        val projection = SpreadAdapterProjection.buildReaderPagesAnchoredToItem(
+            adapterItems = listOf(sourceItem),
+            selectedItem = equalLookingItem,
+            isPortraitPage = { true },
+        )
+
+        assertNull(projection.selectedAnchor)
+    }
+
+    @Test
     fun projectionRejectsMutatedOrReplacedSourceItems() {
         val original = listOf(Any(), Any())
         val projection = SpreadAdapterProjection.build(
