@@ -71,8 +71,6 @@ class WebtoonPageHolder(
      */
     private var page: ReaderPage? = null
 
-    /** Apply cached zoom only after the replacement image has decoded. */
-
     private val scope = MainScope()
 
     /**
