@@ -119,6 +119,8 @@ class ReaderPreferences(
 
     fun dualPageMode() = preferenceStore.getInt("pref_dual_page_mode", 0)
 
+    fun dualPageFirstPageSingle() = preferenceStore.getBoolean("pref_dual_page_first_page_single", false)
+
 
     // endregion
 
