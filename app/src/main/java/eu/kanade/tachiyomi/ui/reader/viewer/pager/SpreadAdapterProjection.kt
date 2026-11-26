@@ -31,6 +31,7 @@ internal data class SpreadAdapterProjection<T>(
             selectedAdapterIndex: Int,
             isPortraitPage: (ReaderPage) -> Boolean?,
             firstPageSingle: Boolean = false,
+            firstPageIndex: Int? = null,
         ): SpreadAdapterProjection<Any> = build(
             adapterItems = adapterItems,
             selectedAdapterIndex = selectedAdapterIndex,
@@ -42,6 +43,7 @@ internal data class SpreadAdapterProjection<T>(
                 firstPage != null && secondPage != null && sameChapterIfAvailable(firstPage, secondPage)
             },
             firstPageSingle = firstPageSingle,
+            firstPageIndex = firstPageIndex,
         )
 
         /**
@@ -54,6 +56,7 @@ internal data class SpreadAdapterProjection<T>(
             selectedItem: Any?,
             isPortraitPage: (ReaderPage) -> Boolean?,
             firstPageSingle: Boolean = false,
+            firstPageIndex: Int? = null,
         ): SpreadAdapterProjection<Any> {
             val selectedIndex = if (selectedItem == null) {
                 -1
@@ -65,6 +68,7 @@ internal data class SpreadAdapterProjection<T>(
                 selectedAdapterIndex = selectedIndex,
                 isPortraitPage = isPortraitPage,
                 firstPageSingle = firstPageSingle,
+                firstPageIndex = firstPageIndex,
             )
         }
 
@@ -83,6 +87,7 @@ internal data class SpreadAdapterProjection<T>(
             canPair: (T) -> Boolean = { true },
             canPairTogether: (T, T) -> Boolean = { _, _ -> true },
             firstPageSingle: Boolean = false,
+            firstPageIndex: Int? = null,
         ): SpreadAdapterProjection<T> {
             val units = SpreadAdapterItemMapper.map(
                 items = adapterItems,
@@ -90,6 +95,7 @@ internal data class SpreadAdapterProjection<T>(
                 canPair = canPair,
                 canPairTogether = canPairTogether,
                 firstPageSingle = firstPageSingle,
+                firstPageIndex = firstPageIndex,
             )
             return SpreadAdapterProjection(
                 units = units.toList(),
