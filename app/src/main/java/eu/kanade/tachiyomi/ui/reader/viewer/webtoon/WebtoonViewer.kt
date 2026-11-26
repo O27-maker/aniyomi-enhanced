@@ -92,6 +92,13 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      */
     private var currentPage: Any? = null
 
+    private data class SplitScrollViewportAnchor(val page: ReaderPage, val topOffset: Int)
+
+    private data class SplitScrollViewportSnapshot(
+        val left: SplitScrollViewportAnchor?,
+        val right: SplitScrollViewportAnchor?,
+    )
+
     /** Preserve page zoom when RecyclerView recycles a holder or a presentation is rebuilt. */
     private val pageZoomStates = mutableMapOf<ReaderPage, ReaderPageImageView.ImageZoomState>()
 
@@ -401,6 +408,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * untouched so switching back is a safe fallback.
      */
     private fun installSplitScrollHost(initialSourceIndex: Int?) {
+        val previousViewport = captureSplitScrollViewport()
         splitScrollController?.dispose()
         val splitWidthPreference = Injekt.get<ReaderPreferences>().dualPageSplitLeftWidth()
         val host = WebtoonSplitScrollHostView(activity).apply {
@@ -449,7 +457,37 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             },
         )
         bindSplitScrollInteractions(host)
-        initialSourceIndex?.let { splitScrollController?.moveToSourceIndex(it) }
+        val restoredLeft = previousViewport?.left?.let { anchor ->
+            adapter.items.indexOfFirst { it === anchor.page }.takeIf { it >= 0 }
+                ?.let { splitScrollController?.moveToSourceIndex(it, anchor.topOffset) } == true
+        } ?: false
+        val restoredRight = previousViewport?.right?.let { anchor ->
+            adapter.items.indexOfFirst { it === anchor.page }.takeIf { it >= 0 }
+                ?.let { splitScrollController?.moveToSourceIndex(it, anchor.topOffset) } == true
+        } ?: false
+        if (!restoredLeft && !restoredRight) {
+            initialSourceIndex?.let { splitScrollController?.moveToSourceIndex(it) }
+        }
+    }
+
+    /** Capture independent first-visible page anchors before rebuilding the two-column host. */
+    private fun captureSplitScrollViewport(): SplitScrollViewportSnapshot? {
+        val host = splitScrollHost ?: return null
+        val controller = splitScrollController ?: return null
+
+        fun capture(recycler: WebtoonRecyclerView, column: WebtoonSplitScrollHostState.Column): SplitScrollViewportAnchor? {
+            val manager = recycler.layoutManager as? WebtoonLayoutManager ?: return null
+            val position = manager.findFirstVisibleItemPosition()
+            if (position == RecyclerView.NO_POSITION) return null
+            val page = controller.pageAt(column, position) ?: return null
+            val offset = manager.findViewByPosition(position)?.top ?: 0
+            return SplitScrollViewportAnchor(page, offset)
+        }
+
+        return SplitScrollViewportSnapshot(
+            left = capture(host.leftRecycler, WebtoonSplitScrollHostState.Column.LEFT),
+            right = capture(host.rightRecycler, WebtoonSplitScrollHostState.Column.RIGHT),
+        ).takeIf { it.left != null || it.right != null }
     }
 
 
