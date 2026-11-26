@@ -13,8 +13,8 @@ import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
  * RecyclerView projection adapter for continuous-reader Spread.
  *
  * The original WebtoonAdapter remains authoritative. Page holders are cached by
- * ReaderPage identity and moved between projected rows when orientation changes,
- * preserving decoded images, zoom, pan, gestures, and in-flight page state.
+ * ReaderPage identity during regrouping so decoded images, zoom, pan, gestures,
+ * and in-flight page state survive orientation-driven projection refreshes.
  */
 internal class WebtoonSpreadAdapter(
     private val viewer: WebtoonViewer,
@@ -23,12 +23,14 @@ internal class WebtoonSpreadAdapter(
 ) : RecyclerView.Adapter<WebtoonSpreadAdapter.RowHolder>() {
 
     private val pageHolderCache = IdentityHashMap<ReaderPage, WebtoonPageHolder>()
+    private var preservingHoldersForProjectionRefresh = false
 
     internal class RowHolder(
         val container: LinearLayout,
         private val adapter: WebtoonSpreadAdapter,
     ) : RecyclerView.ViewHolder(container) {
         private var transitionHolder: WebtoonTransitionHolder? = null
+        private val boundPages = mutableListOf<ReaderPage>()
 
         fun bind(unit: WebtoonSpreadPlan.Unit<Any>) {
             clearRow()
@@ -57,6 +59,7 @@ internal class WebtoonSpreadAdapter(
 
         private fun addPage(page: ReaderPage, paired: Boolean) {
             val holder = adapter.obtainPageHolder(page)
+            boundPages += page
             (holder.itemView.parent as? ViewGroup)?.removeView(holder.itemView)
             holder.itemView.layoutParams = LinearLayout.LayoutParams(
                 if (paired) 0 else MATCH_PARENT,
@@ -70,6 +73,12 @@ internal class WebtoonSpreadAdapter(
             transitionHolder?.recycle()
             transitionHolder = null
             container.removeAllViews()
+            boundPages.clear()
+        }
+
+        fun releaseCachedPages() {
+            boundPages.forEach(adapter::releasePageHolder)
+            boundPages.clear()
         }
 
         fun recycleChildren() = clearRow()
@@ -82,7 +91,27 @@ internal class WebtoonSpreadAdapter(
         }
     }
 
-    /** Release cached holders only when their source pages leave the authoritative sequence. */
+    private fun releasePageHolder(page: ReaderPage) {
+        pageHolderCache.remove(page)?.recycle()
+    }
+
+    fun beginProjectionRefresh() {
+        preservingHoldersForProjectionRefresh = true
+    }
+
+    fun endProjectionRefreshAndPrune() {
+        preservingHoldersForProjectionRefresh = false
+        val iterator = pageHolderCache.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (entry.value.itemView.parent == null) {
+                entry.value.recycle()
+                iterator.remove()
+            }
+        }
+    }
+
+    /** Release holders for pages that left the authoritative source sequence. */
     fun retainSourcePages(items: List<Any>) {
         val retained = items.filterIsInstance<ReaderPage>().toSet()
         val iterator = pageHolderCache.entries.iterator()
@@ -115,6 +144,7 @@ internal class WebtoonSpreadAdapter(
     }
 
     override fun onViewRecycled(holder: RowHolder) {
+        if (!preservingHoldersForProjectionRefresh) holder.releaseCachedPages()
         holder.recycleChildren()
     }
 
