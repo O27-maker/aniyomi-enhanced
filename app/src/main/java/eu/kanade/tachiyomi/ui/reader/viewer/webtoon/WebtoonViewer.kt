@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
@@ -90,6 +91,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Currently active item. It can be a chapter page or a chapter transition.
      */
     private var currentPage: Any? = null
+
+    /** Preserve page zoom when RecyclerView recycles a holder or a presentation is rebuilt. */
+    private val pageZoomStates = mutableMapOf<ReaderPage, ReaderPageImageView.ImageZoomState>()
 
     private val threshold: Int =
         Injekt.get<ReaderPreferences>()
@@ -210,6 +214,14 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     }
 
 
+
+    internal fun savePageZoomState(page: ReaderPage, state: ReaderPageImageView.ImageZoomState) {
+        if (adapter.items.any { it === page }) pageZoomStates[page] = state
+    }
+
+    internal fun restorePageZoomState(page: ReaderPage, holder: WebtoonPageHolder) {
+        pageZoomStates.remove(page)?.let(holder::restoreZoomState)
+    }
 
     /** Create a page holder using the reader theme and the active Spread RecyclerView. */
     internal fun createSpreadPageHolder(): WebtoonPageHolder =
@@ -570,6 +582,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         // Detach first so RecyclerView recycles its holders while the adapter is still valid.
         recycler.adapter = null
         adapter.clear()
+        pageZoomStates.clear()
 
         super.destroy()
         scope.cancel()
@@ -617,6 +630,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val firstLayout = recycler.isGone
         val forceTransition = config.alwaysShowChapterTransition || currentPage is ChapterTransition
         adapter.setChapters(chapters, forceTransition)
+        pageZoomStates.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
 
         val requestedPage = chapters.currChapter.pages
             ?.getOrNull(chapters.currChapter.requestedPage)
