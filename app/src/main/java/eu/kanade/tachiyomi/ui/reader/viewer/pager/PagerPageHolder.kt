@@ -44,6 +44,10 @@ class PagerPageHolder(
     override val item
         get() = page
 
+    /** Decoded orientation used by Spread; null means the image is not ready yet. */
+    val isPortraitForSpread: Boolean?
+        get() = isPortraitImage()
+
     /**
      * Loading progress bar to indicate the current progress.
      */
