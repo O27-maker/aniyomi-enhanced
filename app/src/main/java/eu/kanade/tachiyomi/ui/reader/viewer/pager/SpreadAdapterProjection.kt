@@ -21,6 +21,24 @@ internal data class SpreadAdapterProjection<T>(
             adapterItems.indices.all { adapterItems[it] === sourceSnapshot[it] }
 
     companion object {
+        /**
+         * Build a reader-aware projection. Chapter transitions and inserted split pages
+         * are always standalone. Only adjacent regular pages with known portrait geometry
+         * may be paired; unknown dimensions remain standalone.
+         */
+        fun buildReaderPages(
+            adapterItems: List<Any>,
+            selectedAdapterIndex: Int,
+            isPortraitPage: (ReaderPage) -> Boolean,
+            firstPageSingle: Boolean = false,
+        ): SpreadAdapterProjection<Any> = build(
+            adapterItems = adapterItems,
+            selectedAdapterIndex = selectedAdapterIndex,
+            isBoundary = { it is ChapterTransition },
+            canPair = { item -> item is ReaderPage && item !is InsertPage && isPortraitPage(item) },
+            firstPageSingle = firstPageSingle,
+        )
+
         fun <T> build(
             adapterItems: List<T>,
             selectedAdapterIndex: Int,
