@@ -70,8 +70,6 @@ internal fun ColumnScope.ReadingModePage(screenModel: ReaderSettingsScreenModel)
 
 @Composable
 private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
-    HeadingItem(MR.strings.pager_viewer)
-
     val navigationModePager by screenModel.preferences.navigationModePager().collectAsState()
     val pagerNavInverted by screenModel.preferences.pagerNavInverted().collectAsState()
     TapZonesItems(
@@ -172,8 +170,6 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
 @Composable
 private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenModel) {
     val numberFormat = remember { NumberFormat.getPercentInstance() }
-
-    HeadingItem(MR.strings.webtoon_viewer)
 
     val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
     SettingsChipRow(MR.strings.webtoon_viewer) {
