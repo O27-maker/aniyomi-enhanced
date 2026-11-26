@@ -260,6 +260,10 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     fun restoreZoomState(state: ImageZoomState) {
+        // Page selection can schedule automatic landscape zoom before the image-loaded
+        // callback restores the user's state. Cancel that delayed animation so it cannot
+        // overwrite the restored scale or pan position half a second later.
+        cancelLandscapeZoom()
         when (val view = pageView) {
             is SubsamplingScaleImageView -> {
                 if (view.isReady && state.centerX != null && state.centerY != null) {
