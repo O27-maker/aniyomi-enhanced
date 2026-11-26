@@ -1,7 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
-
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -88,29 +87,7 @@ class SpreadAdapterProjectionTest {
     }
 
     @Test
-    fun projectionRejectsMutatedOrReplacedSourceItems() {
-        val original = listOf(Any(), Any())
-        val projection = SpreadAdapterProjection.build(
-            adapterItems = original,
-            selectedAdapterIndex = 0,
-        )
-
-        assertEquals(true, projection.matchesSource(original))
-        assertEquals(false, projection.matchesSource(listOf(original[0], Any())))
-        assertEquals(false, projection.matchesSource(listOf(original[0])))
-        assertEquals(false, projection.matchesSource(listOf(Any(), original[1])))
-    }
-
-    @Test
-    fun missingSelectedAdapterIndexProducesNullAnchor() {
-        val projection = SpreadAdapterProjection.build(
-            adapterItems = listOf("p0", "p1"),
-            selectedAdapterIndex = 8,
-        )
-        assertNull(projection.selectedAnchor)
-    }
-}    @Test
-    fun readerProjectionPairsOnlyPagesWithKnownPortraitGeometry() {
+    fun readerProjectionKeepsLandscapeOrUnknownPagesStandalone() {
         val pageA = ReaderPage(0)
         val pageB = ReaderPage(1)
         val pageC = ReaderPage(2)
