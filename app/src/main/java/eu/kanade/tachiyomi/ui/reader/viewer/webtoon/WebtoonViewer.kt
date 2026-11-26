@@ -323,7 +323,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             val selectedSource = adapter.items.indexOf(currentPage).takeIf { it >= 0 }
             val anchorView = manager.findViewByPosition(firstVisible)
             val offset = anchorView?.top ?: 0
-            spreadPlan = createSpreadPlan()
+            val nextPlan = createSpreadPlan()
+            if (nextPlan == spreadPlan) return@post
+            spreadPlan = nextPlan
             projection.beginProjectionRefresh()
             projection.notifyDataSetChanged()
             val newDisplay = sourceAnchor?.let(projection::displayIndexForSource) ?: firstVisible
