@@ -127,13 +127,13 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
                         .preferenceValue,
                 )
             },
-            label = { Text("Spread") },
+            label = { Text(stringResource(MR.strings.dual_page_spread)) },
         )
     }
 
     if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
         CheckboxItem(
-            label = "Keep first page alone",
+            label = stringResource(MR.strings.dual_page_first_page_alone),
             pref = screenModel.preferences.dualPageFirstPageSingle(),
         )
     }
@@ -180,7 +180,7 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
                         .preferenceValue,
                 )
             },
-            label = { Text("Split Scroll") },
+            label = { Text(stringResource(MR.strings.dual_page_split_scroll)) },
         )
     }
 
