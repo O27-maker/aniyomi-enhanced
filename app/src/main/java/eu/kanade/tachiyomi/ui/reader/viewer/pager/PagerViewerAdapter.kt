@@ -116,6 +116,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
             newItems.reverse()
         }
 
+        clearSpreadProjection()
         preprocessed = mutableMapOf()
         items = newItems
         notifyDataSetChanged()
@@ -308,6 +309,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
             return
         }
 
+        clearSpreadProjection()
         items.add(placeAtIndex, newPage)
 
         notifyDataSetChanged()
@@ -315,6 +317,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
 
     fun cleanupPageSplit() {
         val insertPages = items.filterIsInstance(InsertPage::class.java)
+        if (insertPages.isNotEmpty()) clearSpreadProjection()
         items.removeAll(insertPages)
         notifyDataSetChanged()
     }
@@ -328,6 +331,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * its instantiated holder trees.
      */
     fun clear() {
+        clearSpreadProjection()
         items.clear()
         preprocessed.clear()
         nextTransition = null
