@@ -72,6 +72,7 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.util.system.hasDisplayCutout
@@ -538,7 +539,13 @@ class ReaderActivity : BaseActivity() {
 
         // Destroy previous viewer if there was one
         if (prevViewer != null) {
+            // Detaching the old viewer disposes its page holders and captures their final
+            // zoom/pan state. Transfer those identity-keyed states before the new viewer binds.
             prevViewer.destroy()
+            val zoomStates = (prevViewer as? ReaderPageZoomStateOwner)?.exportPageZoomStates()
+            if (zoomStates != null) {
+                (newViewer as? ReaderPageZoomStateOwner)?.importPageZoomStates(zoomStates)
+            }
             binding.viewerContainer.removeAllViews()
         }
         viewModel.onViewerLoaded(newViewer)
