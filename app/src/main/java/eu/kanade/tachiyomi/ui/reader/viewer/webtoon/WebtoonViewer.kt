@@ -71,7 +71,14 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     /**
      * Adapter of the recycler view.
      */
-    private val adapter = WebtoonAdapter(this)
+    internal val adapter = WebtoonAdapter(this)
+
+    /** Experimental Spread projection; adapter.items remains the source of truth. */
+    private var spreadRecycler: WebtoonRecyclerView? = null
+    private var spreadLayoutManager: WebtoonLayoutManager? = null
+    private var spreadAdapter: WebtoonSpreadAdapter? = null
+    private var spreadPlan: WebtoonSpreadPlan<Any>? = null
+    private val spreadOrientations = mutableMapOf<ReaderPage, Boolean?>()
 
     /** Experimental two-column host; the normal reader remains the fallback. */
     private var splitScrollHost: WebtoonSplitScrollHostView? = null
@@ -190,6 +197,150 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         root.addView(frame, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
     }
 
+
+
+    /** Create a page holder using the reader theme and the active Spread RecyclerView. */
+    internal fun createSpreadPageHolder(): WebtoonPageHolder =
+        adapter.createPageHolder(requireNotNull(spreadRecycler))
+
+    private fun installSpreadHost(initialSourceIndex: Int?) {
+        val host = spreadRecycler ?: WebtoonRecyclerView(activity).also { spreadRecycler = it }
+        val manager = spreadLayoutManager ?: WebtoonLayoutManager(activity, scrollDistance).also { spreadLayoutManager = it }
+        host.setItemViewCacheSize(RECYCLER_VIEW_CACHE_SIZE)
+        host.itemAnimator = null
+        host.isFocusable = false
+        host.layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        host.layoutManager = manager
+        spreadPlan = createSpreadPlan()
+        val projection = spreadAdapter ?: WebtoonSpreadAdapter(
+            viewer = this,
+            sourceItems = { adapter.items },
+            plan = { requireNotNull(spreadPlan) },
+        ).also { spreadAdapter = it }
+        host.adapter = projection
+        host.clearOnScrollListeners()
+        host.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    onSpreadScrolled()
+                    if ((dy > threshold || dy < -threshold) && activity.viewModel.state.value.menuVisible) {
+                        activity.hideMenu()
+                    }
+                    if (dy < 0) {
+                        val first = manager.findFirstVisibleItemPosition()
+                        val item = projection.sourceItemAt(first) as? ChapterTransition.Prev
+                        item?.to?.let(activity::requestPreloadChapter)
+                    }
+                    val last = manager.findLastEndVisibleItemPosition()
+                    val item = projection.sourceItemAt(last)
+                    if (item is ChapterTransition.Next && item.to == null) activity.showMenu()
+                }
+            },
+        )
+        host.tapListener = { event ->
+            val position = PointF(
+                event.x / host.width.coerceAtLeast(1),
+                event.y / host.originalHeight.coerceAtLeast(host.height).coerceAtLeast(1),
+            )
+            when (config.navigator.getAction(position)) {
+                NavigationRegion.MENU -> activity.toggleMenu()
+                NavigationRegion.NEXT, NavigationRegion.RIGHT -> host.scrollBy(0, scrollDistance)
+                NavigationRegion.PREV, NavigationRegion.LEFT -> host.scrollBy(0, -scrollDistance)
+            }
+        }
+        host.longTapListener = { event ->
+            if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
+                val child = host.findChildViewUnder(event.x, event.y)
+                val displayIndex = child?.let(host::getChildAdapterPosition) ?: RecyclerView.NO_POSITION
+                val sourceIndex = projection.sourceIndexAt(displayIndex)
+                val page = sourceIndex?.let { adapter.items.getOrNull(it) as? ReaderPage }
+                if (page != null) {
+                    activity.onPageLongTap(page)
+                    true
+                } else false
+            } else false
+        }
+        frame.isVisible = false
+        recycler.isVisible = false
+        splitScrollHost?.let(root::removeView)
+        splitScrollHost = null
+        if (host.parent !== root) root.addView(host, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        host.isVisible = true
+        initialSourceIndex?.let { source ->
+            val display = projection.displayIndexForSource(source)
+            if (display >= 0) {
+                manager.scrollToPositionWithOffset(display, 0)
+                onSpreadScrolled(display)
+            }
+        }
+    }
+
+    private fun createSpreadPlan(): WebtoonSpreadPlan<Any> {
+        return WebtoonSpreadPlan.create(
+            items = adapter.items,
+            isBoundary = { it is ChapterTransition },
+            isPortrait = { item -> (item as? ReaderPage)?.let { spreadOrientations[it] } },
+            canPair = { it is ReaderPage },
+        )
+    }
+
+    /** Called after a page image decodes; rebuild only if its orientation changed. */
+    internal fun onSpreadPageOrientationReady(page: ReaderPage, isPortrait: Boolean?) {
+        if (config.dualPagePresentationMode != DualPagePresentationMode.SPREAD) return
+        if (adapter.items.none { it === page }) return
+        if (spreadOrientations[page] == isPortrait) return
+        spreadOrientations[page] = isPortrait
+        val manager = spreadLayoutManager ?: return
+        val projection = spreadAdapter ?: return
+        val firstVisible = manager.findFirstVisibleItemPosition()
+        val sourceAnchor = projection.sourceIndexAt(firstVisible)
+        val anchorView = manager.findViewByPosition(firstVisible)
+        val offset = anchorView?.top ?: 0
+        spreadPlan = createSpreadPlan()
+        projection.notifyDataSetChanged()
+        val newDisplay = sourceAnchor?.let(projection::displayIndexForSource) ?: firstVisible
+        if (newDisplay >= 0) manager.scrollToPositionWithOffset(newDisplay, offset)
+    }
+
+    private fun onSpreadScrolled(displayPosition: Int? = null) {
+        val manager = spreadLayoutManager ?: return
+        val projection = spreadAdapter ?: return
+        val position = displayPosition ?: manager.findLastEndVisibleItemPosition()
+        val item = projection.sourceItemAt(position) ?: return
+        if (currentPage == item) return
+        val allowPreload = checkAllowPreload(item as? ReaderPage)
+        currentPage = item
+        when (item) {
+            is ReaderPage -> onPageSelected(item, allowPreload)
+            is ChapterTransition -> onTransitionSelected(item)
+        }
+    }
+
+    private fun disposeSpreadHost() {
+        spreadRecycler?.apply {
+            tapListener = null
+            longTapListener = null
+            adapter = null
+            clearOnScrollListeners()
+        }
+        spreadRecycler?.let(root::removeView)
+        spreadAdapter = null
+        spreadPlan = null
+        spreadOrientations.clear()
+        spreadRecycler = null
+        spreadLayoutManager = null
+    }
+
+    private fun disposeSplitScrollHost() {
+        splitScrollController?.dispose()
+        splitScrollController = null
+        splitScrollHost?.leftRecycler?.apply { tapListener = null; longTapListener = null }
+        splitScrollHost?.rightRecycler?.apply { tapListener = null; longTapListener = null }
+        splitScrollHost?.setColumnAdapters(null, null)
+        splitScrollHost?.let(root::removeView)
+        splitScrollHost = null
+        activeSplitRecycler = null
+    }
 
     /**
      * Install the experimental Split Scroll projection over the authoritative
@@ -425,19 +576,28 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val forceTransition = config.alwaysShowChapterTransition || currentPage is ChapterTransition
         adapter.setChapters(chapters, forceTransition)
 
-        if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
-            val requestedPage = chapters.currChapter.pages
-                ?.getOrNull(chapters.currChapter.requestedPage)
-            installSplitScrollHost(requestedPage?.let(adapter.items::indexOf)?.takeIf { it >= 0 })
-            recycler.isVisible = false
-            return
-        } else {
-            splitScrollController?.dispose()
-            splitScrollController = null
-            splitScrollHost?.let(root::removeView)
-            splitScrollHost = null
-            frame.isVisible = true
-            recycler.isVisible = true
+        val requestedPage = chapters.currChapter.pages
+            ?.getOrNull(chapters.currChapter.requestedPage)
+        val requestedSourceIndex = requestedPage?.let(adapter.items::indexOf)?.takeIf { it >= 0 }
+        when (config.dualPagePresentationMode) {
+            DualPagePresentationMode.SPLIT_SCROLL -> {
+                disposeSpreadHost()
+                installSplitScrollHost(requestedSourceIndex)
+                recycler.isVisible = false
+                return
+            }
+            DualPagePresentationMode.SPREAD -> {
+                disposeSplitScrollHost()
+                installSpreadHost(requestedSourceIndex)
+                recycler.isVisible = false
+                return
+            }
+            DualPagePresentationMode.NONE -> {
+                disposeSplitScrollHost()
+                disposeSpreadHost()
+                frame.isVisible = true
+                recycler.isVisible = true
+            }
         }
 
         if (firstLayout) {
@@ -455,6 +615,14 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val position = adapter.items.indexOf(page)
         if (position != -1 && config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
             splitScrollController?.moveToSourceIndex(position)
+            return
+        }
+        if (position != -1 && config.dualPagePresentationMode == DualPagePresentationMode.SPREAD) {
+            val displayPosition = spreadAdapter?.displayIndexForSource(position) ?: -1
+            if (displayPosition >= 0) {
+                spreadLayoutManager?.scrollToPositionWithOffset(displayPosition, 0)
+                if (spreadLayoutManager?.findLastEndVisibleItemPosition() == -1) onSpreadScrolled(displayPosition)
+            }
             return
         }
         if (position != -1) {
