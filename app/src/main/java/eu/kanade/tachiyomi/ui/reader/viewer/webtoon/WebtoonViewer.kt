@@ -20,6 +20,7 @@ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
@@ -229,6 +230,15 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
     internal fun restorePageZoomState(page: ReaderPage, holder: WebtoonPageHolder) {
         pageZoomStates.remove(page)?.let(holder::restoreZoomState)
+    }
+
+    override fun exportPageZoomStates(): IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState> =
+        IdentityHashMap(pageZoomStates).also { pageZoomStates.clear() }
+
+    override fun importPageZoomStates(
+        states: IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>,
+    ) {
+        pageZoomStates.putAll(states)
     }
 
     /** Create a page holder using the reader theme and the active Spread RecyclerView. */
@@ -638,8 +648,6 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         // Detach first so RecyclerView recycles its holders while the adapter is still valid.
         recycler.adapter = null
         adapter.clear()
-        pageZoomStates.clear()
-
         super.destroy()
         scope.cancel()
     }
