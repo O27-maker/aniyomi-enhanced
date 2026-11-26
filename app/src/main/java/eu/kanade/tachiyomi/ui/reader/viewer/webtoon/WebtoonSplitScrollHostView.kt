@@ -12,16 +12,10 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.WebtoonLayoutManager
 
 /**
- * Structural container for a future Split Scroll reader.
- *
- * Each side owns a separate WebtoonFrame and WebtoonRecyclerView, so pinch, pan,
- * fling and vertical scrolling are scoped to the touched column. A full-width
- * boundary slot sits after the two columns and is shown only when the segment
- * barrier coordinator releases it.
- *
- * This view is intentionally not installed by WebtoonViewer yet. Its recyclers
- * have independent LayoutManagers but no adapters until the viewer integration
- * can supply correctly segmented adapters and lifecycle-safe holders.
+ * Two-column Split Scroll host. Each side owns an independent WebtoonFrame,
+ * RecyclerView and LayoutManager. The draggable center handle adjusts the
+ * shared width ratio without coupling the columns' scroll positions. A full-width
+ * boundary slot is shown only when the segment barrier coordinator releases it.
  */
 internal class WebtoonSplitScrollHostView(
     context: Context,
@@ -125,7 +119,7 @@ internal class WebtoonSplitScrollHostView(
         addView(resizeHandle, FrameLayout.LayoutParams(
             (32 * resources.displayMetrics.density).toInt().coerceAtLeast(32),
             ViewGroup.LayoutParams.MATCH_PARENT,
-            Gravity.START,
+            Gravity.LEFT,
         ))
         setLeftWidthPercent(DEFAULT_LEFT_WIDTH_PERCENT)
     }
