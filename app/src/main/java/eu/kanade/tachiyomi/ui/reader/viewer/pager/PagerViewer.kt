@@ -481,9 +481,8 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         }
         activeSpreadProjection = null
         adapter.setChapters(chapters, forceTransition)
-        rebuildSpreadProjection()
 
-        // Layout the pager once a chapter is being set
+        // Layout the active presentation once a chapter is being set
         if (config.dualPagePresentationMode == eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPLIT_SCROLL) {
             val requestedPage = chapters.currChapter.pages
                 ?.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0))
