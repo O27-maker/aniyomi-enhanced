@@ -194,6 +194,9 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                 for (index in 0 until view.childCount) {
                     disposeViewTree(view.getChildAt(index))
                 }
+                // Release the projection's page references only after its child holders
+                // have been permanently disposed.
+                if (view is SpreadFrameLayout) view.clearBinding()
             }
         }
     }
