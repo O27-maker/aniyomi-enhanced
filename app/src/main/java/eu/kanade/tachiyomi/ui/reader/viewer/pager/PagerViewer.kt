@@ -197,6 +197,13 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pager.findPageHolder(page)
 
     /**
+     * Returns decoded orientation only for an instantiated page holder.
+     * Pages not currently decoded remain ineligible for Spread pairing.
+     */
+    internal fun isPortraitPageForSpread(page: ReaderPage): Boolean? =
+        getPageHolder(page)?.isPortraitForSpread
+
+    /**
      * Spread presentation nests the original page holders inside a frame. Search the
      * pager's view tree so selection and pan navigation keep resolving the same holder.
      */
