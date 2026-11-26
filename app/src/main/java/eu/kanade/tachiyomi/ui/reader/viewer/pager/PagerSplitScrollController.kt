@@ -30,7 +30,7 @@ internal class PagerSplitScrollController<T>(
     fun rebuild(source: List<T>): Boolean {
         val nextSource = source.toList()
         val nextPlan = PagerSplitScrollPlan.create(
-            items = nextSource,
+            source = nextSource,
             isBoundary = isBoundary,
             firstColumn = firstColumn,
         )
