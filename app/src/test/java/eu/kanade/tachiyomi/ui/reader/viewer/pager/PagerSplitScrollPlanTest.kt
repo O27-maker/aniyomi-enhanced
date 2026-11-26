@@ -39,6 +39,22 @@ class PagerSplitScrollPlanTest {
     }
 
     @Test
+    fun `right first placement restarts on right after chapter boundary`() {
+        val source = listOf("before", "transition", "after-a", "after-b")
+        val plan = PagerSplitScrollPlan.create(
+            source,
+            { it == "transition" },
+            PagerSplitScrollPlan.Column.RIGHT,
+        )
+
+        assertEquals(PagerSplitScrollPlan.Column.RIGHT, plan.placementForSourceIndex(0)?.column)
+        assertEquals(PagerSplitScrollPlan.Column.FULL_WIDTH, plan.placementForSourceIndex(1)?.column)
+        assertEquals(PagerSplitScrollPlan.Column.RIGHT, plan.placementForSourceIndex(2)?.column)
+        assertEquals(PagerSplitScrollPlan.Column.LEFT, plan.placementForSourceIndex(3)?.column)
+        assertTrue(plan.matchesSource(source))
+    }
+
+    @Test
     fun `identity replacement invalidates source snapshot`() {
         val original = String(charArrayOf('a'))
         val source = listOf(original, "b")
