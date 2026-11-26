@@ -474,6 +474,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     private fun setChaptersInternal(chapters: ViewerChapters) {
         val forceTransition = config.alwaysShowChapterTransition ||
             currentPage is ChapterTransition
+        // Invalidate column placements before the authoritative source list is mutated.
+        if (splitScrollHost != null) {
+            splitScrollController?.dispose()
+            splitScrollController = null
+        }
         activeSpreadProjection = null
         adapter.setChapters(chapters, forceTransition)
         rebuildSpreadProjection()
@@ -505,8 +510,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     override fun moveToPage(page: ReaderPage) {
         val sourceIndex = adapter.items.indexOfFirst { it === page }
-        if (sourceIndex >= 0 && splitScrollController != null) {
-            splitScrollController?.moveToSourceIndex(sourceIndex)
+        if (sourceIndex >= 0 && splitScrollHost != null) {
+            if (splitScrollController != null) splitScrollController?.moveToSourceIndex(sourceIndex)
+            else pendingSourceSelectionIndex = sourceIndex
             return
         }
         val position = if (sourceIndex >= 0) adapter.displayIndexForSource(sourceIndex) else -1
@@ -669,9 +675,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     /** Recreate the column projection; PagerViewerAdapter.items remains authoritative. */
     private fun rebuildSplitScrollPresentation(preferredSourceIndex: Int? = null) {
         val host = splitScrollHost ?: return
-        val selectedIndex = preferredSourceIndex ?: currentPage?.let { selected ->
-            adapter.items.indexOfFirst { it === selected }
-        }?.takeIf { it >= 0 }
+        val selectedIndex = preferredSourceIndex
+            ?: pendingSourceSelectionIndex?.takeIf { it in adapter.items.indices }
+            ?: currentPage?.let { selected -> adapter.items.indexOfFirst { it === selected } }?.takeIf { it >= 0 }
         splitScrollController?.dispose()
         splitScrollController = null
         activeBoundaryHolder?.dispose()
@@ -702,7 +708,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
                 }
             },
         )
-        selectedIndex?.let { splitScrollController?.moveToSourceIndex(it) }
+        selectedIndex?.let {
+            pendingSourceSelectionIndex = null
+            splitScrollController?.moveToSourceIndex(it)
+        }
     }
 
     /** Restore the ordinary pager before changing to Spread or normal single-page mode. */
@@ -806,16 +815,24 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         activity.runOnUiThread {
             // Need to insert on UI thread else images will go blank
             activeSpreadProjection = null
+            if (splitScrollHost != null) {
+                splitScrollController?.dispose()
+                splitScrollController = null
+            }
             adapter.onPageSplit(currentPage, newPage)
-            if (splitScrollController != null) rebuildSplitScrollPresentation()
+            if (splitScrollHost != null) rebuildSplitScrollPresentation()
             else rebuildSpreadProjection()
         }
     }
 
     private fun cleanupPageSplit() {
         activeSpreadProjection = null
+        if (splitScrollHost != null) {
+            splitScrollController?.dispose()
+            splitScrollController = null
+        }
         adapter.cleanupPageSplit()
-        if (splitScrollController != null) rebuildSplitScrollPresentation()
+        if (splitScrollHost != null) rebuildSplitScrollPresentation()
         else rebuildSpreadProjection()
     }
 }
