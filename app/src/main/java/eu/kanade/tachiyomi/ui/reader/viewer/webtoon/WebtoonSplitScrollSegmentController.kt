@@ -137,7 +137,7 @@ internal class WebtoonSplitScrollSegmentController(
                     ?.scrollToPositionWithOffset(position.second, offsetPx)
             WebtoonSplitScrollPlan.Column.RIGHT ->
                 (host.rightRecycler.layoutManager as? WebtoonLayoutManager)
-                    ?.scrollToPositionWithOffset(position.second, 0)
+                    ?.scrollToPositionWithOffset(position.second, offsetPx)
             WebtoonSplitScrollPlan.Column.FULL_WIDTH -> return false
         }
         return true
