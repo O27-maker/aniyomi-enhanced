@@ -526,8 +526,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
         // Layout the active presentation once a chapter is being set
         if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
-            val requestedPage = chapters.currChapter.pages
-                ?.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0))
+            val requestedPage = chapters.currChapter.pages?.let { pages ->
+                pages.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0)) ?: pages.lastOrNull()
+            }
             val requestedIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }
                 ?.takeIf { it >= 0 }
             if (splitScrollHost == null) installSplitScrollPresentation(requestedIndex)
