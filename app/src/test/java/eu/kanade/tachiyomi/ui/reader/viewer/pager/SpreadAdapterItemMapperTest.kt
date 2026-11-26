@@ -48,6 +48,23 @@ class SpreadAdapterItemMapperTest {
     }
 
     @Test
+    fun adjacentEligibleItemsFromDifferentChaptersRemainSeparate() {
+        val pages = listOf("chapter-a-page", "chapter-b-page", "chapter-b-next")
+        assertEquals(
+            listOf(
+                SpreadAdapterItemMapper.Unit.Single("chapter-a-page", 0),
+                SpreadAdapterItemMapper.Unit.Pair("chapter-b-page", 1, "chapter-b-next", 2),
+            ),
+            SpreadAdapterItemMapper.map(
+                items = pages,
+                canPairTogether = { first, second ->
+                    first.substringBefore('-') == second.substringBefore('-')
+                },
+            ),
+        )
+    }
+
+    @Test
     fun consecutiveBoundaryItemsRemainIndividual() {
         val items = listOf("page-a", "transition-1", "transition-2", "page-b", "page-c")
         assertEquals(
