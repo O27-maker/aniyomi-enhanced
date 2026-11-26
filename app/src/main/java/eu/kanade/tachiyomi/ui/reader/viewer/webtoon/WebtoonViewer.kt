@@ -163,7 +163,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         config.imagePropertyChangedListener = {
             when (config.dualPagePresentationMode) {
                 DualPagePresentationMode.SPLIT_SCROLL -> {
-                    if (adapter.items.isNotEmpty()) installSplitScrollHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
+                    if (adapter.items.isNotEmpty()) {
+                        installSplitScrollHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
+                    }
                 }
                 DualPagePresentationMode.SPREAD -> {
                     if (adapter.items.isNotEmpty()) {
@@ -215,7 +217,8 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
     private fun installSpreadHost(initialSourceIndex: Int?) {
         val host = spreadRecycler ?: WebtoonRecyclerView(activity).also { spreadRecycler = it }
-        val manager = spreadLayoutManager ?: WebtoonLayoutManager(activity, scrollDistance).also { spreadLayoutManager = it }
+        val manager = spreadLayoutManager
+            ?: WebtoonLayoutManager(activity, scrollDistance).also { spreadLayoutManager = it }
         host.setItemViewCacheSize(RECYCLER_VIEW_CACHE_SIZE)
         host.itemAnimator = null
         host.isFocusable = false
