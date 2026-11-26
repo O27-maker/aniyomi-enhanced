@@ -415,11 +415,21 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         if (adapter.items.isEmpty()) return
 
         val selectedItem = currentPage ?: adapter.sourceItemAtDisplay(pager.currentItem)
+        val currentChapterPages = adapter.currentChapter?.pages
+        val coverPage = if (this is R2LPagerViewer) {
+            currentChapterPages?.lastOrNull()
+        } else {
+            currentChapterPages?.firstOrNull()
+        }
+        val coverPageIndex = coverPage?.let { page ->
+            adapter.items.indexOfFirst { it === page }.takeIf { it >= 0 }
+        }
         val projection = SpreadAdapterProjection.buildReaderPagesAnchoredToItem(
             adapterItems = adapter.items,
             selectedItem = selectedItem,
             isPortraitPage = ::isPortraitPageForSpread,
             firstPageSingle = config.firstPageSingle,
+            firstPageIndex = coverPageIndex,
         )
         if (projection.units.isEmpty()) return
         if (activeSpreadProjection?.let { sameSpreadUnits(it.units, projection.units) } == true) return
