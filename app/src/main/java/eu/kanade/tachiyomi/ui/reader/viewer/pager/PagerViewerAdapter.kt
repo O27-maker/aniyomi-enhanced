@@ -116,7 +116,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
             newItems.reverse()
         }
 
-        clearSpreadProjection()
+        invalidateSpreadProjection()
         preprocessed = mutableMapOf()
         items = newItems
         notifyDataSetChanged()
@@ -151,9 +151,15 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     }
 
     internal fun clearSpreadProjection() {
-        if (spreadProjection == null) return
-        spreadProjection = null
+        if (!invalidateSpreadProjection()) return
         notifyDataSetChanged()
+    }
+
+    /** Drop the derived snapshot without notifying until the source mutation is complete. */
+    private fun invalidateSpreadProjection(): Boolean {
+        if (spreadProjection == null) return false
+        spreadProjection = null
+        return true
     }
 
     internal fun sourceItemAtDisplay(displayIndex: Int): Any? {
@@ -309,7 +315,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
             return
         }
 
-        clearSpreadProjection()
+        invalidateSpreadProjection()
         items.add(placeAtIndex, newPage)
 
         notifyDataSetChanged()
@@ -317,7 +323,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
 
     fun cleanupPageSplit() {
         val insertPages = items.filterIsInstance(InsertPage::class.java)
-        if (insertPages.isNotEmpty()) clearSpreadProjection()
+        if (insertPages.isNotEmpty()) invalidateSpreadProjection()
         items.removeAll(insertPages)
         notifyDataSetChanged()
     }
@@ -331,7 +337,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * its instantiated holder trees.
      */
     fun clear() {
-        clearSpreadProjection()
+        invalidateSpreadProjection()
         items.clear()
         preprocessed.clear()
         nextTransition = null
