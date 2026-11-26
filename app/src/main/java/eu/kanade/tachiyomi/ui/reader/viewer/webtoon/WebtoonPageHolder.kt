@@ -201,6 +201,9 @@ class WebtoonPageHolder(
                 Pair(source, isAnimated)
             }
             withUIContext {
+                // A holder may be recycled and rebound while image processing is running
+                // off the UI thread. Never let an old page replace the newly bound image.
+                if (this.page !== page) return@withUIContext
                 frame.setImage(
                     source,
                     isAnimated,
@@ -218,7 +221,7 @@ class WebtoonPageHolder(
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
-                setError()
+                if (this.page === page) setError()
             }
         }
     }
