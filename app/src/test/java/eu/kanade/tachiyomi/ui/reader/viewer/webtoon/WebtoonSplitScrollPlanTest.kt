@@ -94,12 +94,12 @@ class WebtoonSplitScrollPlanTest {
     }
 
     @Test
-    fun `boundaries and invalid source indices have no page column position`() {
+    fun `boundaries resolve to their owning segment but have no page column position`() {
         val plan = WebtoonSplitScrollPlan.create(listOf("page", "transition", "next")) {
             it == "transition"
         }
 
-        assertEquals(-1, plan.segmentIndexForSourceIndex(1))
+        assertEquals(0, plan.segmentIndexForSourceIndex(1))
         assertNull(plan.columnPositionForSourceIndex(1))
         assertEquals(-1, plan.segmentIndexForSourceIndex(-1))
         assertNull(plan.columnPositionForSourceIndex(-1))
