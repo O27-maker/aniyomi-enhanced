@@ -33,6 +33,7 @@ internal class WebtoonSpreadAdapter(
         private val boundPages = mutableListOf<ReaderPage>()
 
         fun bind(unit: WebtoonSpreadPlan.Unit<Any>) {
+            if (!adapter.isPreservingHolders()) releaseCachedPages()
             clearRow()
             container.orientation = LinearLayout.HORIZONTAL
             when (unit) {
@@ -94,6 +95,8 @@ internal class WebtoonSpreadAdapter(
     private fun releasePageHolder(page: ReaderPage) {
         pageHolderCache.remove(page)?.recycle()
     }
+
+    fun isPreservingHolders(): Boolean = preservingHoldersForProjectionRefresh
 
     fun beginProjectionRefresh() {
         preservingHoldersForProjectionRefresh = true
