@@ -650,7 +650,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             if (displayPosition >= 0) {
                 spreadPreferredSourceIndex = position
                 spreadLayoutManager?.scrollToPositionWithOffset(displayPosition, 0)
-                if (spreadLayoutManager?.findLastEndVisibleItemPosition() == -1) onSpreadScrolled(displayPosition, position)
+                onSpreadScrolled(displayPosition, position)
             }
             return
         }
