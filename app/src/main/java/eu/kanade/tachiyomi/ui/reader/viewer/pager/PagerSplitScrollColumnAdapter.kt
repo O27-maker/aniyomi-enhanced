@@ -24,8 +24,6 @@ internal class PagerSplitScrollColumnAdapter(
     private val onPageBound: (ReaderPage, Int) -> Unit = { _, _ -> },
 ) : RecyclerView.Adapter<PagerSplitScrollColumnAdapter.PageHolder>() {
 
-    private val zoomStates = mutableMapOf<ReaderPage, ReaderPageImageView.ImageZoomState>()
-
     init {
         require(placements.all { it.item is ReaderPage }) {
             "Chapter transitions must be hosted as full-width boundaries"
@@ -57,8 +55,6 @@ internal class PagerSplitScrollColumnAdapter(
             )
         }
         return PageHolder(container) { pageHolder ->
-            pageHolder.captureZoomState()?.let { zoomStates[pageHolder.page] = it }
-            pageHolder.onSplitScrollImageLoaded = null
             pageHolder.setOnLongClickListener(null)
             pageHolder.dispose()
         }
@@ -85,9 +81,6 @@ internal class PagerSplitScrollColumnAdapter(
             )
             holder.pageHolder = pageHolder
             pageHolder.setOnLongClickListener(longClickListener)
-            pageHolder.onSplitScrollImageLoaded = {
-                zoomStates.remove(page)?.let(pageHolder::restoreZoomState)
-            }
             holder.container.addView(
                 pageHolder,
                 FrameLayout.LayoutParams(
