@@ -443,6 +443,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     private fun setChaptersInternal(chapters: ViewerChapters) {
         val forceTransition = config.alwaysShowChapterTransition ||
             currentPage is ChapterTransition
+        activeSpreadProjection = null
         adapter.setChapters(chapters, forceTransition)
         rebuildSpreadProjection()
 
@@ -649,11 +650,15 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     fun onPageSplit(currentPage: ReaderPage, newPage: InsertPage) {
         activity.runOnUiThread {
             // Need to insert on UI thread else images will go blank
+            activeSpreadProjection = null
             adapter.onPageSplit(currentPage, newPage)
+            rebuildSpreadProjection()
         }
     }
 
     private fun cleanupPageSplit() {
+        activeSpreadProjection = null
         adapter.cleanupPageSplit()
+        rebuildSpreadProjection()
     }
 }
