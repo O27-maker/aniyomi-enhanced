@@ -113,6 +113,26 @@ internal class WebtoonSplitScrollSegmentController(
 
     fun moveToSourceIndex(sourceIndex: Int, offsetPx: Int = 0): Boolean {
         if (disposed) return false
+        val boundarySegmentIndex = plan.segments.indexOfFirst {
+            it.boundaryAfter?.originalIndex == sourceIndex
+        }
+        if (boundarySegmentIndex >= 0) {
+            if (boundarySegmentIndex != segmentIndex || boundaryNotified) {
+                host.hideBoundary()
+                detachBindings()
+                state = coordinator.initialState(boundarySegmentIndex)
+                bindSegment()
+            }
+            if (!boundaryNotified) {
+                val result = coordinator.selectBoundary(state) ?: return false
+                state = result.state
+                boundaryNotified = true
+                onSelection(result)
+                onBoundaryReady(plan.segments.getOrNull(segmentIndex)?.boundaryAfter)
+            }
+            return true
+        }
+
         val targetSegmentIndex = plan.segmentIndexForSourceIndex(sourceIndex)
         if (targetSegmentIndex < 0) return false
 
