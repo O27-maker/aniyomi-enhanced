@@ -144,7 +144,7 @@ internal class PagerSplitScrollHostView(
 
     fun showBoundary(view: View, onContinue: () -> Unit = {}) {
         view.setOnClickListener { onContinue() }
-        view.isClickable = true,
+        view.isClickable = true
         boundarySlot.removeAllViews()
         boundarySlot.addView(view, LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
