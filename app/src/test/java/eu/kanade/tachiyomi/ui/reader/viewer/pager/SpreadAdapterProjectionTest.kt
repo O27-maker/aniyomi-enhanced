@@ -108,6 +108,36 @@ class SpreadAdapterProjectionTest {
     }
 
     @Test
+    fun readerProjectionDoesNotPairAcrossPagesWithUnknownOrientation() {
+        val pageA = ReaderPage(0)
+        val pageB = ReaderPage(1)
+        val pageC = ReaderPage(2)
+        val pageD = ReaderPage(3)
+        val projection = SpreadAdapterProjection.buildReaderPages(
+            adapterItems = listOf(pageA, pageB, pageC, pageD),
+            selectedAdapterIndex = 2,
+            isPortraitPage = { page ->
+                when (page) {
+                    pageA, pageD -> true
+                    pageB -> null
+                    else -> false
+                }
+            },
+        )
+
+        assertEquals(
+            listOf(
+                SpreadAdapterItemMapper.Unit.Single(pageA, 0),
+                SpreadAdapterItemMapper.Unit.Single(pageB, 1),
+                SpreadAdapterItemMapper.Unit.Single(pageC, 2),
+                SpreadAdapterItemMapper.Unit.Single(pageD, 3),
+            ),
+            projection.units,
+        )
+        assertEquals(SpreadAdapterNavigationMap.Anchor(2, 2), projection.selectedAnchor)
+    }
+
+    @Test
     fun readerProjectionPairsAdjacentPortraitPagesAndKeepsCoverAlone() {
         val cover = ReaderPage(0)
         val pageA = ReaderPage(1)
