@@ -39,6 +39,30 @@ internal data class SpreadAdapterProjection<T>(
             firstPageSingle = firstPageSingle,
         )
 
+        /**
+         * Rebuild a reader projection around the active source item rather than a display
+         * position. This is intended for orientation-driven refreshes: pairing may change
+         * the display index, but the selected ReaderPage identity remains stable.
+         */
+        fun buildReaderPagesAnchoredToItem(
+            adapterItems: List<Any>,
+            selectedItem: Any?,
+            isPortraitPage: (ReaderPage) -> Boolean?,
+            firstPageSingle: Boolean = false,
+        ): SpreadAdapterProjection<Any> {
+            val selectedIndex = if (selectedItem == null) {
+                -1
+            } else {
+                adapterItems.indexOfFirst { it === selectedItem }
+            }
+            return buildReaderPages(
+                adapterItems = adapterItems,
+                selectedAdapterIndex = selectedIndex,
+                isPortraitPage = isPortraitPage,
+                firstPageSingle = firstPageSingle,
+            )
+        }
+
         fun <T> build(
             adapterItems: List<T>,
             selectedAdapterIndex: Int,
