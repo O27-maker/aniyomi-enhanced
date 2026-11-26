@@ -123,7 +123,7 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
             onClick = {
                 screenModel.preferences.dualPageMode().set(
                     if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
-                        DualPagePresentationMode.SPLIT_SCROLL.preferenceValue
+                        DualPagePresentationMode.NONE.preferenceValue
                     } else {
                         DualPagePresentationMode.SPREAD.preferenceValue
                     },
@@ -178,7 +178,7 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
             onClick = {
                 screenModel.preferences.dualPageMode().set(
                     if (dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue) {
-                        DualPagePresentationMode.SPREAD.preferenceValue
+                        DualPagePresentationMode.NONE.preferenceValue
                     } else {
                         DualPagePresentationMode.SPLIT_SCROLL.preferenceValue
                     },
