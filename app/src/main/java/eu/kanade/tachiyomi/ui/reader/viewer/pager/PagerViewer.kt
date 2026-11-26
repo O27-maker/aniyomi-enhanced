@@ -694,6 +694,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         splitScrollController = null
         activeBoundaryHolder?.dispose()
         activeBoundaryHolder = null
+        host.hideBoundary()
 
         val plan = PagerSplitScrollPlan.create(
             source = adapter.items.toList(),
