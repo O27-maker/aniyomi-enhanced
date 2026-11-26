@@ -314,14 +314,14 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
     private fun createSpreadPlan(): WebtoonSpreadPlan<Any> {
         val firstPage = adapter.currentChapter?.pages?.firstOrNull()
-        val firstPageIndex = firstPage?.let(adapter.items::indexOf) ?: -1
+        val firstPageIndex = firstPage?.let { page -> adapter.items.indexOfFirst { it === page } } ?: -1
         return WebtoonSpreadPlan.create(
             items = adapter.items,
             isBoundary = { it is ChapterTransition },
             isPortrait = { item -> (item as? ReaderPage)?.let { spreadOrientations[it] } },
             canPair = { it is ReaderPage },
             canPairWithNext = { first, second ->
-                first is ReaderPage && second is ReaderPage && first.chapter == second.chapter
+                first is ReaderPage && second is ReaderPage && first.chapter === second.chapter
             },
             firstPageSingle = config.firstPageSingle,
             firstPageIndex = firstPageIndex,
@@ -781,8 +781,8 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         // verify that its original index still resolves to the same authoritative item.
         // This rejects callbacks made stale by chapter replacement or inserted split pages.
         val item = adapter.items.getOrNull(selection.sourceIndex) ?: return
-        if (item != selection.item) return
-        if (currentPage == item) return
+        if (item !== selection.item) return
+        if (currentPage === item) return
 
         val allowPreload = checkAllowPreload(item as? ReaderPage)
         currentPage = item
