@@ -88,7 +88,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     private var currentPageForward = true
 
     /** Zoom state survives holder disposal while switching reader presentations. */
-    private val pageZoomStates = mutableMapOf<ReaderPage, ReaderPageImageView.ImageZoomState>()
+    private val pageZoomStates = java.util.IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>()
 
     /** Original source index requested by moveToPage while the pager changes display units. */
     private var pendingSourceSelectionIndex: Int? = null
@@ -282,7 +282,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     private fun android.view.ViewGroup.findPageHolder(page: ReaderPage): PagerPageHolder? =
         children.firstNotNullOfOrNull { child ->
             when {
-                child is PagerPageHolder && child.item == page -> child
+                child is PagerPageHolder && child.item === page -> child
                 child is android.view.ViewGroup -> child.findPageHolder(page)
                 else -> null
             }
@@ -312,7 +312,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     /** Shared source-index selection path for pager and independent Split Scroll columns. */
     private fun onSourceIndexSelected(sourceIndex: Int?) {
         val page = sourceIndex?.let(adapter.items::getOrNull) ?: return
-        if (currentPage == page) return
+        if (currentPage === page) return
         val allowPreload = checkAllowPreload(page as? ReaderPage)
         val forward = when {
             currentPage is ReaderPage && page is ReaderPage -> {
