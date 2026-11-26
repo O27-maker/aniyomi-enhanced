@@ -457,15 +457,27 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             },
         )
         bindSplitScrollInteractions(host)
-        val restoredLeft = previousViewport?.left?.let { anchor ->
+        val leftIndex = previousViewport?.left?.let { anchor ->
             adapter.items.indexOfFirst { it === anchor.page }.takeIf { it >= 0 }
-                ?.let { splitScrollController?.moveToSourceIndex(it, anchor.topOffset) } == true
-        } ?: false
-        val restoredRight = previousViewport?.right?.let { anchor ->
+        }
+        val rightIndex = previousViewport?.right?.let { anchor ->
             adapter.items.indexOfFirst { it === anchor.page }.takeIf { it >= 0 }
-                ?.let { splitScrollController?.moveToSourceIndex(it, anchor.topOffset) } == true
-        } ?: false
-        if (!restoredLeft && !restoredRight) {
+        }
+        val controller = splitScrollController
+        val anchorsShareSegment = leftIndex == null || rightIndex == null ||
+            controller?.segmentIndexForSourceIndex(leftIndex) == controller?.segmentIndexForSourceIndex(rightIndex)
+        val restoredViewport = if (anchorsShareSegment) {
+            val restoredLeft = leftIndex?.let { index ->
+                previousViewport?.left?.let { splitScrollController?.moveToSourceIndex(index, it.topOffset) }
+            } == true
+            val restoredRight = rightIndex?.let { index ->
+                previousViewport?.right?.let { splitScrollController?.moveToSourceIndex(index, it.topOffset) }
+            } == true
+            restoredLeft || restoredRight
+        } else {
+            false
+        }
+        if (!restoredViewport) {
             initialSourceIndex?.let { splitScrollController?.moveToSourceIndex(it) }
         }
     }
