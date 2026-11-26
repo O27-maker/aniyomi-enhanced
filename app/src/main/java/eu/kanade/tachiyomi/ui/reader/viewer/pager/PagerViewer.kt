@@ -76,6 +76,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private var currentPage: Any? = null
 
+    /** Original source index requested by moveToPage while the pager changes display units. */
+    private var pendingSourceSelectionIndex: Int? = null
+
     /**
      * Viewer chapters to set when the pager enters idle mode. Otherwise, if the view was settling
      * or dragging, there'd be a noticeable and annoying jump.
@@ -254,15 +257,18 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private fun onPageChange(position: Int) {
         val projection = activeSpreadProjection
+        val pendingIndex = pendingSourceSelectionIndex
+            ?.takeIf { adapter.displayIndexForSource(it) == position }
         val sourceIndex = if (projection != null) {
             SpreadAdapterNavigationMap.adapterIndexForDisplay(
                 projection.units,
                 position,
-                adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 },
+                pendingIndex ?: adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 },
             )
         } else {
             position
         }
+        if (pendingIndex != null) pendingSourceSelectionIndex = null
         val page = sourceIndex?.let(adapter.items::getOrNull)
         if (page != null && currentPage != page) {
             val allowPreload = checkAllowPreload(page as? ReaderPage)
@@ -464,8 +470,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         val position = if (sourceIndex >= 0) adapter.displayIndexForSource(sourceIndex) else -1
         if (position != -1) {
             val currentPosition = pager.currentItem
+            pendingSourceSelectionIndex = sourceIndex
             pager.setCurrentItem(position, true)
-            // manually call onPageChange since ViewPager listener is not triggered in this case
+            // Manually call onPageChange since ViewPager listener is not triggered in this case.
             if (currentPosition == position) {
                 onPageChange(position)
             }
