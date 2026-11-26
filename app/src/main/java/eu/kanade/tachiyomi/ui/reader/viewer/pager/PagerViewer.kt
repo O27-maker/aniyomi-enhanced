@@ -19,6 +19,7 @@ import eu.kanade.tachiyomi.ui.reader.model.InsertPage
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
+import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
@@ -36,6 +37,8 @@ import kotlin.math.min
 abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
     val downloadManager: MangaDownloadManager by injectLazy()
+
+    private val readerPreferences: ReaderPreferences by injectLazy()
 
     private val scope = MainScope()
 
@@ -719,7 +722,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         adapter.clearSpreadProjection()
         pager.adapter = null
 
-        val host = PagerSplitScrollHostView(activity)
+        val splitWidthPreference = readerPreferences.dualPageSplitLeftWidth()
+        val host = PagerSplitScrollHostView(activity).apply {
+            setLeftWidthPercent(splitWidthPreference.get())
+            onLeftWidthChanged = { splitWidthPreference.set(it) }
+        }
         host.onTap = { event -> handleTap(event, host) }
         splitScrollHost = host
         root.removeView(pager)
