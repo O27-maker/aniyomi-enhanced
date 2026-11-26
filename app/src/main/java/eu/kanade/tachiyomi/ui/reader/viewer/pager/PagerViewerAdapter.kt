@@ -73,16 +73,20 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         if (currPages != null) {
             val pages = currPages.toMutableList()
 
-            val lastPage = pages.last()
+            // Chapters can briefly expose an empty page list while sources are being
+            // initialized. There is no last page to anchor preprocessed splits yet.
+            if (pages.isNotEmpty()) {
+                val lastPage = pages.last()
 
-            // Insert preprocessed pages into current page list
-            preprocessed.keys.sortedDescending()
-                .forEach { key ->
-                    if (lastPage.index == key) {
-                        insertPageLastPage = preprocessed[key]
+                // Insert preprocessed pages into current page list
+                preprocessed.keys.sortedDescending()
+                    .forEach { key ->
+                        if (lastPage.index == key) {
+                            insertPageLastPage = preprocessed[key]
+                        }
+                        preprocessed[key]?.let { pages.add(key + 1, it) }
                     }
-                    preprocessed[key]?.let { pages.add(key + 1, it) }
-                }
+            }
 
             newItems.addAll(pages)
         }
