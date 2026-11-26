@@ -9,6 +9,7 @@ package eu.kanade.tachiyomi.ui.reader.setting
 enum class DualPagePresentationMode(val preferenceValue: Int) {
     SPREAD(0),
     SPLIT_SCROLL(1),
+    NONE(2),
     ;
 
     companion object {
