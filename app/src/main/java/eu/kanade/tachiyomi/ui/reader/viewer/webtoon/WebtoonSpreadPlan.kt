@@ -83,6 +83,7 @@ internal data class WebtoonSpreadPlan<T>(
             isBoundary: (T) -> Boolean,
             isPortrait: (T) -> Boolean?,
             canPair: (T) -> Boolean = { true },
+            canPairWithNext: (T, T) -> Boolean = { _, _ -> true },
             firstPageSingle: Boolean = false,
             firstPageIndex: Int = 0,
         ): WebtoonSpreadPlan<T> {
@@ -103,7 +104,7 @@ internal data class WebtoonSpreadPlan<T>(
                 val next = items.getOrNull(index + 1)
                 val canPairCurrent = canPair(item) && isPortrait(item) == true
                 val canPairNext = next != null && !isBoundary(next) && canPair(next) && isPortrait(next) == true
-                if (canPairCurrent && canPairNext) {
+                if (canPairCurrent && canPairNext && canPairWithNext(item, next!!)) {
                     units += Unit.Pair(index, item, index + 1, next!!)
                     index += 2
                 } else {
