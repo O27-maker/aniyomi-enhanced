@@ -172,6 +172,17 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
     val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
     SettingsChipRow(MR.strings.webtoon_viewer) {
         FilterChip(
+            selected = dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue,
+            onClick = {
+                screenModel.preferences.dualPageMode().set(
+                    DualPagePresentationMode.fromPreference(dualPageMode)
+                        .toggleTo(DualPagePresentationMode.SPREAD)
+                        .preferenceValue,
+                )
+            },
+            label = { Text(stringResource(MR.strings.dual_page_spread)) },
+        )
+        FilterChip(
             selected = dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue,
             onClick = {
                 screenModel.preferences.dualPageMode().set(
@@ -181,6 +192,13 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
                 )
             },
             label = { Text(stringResource(MR.strings.dual_page_split_scroll)) },
+        )
+    }
+
+    if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
+        CheckboxItem(
+            label = stringResource(MR.strings.dual_page_first_page_alone),
+            pref = screenModel.preferences.dualPageFirstPageSingle(),
         )
     }
 
