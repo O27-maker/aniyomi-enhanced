@@ -22,9 +22,12 @@ internal object SpreadPageMapper {
      * commonly used for a cover.
      *
      * [isLandscape] should return true only when dimensions are known and width
-     * is greater than height. Unknown dimensions should be treated as portrait.
-     * [canPair] lets callers exclude special pages (such as inserted split
-     * pages) without changing their position or identity.
+     * is greater than height. Callers that require known orientation must exclude
+     * pages with unknown dimensions through [canPair] rather than treating them as
+     * portrait pages.
+     * [canPair] lets callers exclude special pages (such as inserted split pages)
+     * or pages whose orientation is not yet known, without changing their position
+     * or identity.
      */
     fun <T> map(
         pages: List<T>,
