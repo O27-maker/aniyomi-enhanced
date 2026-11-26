@@ -88,6 +88,24 @@ class SpreadAdapterProjectionTest {
     }
 
     @Test
+    fun readerProjectionDoesNotAssumeSourceZeroIsCoverWhenCoverIndexIsMissing() {
+        val previous = ReaderPage(0)
+        val next = ReaderPage(1)
+        val projection = SpreadAdapterProjection.buildReaderPages(
+            adapterItems = listOf(previous, next),
+            selectedAdapterIndex = 0,
+            isPortraitPage = { true },
+            firstPageSingle = true,
+            firstPageIndex = null,
+        )
+
+        assertEquals(
+            listOf(SpreadAdapterItemMapper.Unit.Pair(previous, 0, next, 1)),
+            projection.units,
+        )
+    }
+
+    @Test
     fun readerProjectionKeepsLandscapeOrUnknownPagesStandalone() {
         val pageA = ReaderPage(0)
         val pageB = ReaderPage(1)
