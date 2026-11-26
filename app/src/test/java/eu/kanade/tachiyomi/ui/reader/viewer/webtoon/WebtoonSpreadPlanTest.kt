@@ -69,6 +69,24 @@ class WebtoonSpreadPlanTest {
     }
 
     @Test
+    fun `first page alone targets current chapter page after leading transition items`() {
+        val items = listOf("previous-page", "transition", "cover", "p1", "p2")
+        val plan = WebtoonSpreadPlan.create(
+            items = items,
+            isBoundary = { it == "transition" },
+            isPortrait = { true },
+            firstPageSingle = true,
+            firstPageIndex = 2,
+        )
+
+        assertEquals(
+            listOf(listOf(0), listOf(1), listOf(2), listOf(3, 4)),
+            plan.units.map { it.sourceIndices },
+        )
+        assertTrue(plan.matchesSource(items))
+    }
+
+    @Test
     fun `source validation rejects reordered or replaced entries`() {
         val original = listOf("one", "two")
         val plan = WebtoonSpreadPlan.create(original, { false }, { true })
