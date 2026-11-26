@@ -3,6 +3,8 @@ package eu.kanade.tachiyomi.ui.reader.viewer.pager
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -89,6 +91,7 @@ internal class PagerSplitScrollHostView(
     }
 
     var onLeftWidthChanged: ((Int) -> Unit)? = null
+    var onTap: ((MotionEvent) -> Unit)? = null
     private var dragStartWidthPercent = DEFAULT_LEFT_WIDTH_PERCENT
 
     var leftWidthPercent: Int = DEFAULT_LEFT_WIDTH_PERCENT
@@ -109,6 +112,27 @@ internal class PagerSplitScrollHostView(
             Gravity.LEFT,
         ))
         setLeftWidthPercent(DEFAULT_LEFT_WIDTH_PERCENT)
+        installTapListener(leftRecycler)
+        installTapListener(rightRecycler)
+    }
+
+    /**
+     * Observe confirmed single taps without intercepting the page holder's own zoom gestures.
+     * Double taps are left to PagerPageHolder and are not forwarded as navigation taps.
+     */
+    private fun installTapListener(recycler: RecyclerView) {
+        val detector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
+                onTap?.invoke(event)
+                return true
+            }
+        })
+        recycler.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            override fun onInterceptTouchEvent(rv: RecyclerView, event: MotionEvent): Boolean {
+                detector.onTouchEvent(event)
+                return false
+            }
+        })
     }
 
     fun setLeftWidthPercent(percent: Int) {
