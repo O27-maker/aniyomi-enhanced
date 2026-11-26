@@ -684,8 +684,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         adapter.setChapters(chapters, forceTransition)
         pageZoomStates.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
 
-        val requestedPage = chapters.currChapter.pages
-            ?.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0))
+        val requestedPage = chapters.currChapter.pages?.let { pages ->
+            pages.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0)) ?: pages.lastOrNull()
+        }
         val requestedSourceIndex = requestedPage?.let(adapter.items::indexOf)?.takeIf { it >= 0 }
         when (config.dualPagePresentationMode) {
             DualPagePresentationMode.SPLIT_SCROLL -> {
