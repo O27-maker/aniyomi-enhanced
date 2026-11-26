@@ -158,11 +158,52 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     /**
      * Creates a new view for the item at the given [position].
      */
-    override fun createView(container: ViewGroup, position: Int): View {
-        return when (val item = items[position]) {
+    override fun createView(container: ViewGroup, position: Int): View =
+        createItemView(items[position])
+
+    private fun createItemView(item: Any): View {
+        return when (item) {
             is ReaderPage -> PagerPageHolder(requireNotNull(readerThemedContext), viewer, item)
             is ChapterTransition -> PagerTransitionHolder(requireNotNull(readerThemedContext), viewer, item)
             else -> throw NotImplementedError("Holder for ${item.javaClass} not implemented")
+        }
+    }
+
+    /**
+     * Create the view tree for one immutable Spread display unit. Original source items
+     * remain authoritative; only regular ReaderPages may be paired by the projection.
+     * Transition items keep their full-width transition holder.
+     *
+     * This factory does not alter adapter count or selection. The owning pager adapter
+     * must use the same projection snapshot for its count and item-position mapping.
+     */
+    internal fun createSpreadView(
+        container: ViewGroup,
+        unit: SpreadAdapterItemMapper.Unit<Any>,
+        isR2L: Boolean,
+    ): View {
+        return when (unit) {
+            is SpreadAdapterItemMapper.Unit.Single -> {
+                when (unit.item) {
+                    is ReaderPage -> {
+                        val holder = createItemView(unit.item) as PagerPageHolder
+                        SpreadFrameLayout(container.context).apply {
+                            bind(unit, holder, isR2L = isR2L)
+                        }
+                    }
+                    is ChapterTransition -> createItemView(unit.item)
+                    else -> throw NotImplementedError("Spread holder for ${unit.item.javaClass} not implemented")
+                }
+            }
+            is SpreadAdapterItemMapper.Unit.Pair -> {
+                val first = createItemView(unit.first) as? PagerPageHolder
+                    ?: error("The first Spread item is not a reader page")
+                val second = createItemView(unit.second) as? PagerPageHolder
+                    ?: error("The second Spread item is not a reader page")
+                SpreadFrameLayout(container.context).apply {
+                    bind(unit, first, second, isR2L)
+                }
+            }
         }
     }
 
