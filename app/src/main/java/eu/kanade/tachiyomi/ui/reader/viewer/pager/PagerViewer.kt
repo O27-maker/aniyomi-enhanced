@@ -217,7 +217,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pager.findPageHolder(page)
 
     /**
-     * Optional signal for a future live Spread projection. Orientation is only reliable
+     * Signal used by the live Spread projection. Orientation is only reliable
      * after the holder reports a successfully decoded image; consumers must preserve the
      * current source-page anchor before rebuilding display units.
      */
