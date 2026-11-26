@@ -61,6 +61,18 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
     }
 
     @Test
+    fun `direct transition navigation marks both columns complete`() {
+        val coordinator = coordinator()
+        val result = coordinator.selectBoundary(coordinator.initialState())
+
+        assertTrue(result?.accepted == true)
+        assertTrue(result?.boundaryReady == true)
+        assertEquals(2, result?.selection?.sourceIndex)
+        assertTrue(result?.selection?.isBoundary == true)
+        assertTrue(result?.state?.barrier?.bothColumnsAtEnd == true)
+    }
+
+    @Test
     fun `stale lifecycle callback is rejected without changing state`() {
         val coordinator = coordinator()
         var state = coordinator.initialState()
