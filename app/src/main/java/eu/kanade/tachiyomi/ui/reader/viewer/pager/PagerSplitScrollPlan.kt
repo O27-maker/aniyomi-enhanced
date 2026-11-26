@@ -30,7 +30,8 @@ internal data class PagerSplitScrollPlan<T>(
         if (index !in 0 until sourceSize) return -1
         return segments.indexOfFirst { segment ->
             segment.left.any { it.sourceIndex == index } ||
-                segment.right.any { it.sourceIndex == index }
+                segment.right.any { it.sourceIndex == index } ||
+                segment.boundaryAfter?.sourceIndex == index
         }
     }
 
