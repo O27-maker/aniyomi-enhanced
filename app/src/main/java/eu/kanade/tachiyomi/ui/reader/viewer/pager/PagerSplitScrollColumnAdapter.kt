@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.recyclerview.widget.RecyclerView
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.util.system.createReaderThemeContext
 
 /**
@@ -22,6 +23,8 @@ internal class PagerSplitScrollColumnAdapter(
     private val placements: List<PagerSplitScrollPlan.Placement<Any>>,
     private val onPageBound: (ReaderPage, Int) -> Unit = { _, _ -> },
 ) : RecyclerView.Adapter<PagerSplitScrollColumnAdapter.PageHolder>() {
+
+    private val zoomStates = mutableMapOf<ReaderPage, ReaderPageImageView.ImageZoomState>()
 
     init {
         require(placements.all { it.item is ReaderPage }) {
@@ -77,6 +80,9 @@ internal class PagerSplitScrollColumnAdapter(
             )
             holder.pageHolder = pageHolder
             pageHolder.setOnLongClickListener(longClickListener)
+            pageHolder.onSplitScrollImageLoaded = {
+                zoomStates.remove(page)?.let(pageHolder::restoreZoomState)
+            }
             holder.container.addView(
                 pageHolder,
                 FrameLayout.LayoutParams(
@@ -106,8 +112,12 @@ internal class PagerSplitScrollColumnAdapter(
 
         fun clearPageHolder() {
             container.setOnLongClickListener(null)
-            pageHolder?.setOnLongClickListener(null)
-            pageHolder?.dispose()
+            pageHolder?.let { current ->
+                current.captureZoomState()?.let { zoomStates[current.page] = it }
+                current.onSplitScrollImageLoaded = null
+                current.setOnLongClickListener(null)
+                current.dispose()
+            }
             pageHolder = null
             container.removeAllViews()
         }
