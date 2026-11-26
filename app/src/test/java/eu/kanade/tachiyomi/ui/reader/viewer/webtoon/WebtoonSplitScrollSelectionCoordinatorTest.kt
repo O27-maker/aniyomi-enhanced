@@ -141,4 +141,29 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         assertEquals(1, second?.selection?.sourceIndex)
     }
 
+
+    @Test
+    fun `scrolling one column back from end cancels pending boundary arrival`() {
+        val coordinator = coordinator()
+        var state = coordinator.initialState()
+        val (leftHost, leftBinding) = state.host.attach(Column.LEFT)
+        val (bothHosts, rightBinding) = leftHost.attach(Column.RIGHT)
+        state = state.copy(host = bothHosts)
+
+        val leftReachedEnd = coordinator.onColumnScrolled(
+            state, leftBinding, 0, 0, 200, reachedSegmentEnd = true,
+        )
+        val leftMovedBack = coordinator.onColumnScrolled(
+            leftReachedEnd.state, leftBinding, 0, 0, 100, reachedSegmentEnd = false,
+        )
+        val rightReachedEnd = coordinator.onColumnScrolled(
+            leftMovedBack.state, rightBinding, 0, 1, 300, reachedSegmentEnd = true,
+        )
+
+        assertFalse(leftMovedBack.boundaryReady)
+        assertFalse(rightReachedEnd.boundaryReady)
+        assertFalse(rightReachedEnd.state.barrier.leftAtEnd)
+        assertTrue(rightReachedEnd.state.barrier.rightAtEnd)
+        assertEquals(1, rightReachedEnd.selection?.sourceIndex)
+    }
 }
