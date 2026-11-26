@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import eu.kanade.domain.entries.manga.model.readerOrientation
 import eu.kanade.domain.entries.manga.model.readingMode
+import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
@@ -117,10 +118,35 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
         pref = screenModel.preferences.navigateToPan(),
     )
 
+    val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
+    SettingsChipRow(MR.strings.pager_viewer) {
+        DualPagePresentationMode.entries.forEach { mode ->
+            FilterChip(
+                selected = dualPageMode == mode.preferenceValue,
+                onClick = { screenModel.preferences.dualPageMode().set(mode.preferenceValue) },
+                label = {
+                    Text(
+                        when (mode) {
+                            DualPagePresentationMode.SPREAD -> "Spread"
+                            DualPagePresentationMode.SPLIT_SCROLL -> "Split Scroll"
+                        },
+                    )
+                },
+            )
+        }
+    }
+
+    if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
+        CheckboxItem(
+            label = "Keep first page alone",
+            pref = screenModel.preferences.dualPageFirstPageSingle(),
+        )
+    }
+
     val dualPageSplitPaged by screenModel.preferences.dualPageSplitPaged().collectAsState()
     CheckboxItem(
         label = stringResource(MR.strings.pref_dual_page_split),
-        pref = screenModel.preferences.dualPageInvertPaged(),
+        pref = screenModel.preferences.dualPageSplitPaged(),
     )
 
     if (dualPageSplitPaged) {
