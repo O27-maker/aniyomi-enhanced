@@ -129,6 +129,17 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
             },
             label = { Text(stringResource(MR.strings.dual_page_spread)) },
         )
+        FilterChip(
+            selected = dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue,
+            onClick = {
+                screenModel.preferences.dualPageMode().set(
+                    DualPagePresentationMode.fromPreference(dualPageMode)
+                        .toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
+                        .preferenceValue,
+                )
+            },
+            label = { Text(stringResource(MR.strings.dual_page_split_scroll)) },
+        )
     }
 
     if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
