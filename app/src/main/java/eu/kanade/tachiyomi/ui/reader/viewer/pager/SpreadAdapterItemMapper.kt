@@ -24,6 +24,7 @@ internal object SpreadAdapterItemMapper {
         items: List<T>,
         isBoundary: (T) -> Boolean = { false },
         canPair: (T) -> Boolean = { true },
+        canPairTogether: (T, T) -> Boolean = { _, _ -> true },
         firstPageSingle: Boolean = false,
     ): List<Unit<T>> {
         val result = mutableListOf<Unit<T>>()
@@ -42,7 +43,7 @@ internal object SpreadAdapterItemMapper {
 
             val nextIndex = index + 1
             val next = items.getOrNull(nextIndex)
-            if (next != null && !isBoundary(next) && canPair(next)) {
+            if (next != null && !isBoundary(next) && canPair(next) && canPairTogether(current, next)) {
                 result += Unit.Pair(current, index, next, nextIndex)
                 index += 2
             } else {
