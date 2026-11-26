@@ -44,6 +44,21 @@ internal class WebtoonSplitScrollBarrierCoordinator<T>(
         }
     }
 
+    /** Clear a column's arrival when it scrolls away from its own segment end. */
+    fun markColumnNotAtEnd(
+        state: State,
+        callbackSegmentIndex: Int,
+        column: WebtoonSplitScrollPlan.Column,
+    ): State {
+        if (!hasValidProjection()) return state
+        if (callbackSegmentIndex != state.segmentIndex) return state
+        return when (column) {
+            WebtoonSplitScrollPlan.Column.LEFT -> state.copy(leftAtEnd = false)
+            WebtoonSplitScrollPlan.Column.RIGHT -> state.copy(rightAtEnd = false)
+            WebtoonSplitScrollPlan.Column.FULL_WIDTH -> state
+        }
+    }
+
     fun isBoundaryReady(state: State): Boolean {
         if (!hasValidProjection()) return false
         val segment = plan.segments.getOrNull(state.segmentIndex) ?: return false
