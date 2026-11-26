@@ -407,8 +407,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * WebtoonAdapter sequence. The standard RecyclerView and adapter are retained
      * untouched so switching back is a safe fallback.
      */
-    private fun installSplitScrollHost(initialSourceIndex: Int?) {
-        val previousViewport = captureSplitScrollViewport()
+    private fun installSplitScrollHost(
+        initialSourceIndex: Int?,
+        restoreViewport: Boolean = true,
+    ) {
+        val previousViewport = if (restoreViewport) captureSplitScrollViewport() else null
         splitScrollController?.dispose()
         val splitWidthPreference = Injekt.get<ReaderPreferences>().dualPageSplitLeftWidth()
         val host = WebtoonSplitScrollHostView(activity).apply {
@@ -691,7 +694,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         when (config.dualPagePresentationMode) {
             DualPagePresentationMode.SPLIT_SCROLL -> {
                 disposeSpreadHost()
-                installSplitScrollHost(requestedSourceIndex)
+                installSplitScrollHost(requestedSourceIndex, restoreViewport = false)
                 recycler.isVisible = false
                 return
             }
