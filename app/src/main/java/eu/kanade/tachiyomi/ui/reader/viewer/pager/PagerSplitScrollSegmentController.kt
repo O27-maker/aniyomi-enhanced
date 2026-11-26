@@ -38,6 +38,27 @@ internal class PagerSplitScrollSegmentController(
 
     fun moveToSourceIndex(sourceIndex: Int): Boolean {
         if (disposed) return false
+
+        // Chapter transitions remain navigable source items. Direct next/previous input
+        // should display the same full-width barrier as reaching both column ends.
+        val boundarySegment = plan.segments.indexOfFirst {
+            it.boundaryAfter?.sourceIndex == sourceIndex
+        }
+        if (boundarySegment >= 0) {
+            if (boundarySegment != segmentIndex || boundaryNotified) {
+                host.hideBoundary()
+                segmentIndex = boundarySegment
+                bindSegment()
+            }
+            if (!boundaryNotified) {
+                val boundary = plan.segments.getOrNull(segmentIndex)?.boundaryAfter
+                boundaryNotified = true
+                onSelection(sourceIndex)
+                onBoundaryReady(boundary)
+            }
+            return true
+        }
+
         val targetSegment = plan.segmentIndexForSourceIndex(sourceIndex)
         if (targetSegment < 0) return false
         if (targetSegment != segmentIndex || boundaryNotified) {
