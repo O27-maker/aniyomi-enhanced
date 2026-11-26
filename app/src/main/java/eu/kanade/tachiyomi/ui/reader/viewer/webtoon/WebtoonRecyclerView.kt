@@ -39,6 +39,12 @@ class WebtoonRecyclerView @JvmOverloads constructor(
             field = value
             if (value && currentScale < DEFAULT_RATE) {
                 zoom(currentScale, DEFAULT_RATE, x, 0f, y, 0f)
+                // Zoom-out changes the RecyclerView's measured height as well as its scale.
+                // Restore that geometry when zoom-out becomes disabled, otherwise the
+                // column keeps an oversized layout after the scale animation completes.
+                layoutParams.height = originalHeight
+                halfHeight = layoutParams.height / 2
+                requestLayout()
             }
         }
     private val minRate
