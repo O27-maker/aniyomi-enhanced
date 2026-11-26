@@ -131,4 +131,27 @@ class WebtoonSplitScrollBarrierCoordinatorTest {
         assertFalse(coordinator.isBoundaryReady(both))
         assertNull(coordinator.advance(both))
     }
+
+    @Test
+    fun `scrolling away from end clears only that column arrival`() {
+        val coordinator = coordinator()
+        val initial = coordinator.initialState()
+        val leftAtEnd = coordinator.markColumnAtEnd(initial, 0, Column.LEFT)
+        val rightAtEnd = coordinator.markColumnAtEnd(leftAtEnd, 0, Column.RIGHT)
+        assertTrue(coordinator.isBoundaryReady(rightAtEnd))
+
+        val leftMovedBack = coordinator.markColumnNotAtEnd(rightAtEnd, 0, Column.LEFT)
+        assertFalse(leftMovedBack.leftAtEnd)
+        assertTrue(leftMovedBack.rightAtEnd)
+        assertFalse(coordinator.isBoundaryReady(leftMovedBack))
+    }
+
+    @Test
+    fun `stale not at end callback cannot clear a newer segment state`() {
+        val coordinator = coordinator()
+        val initial = coordinator.initialState(1)
+        val changed = coordinator.markColumnNotAtEnd(initial, 0, Column.LEFT)
+
+        assertEquals(initial, changed)
+    }
 }
