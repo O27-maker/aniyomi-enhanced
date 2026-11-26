@@ -48,6 +48,9 @@ class PagerConfig(
     var landscapeZoom = false
         private set
 
+    var firstPageSingle = false
+        private set
+
     init {
         readerPreferences.readerTheme()
             .register(
@@ -82,6 +85,9 @@ class PagerConfig(
             .drop(1)
             .onEach { navigationModeChangedListener?.invoke() }
             .launchIn(scope)
+
+        readerPreferences.dualPageFirstPageSingle()
+            .register({ firstPageSingle = it }, { imagePropertyChangedListener?.invoke() })
 
         readerPreferences.dualPageSplitPaged()
             .register(
