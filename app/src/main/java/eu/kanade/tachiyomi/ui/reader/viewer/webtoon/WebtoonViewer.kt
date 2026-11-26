@@ -344,6 +344,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val position = displayPosition ?: manager.findLastEndVisibleItemPosition()
         val preferred = preferredSourceIndex ?: spreadPreferredSourceIndex
             ?.takeIf { projection.displayIndexForSource(it) == position }
+            ?: projection.lastSourceIndexAt(position)
         spreadPreferredSourceIndex = null
         val item = projection.sourceItemAt(position, preferred) ?: return
         if (currentPage == item) return
