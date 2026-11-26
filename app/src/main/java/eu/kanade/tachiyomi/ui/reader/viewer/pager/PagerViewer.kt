@@ -68,6 +68,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private val adapter = PagerViewerAdapter(this)
 
+    /** Immutable Spread projection currently installed in the pager adapter. */
+    private var activeSpreadProjection: SpreadAdapterProjection<Any>? = null
+
     /**
      * Currently active item. It can be a chapter page or a chapter transition.
      */
@@ -145,6 +148,18 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             refreshAdapter()
         }
 
+        config.dualPagePresentationModeChangedListener = {
+            if (config.dualPagePresentationMode == eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPREAD) {
+                rebuildSpreadProjection()
+            } else {
+                clearSpreadPresentation()
+            }
+        }
+
+        setSpreadPageOrientationChangedListener {
+            rebuildSpreadProjection()
+        }
+
         config.navigationModeChangedListener = {
             val showOnStart = config.navigationOverlayOnStart || config.forceNavigationOverlay
             activity.binding.navigationOverlay.setNavigation(config.navigator, showOnStart)
@@ -172,6 +187,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         config.dualPageSplitChangedListener = null
         config.dualPagePresentationModeChangedListener = null
         spreadPageOrientationChangedListener = null
+        activeSpreadProjection = null
         config.imagePropertyChangedListener = null
         config.navigationModeChangedListener = null
 
@@ -237,7 +253,17 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Called when a new page (either a [ReaderPage] or [ChapterTransition]) is marked as active
      */
     private fun onPageChange(position: Int) {
-        val page = adapter.items.getOrNull(position)
+        val projection = activeSpreadProjection
+        val sourceIndex = if (projection != null) {
+            SpreadAdapterNavigationMap.adapterIndexForDisplay(
+                projection.units,
+                position,
+                adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 },
+            )
+        } else {
+            position
+        }
+        val page = sourceIndex?.let(adapter.items::getOrNull)
         if (page != null && currentPage != page) {
             val allowPreload = checkAllowPreload(page as? ReaderPage)
             val forward = when {
@@ -357,7 +383,8 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Tells this viewer to move to the given [page].
      */
     override fun moveToPage(page: ReaderPage) {
-        val position = adapter.items.indexOf(page)
+        val sourceIndex = adapter.items.indexOfFirst { it === page }
+        val position = if (sourceIndex >= 0) adapter.displayIndexForSource(sourceIndex) else -1
         if (position != -1) {
             val currentPosition = pager.currentItem
             pager.setCurrentItem(position, true)
@@ -470,10 +497,14 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * changed.
      */
     private fun refreshAdapter() {
-        val currentItem = pager.currentItem
+        val currentPage = this.currentPage
         adapter.refresh()
         pager.adapter = adapter
-        pager.setCurrentItem(currentItem, false)
+        if (currentPage is ReaderPage) {
+            moveToPage(currentPage)
+        } else {
+            pager.setCurrentItem(pager.currentItem.coerceIn(0, (adapter.count - 1).coerceAtLeast(0)), false)
+        }
     }
 
     /**
