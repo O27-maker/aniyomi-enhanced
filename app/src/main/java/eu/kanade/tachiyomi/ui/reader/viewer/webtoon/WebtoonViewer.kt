@@ -292,11 +292,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             items = adapter.items,
             isBoundary = { it is ChapterTransition },
             isPortrait = { item -> (item as? ReaderPage)?.let { spreadOrientations[it] } },
-            canPair = { item ->
-                val page = item as? ReaderPage
-                val index = page?.let(adapter.items::indexOf) ?: -1
-                val next = adapter.items.getOrNull(index + 1) as? ReaderPage
-                page != null && next?.chapter == page.chapter
+            canPair = { it is ReaderPage },
+            canPairWithNext = { first, second ->
+                first is ReaderPage && second is ReaderPage && first.chapter == second.chapter
             },
             firstPageSingle = config.firstPageSingle,
             firstPageIndex = firstPageIndex,
