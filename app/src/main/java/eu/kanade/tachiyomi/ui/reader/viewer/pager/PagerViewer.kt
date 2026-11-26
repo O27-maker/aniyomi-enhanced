@@ -120,23 +120,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pager.id = R.id.reader_pager
         pager.adapter = adapter
         pager.addOnPageChangeListener(pageChangeListener)
-        pager.tapListener = { event ->
-            val viewPosition = IntArray(2)
-            pager.getLocationOnScreen(viewPosition)
-            val viewPositionRelativeToWindow = IntArray(2)
-            pager.getLocationInWindow(viewPositionRelativeToWindow)
-            val pos = PointF(
-                (event.rawX - viewPosition[0] + viewPositionRelativeToWindow[0]) / pager.width,
-                (event.rawY - viewPosition[1] + viewPositionRelativeToWindow[1]) / pager.height,
-            )
-            when (config.navigator.getAction(pos)) {
-                NavigationRegion.MENU -> activity.toggleMenu()
-                NavigationRegion.NEXT -> moveToNext()
-                NavigationRegion.PREV -> moveToPrevious()
-                NavigationRegion.RIGHT -> moveRightAt(event.rawX, event.rawY)
-                NavigationRegion.LEFT -> moveLeftAt(event.rawX, event.rawY)
-            }
-        }
+        pager.tapListener = { event -> handleTap(event, pager) }
         pager.longTapListener = f@{ event ->
             if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
                 // In Spread mode the long-pressed page may not be the selected page.
@@ -233,6 +217,26 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     override fun getView(): View {
         return root
+    }
+
+    /** Route confirmed taps from either the pager or Split Scroll host through one navigator. */
+    private fun handleTap(event: MotionEvent, target: View) {
+        val viewPosition = IntArray(2)
+        target.getLocationOnScreen(viewPosition)
+        val viewPositionRelativeToWindow = IntArray(2)
+        target.getLocationInWindow(viewPositionRelativeToWindow)
+        if (target.width <= 0 || target.height <= 0) return
+        val position = PointF(
+            (event.rawX - viewPosition[0] + viewPositionRelativeToWindow[0]) / target.width,
+            (event.rawY - viewPosition[1] + viewPositionRelativeToWindow[1]) / target.height,
+        )
+        when (config.navigator.getAction(position)) {
+            NavigationRegion.MENU -> activity.toggleMenu()
+            NavigationRegion.NEXT -> moveToNext()
+            NavigationRegion.PREV -> moveToPrevious()
+            NavigationRegion.RIGHT -> moveRightAt(event.rawX, event.rawY)
+            NavigationRegion.LEFT -> moveLeftAt(event.rawX, event.rawY)
+        }
     }
 
     /**
@@ -547,7 +551,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * when a Spread item contains two independent page holders.
      */
     private fun moveRightAt(rawX: Float, rawY: Float) {
-        val holder = pager.findPageHolderAt(rawX, rawY)
+        val holder = root.findPageHolderAt(rawX, rawY)
             ?: (currentPage as? ReaderPage)?.let(::getPageHolder)
         if (config.navigateToPan && holder?.canPanRight() == true) {
             holder.panRight()
@@ -665,6 +669,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pager.adapter = null
 
         val host = PagerSplitScrollHostView(activity)
+        host.onTap = { event -> handleTap(event, host) }
         splitScrollHost = host
         root.removeView(pager)
         root.addView(host, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
