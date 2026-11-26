@@ -67,10 +67,7 @@ class WebtoonSpreadPlanTest {
             items = items,
             isBoundary = { false },
             isPortrait = { true },
-            canPair = { item ->
-                val next = items.getOrNull(items.indexOf(item) + 1)
-                next != null && chapters[item] == chapters[next]
-            },
+            canPairWithNext = { first, second -> chapters[first] == chapters[second] },
         )
 
         assertEquals(
