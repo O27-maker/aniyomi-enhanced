@@ -143,13 +143,15 @@ class WebtoonPageHolder(
                 loader.loadPage(page)
             }
             page.statusFlow.collectLatest { state ->
+                // Ignore any status emission from a page that no longer owns this holder.
+                if (this.page !== page) return@collectLatest
                 when (state) {
                     Page.State.QUEUE -> setQueued()
                     Page.State.LOAD_PAGE -> setLoading()
                     Page.State.DOWNLOAD_IMAGE -> {
                         setDownloading()
                         page.progressFlow.collectLatest { value ->
-                            progressIndicator.setProgress(value)
+                            if (this.page === page) progressIndicator.setProgress(value)
                         }
                     }
                     Page.State.READY -> setImage(page)
