@@ -29,13 +29,13 @@ internal data class SpreadAdapterProjection<T>(
         fun buildReaderPages(
             adapterItems: List<Any>,
             selectedAdapterIndex: Int,
-            isPortraitPage: (ReaderPage) -> Boolean,
+            isPortraitPage: (ReaderPage) -> Boolean?,
             firstPageSingle: Boolean = false,
         ): SpreadAdapterProjection<Any> = build(
             adapterItems = adapterItems,
             selectedAdapterIndex = selectedAdapterIndex,
             isBoundary = { it is ChapterTransition },
-            canPair = { item -> item is ReaderPage && item !is InsertPage && isPortraitPage(item) },
+            canPair = { item -> item is ReaderPage && item !is InsertPage && isPortraitPage(item) == true },
             firstPageSingle = firstPageSingle,
         )
 
