@@ -83,6 +83,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Currently active item. It can be a chapter page or a chapter transition.
      */
     private var currentPage: Any? = null
+    private var currentPageForward = true
 
     /** Original source index requested by moveToPage while the pager changes display units. */
     private var pendingSourceSelectionIndex: Int? = null
@@ -316,6 +317,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             else -> true
         }
         currentPage = page
+        currentPageForward = forward
         when (page) {
             is ReaderPage -> onReaderPageSelected(page, allowPreload, forward)
             is ChapterTransition -> onTransitionSelected(page)
@@ -345,6 +347,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Called when a [ReaderPage] is marked as active. It notifies the
      * activity of the change and requests the preload of the next chapter if this is the last page.
      */
+    /** A Split Scroll row can bind after its source page was already selected. */
+    internal fun onSplitScrollPageHolderBound(page: ReaderPage, holder: PagerPageHolder) {
+        if (currentPage === page) holder.onPageSelected(currentPageForward)
+    }
+
     private fun onReaderPageSelected(page: ReaderPage, allowPreload: Boolean, forward: Boolean) {
         val pages = page.chapter.pages ?: return
         logcat { "onReaderPageSelected: ${page.number}/${pages.size}" }
