@@ -22,6 +22,39 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
         }
 
 
+    /**
+     * Attach the original page holders for one projected display unit.
+     *
+     * The holders remain the owners of image loading, zoom, gestures, and page identity.
+     * This container only arranges them; permanent disposal remains the pager adapter's
+     * responsibility when it recursively disposes the removed view tree.
+     */
+    fun setPageHolders(
+        first: PagerPageHolder,
+        second: PagerPageHolder? = null,
+        isR2L: Boolean = false,
+    ) {
+        require(first !== second) { "A page holder cannot occupy both spread slots" }
+        require(first.parent == null || first.parent === this) {
+            "The first page holder is already attached to another parent"
+        }
+        require(second == null || second.parent == null || second.parent === this) {
+            "The second page holder is already attached to another parent"
+        }
+
+        // Detach existing children first. PagerPageHolder treats this as a reusable
+        // detach, not permanent disposal, and resumes its state collector on reattach.
+        removeAllViews()
+        this.isR2L = isR2L
+        addView(first)
+        if (second != null) addView(second)
+    }
+
+    /** Remove children without disposing their reusable page holders. */
+    fun detachPageHolders() {
+        removeAllViews()
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         check(childCount <= 2) { "SpreadFrameLayout supports at most two page children" }
         val width = resolveSize(MeasureSpec.getSize(widthMeasureSpec), widthMeasureSpec)
