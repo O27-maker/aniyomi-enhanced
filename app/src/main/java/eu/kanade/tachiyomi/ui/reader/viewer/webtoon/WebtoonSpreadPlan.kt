@@ -65,7 +65,10 @@ internal data class WebtoonSpreadPlan<T>(
                 }
                 is Unit.Pair -> {
                     if (unit.firstSourceIndex != nextIndex || unit.secondSourceIndex != nextIndex + 1) return false
-                    if (items.getOrNull(nextIndex) !== unit.first || items.getOrNull(nextIndex + 1) !== unit.second) return false
+                    if (
+                        items.getOrNull(nextIndex) !== unit.first ||
+                        items.getOrNull(nextIndex + 1) !== unit.second
+                    ) return false
                     nextIndex += 2
                 }
                 is Unit.Boundary -> {
