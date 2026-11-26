@@ -18,6 +18,7 @@ import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.InsertPage
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
+import DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
 import eu.kanade.tachiyomi.util.system.createReaderThemeContext
@@ -151,15 +152,15 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
         config.dualPagePresentationModeChangedListener = { mode ->
             when (mode) {
-                eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPLIT_SCROLL -> {
+                DualPagePresentationMode.SPLIT_SCROLL -> {
                     clearSpreadPresentation()
                     installSplitScrollPresentation()
                 }
-                eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPREAD -> {
+                DualPagePresentationMode.SPREAD -> {
                     leaveSplitScrollPresentation()
                     rebuildSpreadProjection()
                 }
-                eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.NONE -> {
+                DualPagePresentationMode.NONE -> {
                     leaveSplitScrollPresentation()
                     clearSpreadPresentation()
                 }
@@ -395,7 +396,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * orientation callback arrives. The active ReaderPage is retained by identity.
      */
     private fun rebuildSpreadProjection() {
-        if (config.dualPagePresentationMode != eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPREAD) {
+        if (config.dualPagePresentationMode != DualPagePresentationMode.SPREAD) {
             return
         }
         if (adapter.items.isEmpty()) return
@@ -494,7 +495,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         adapter.setChapters(chapters, forceTransition)
 
         // Layout the active presentation once a chapter is being set
-        if (config.dualPagePresentationMode == eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode.SPLIT_SCROLL) {
+        if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
             val requestedPage = chapters.currChapter.pages
                 ?.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0))
             val requestedIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }
@@ -697,7 +698,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         val plan = PagerSplitScrollPlan.create(
             source = adapter.items.toList(),
             isBoundary = { it is ChapterTransition },
-            firstColumn = if (config.dualPageInvert) PagerSplitScrollPlan.Column.RIGHT else PagerSplitScrollPlan.Column.LEFT,
+            firstColumn = if (config.dualPageInvert) {
+                PagerSplitScrollPlan.Column.RIGHT
+            } else {
+                PagerSplitScrollPlan.Column.LEFT
+            },
         )
         if (!plan.matchesSource(adapter.items)) return
         splitScrollController = PagerSplitScrollSegmentController(
