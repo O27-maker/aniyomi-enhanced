@@ -20,7 +20,6 @@ internal class WebtoonSpreadAdapter(
     private val viewer: WebtoonViewer,
     private val sourceItems: () -> List<Any>,
     private val plan: () -> WebtoonSpreadPlan<Any>,
-    private val reversePairOrder: () -> Boolean = { false },
 ) : RecyclerView.Adapter<WebtoonSpreadAdapter.RowHolder>() {
 
     internal class RowHolder(
