@@ -56,6 +56,28 @@ class WebtoonSpreadPlanTest {
     }
 
     @Test
+    fun `pages from different chapters never form a spread pair`() {
+        val items = listOf("previous-last", "current-first", "current-second")
+        val chapters = mapOf(
+            "previous-last" to "previous",
+            "current-first" to "current",
+            "current-second" to "current",
+        )
+        val plan = WebtoonSpreadPlan.create(
+            items = items,
+            isBoundary = { false },
+            isPortrait = { true },
+            canPair = { item -> chapters[item] == chapters[items[items.indexOf(item) + 1.coerceAtMost(items.lastIndex)]] },
+        )
+
+        assertEquals(
+            listOf(listOf(0), listOf(1, 2)),
+            plan.units.map { it.sourceIndices },
+        )
+        assertTrue(plan.matchesSource(items))
+    }
+
+    @Test
     fun `first page can remain alone without changing following pairs`() {
         val items = listOf("cover", "p1", "p2", "p3")
         val plan = WebtoonSpreadPlan.create(
