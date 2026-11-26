@@ -90,6 +90,18 @@ class WebtoonPageHolder(
      * Binds the given [page] with this view holder, subscribing to its state.
      */
     fun bind(page: ReaderPage) {
+        // A holder can be rebound while still attached, without passing through recycle().
+        // Release the previous page's image and controls before exposing the new identity.
+        this.page?.takeIf { it !== page }?.let { previousPage ->
+            frame.captureZoomState()?.let { viewer.savePageZoomState(previousPage, it) }
+            loadJob?.cancel()
+            loadJob = null
+            removeErrorLayout()
+            frame.recycle()
+            progressIndicator.setProgress(0)
+            progressContainer.isVisible = true
+        }
+
         // Stop the previous page before publishing the new identity. Otherwise an old
         // collector can briefly observe this.page as the newly bound page.
         loadJob?.cancel()
