@@ -69,12 +69,14 @@ class SpreadAdapterItemMapperTest {
         val items = listOf("previous", "transition", "cover", "page-a", "page-b")
         assertEquals(
             listOf(
-                SpreadAdapterItemMapper.Unit.Pair("previous", 0, "transition", 1),
+                SpreadAdapterItemMapper.Unit.Single("previous", 0),
+                SpreadAdapterItemMapper.Unit.Single("transition", 1),
                 SpreadAdapterItemMapper.Unit.Single("cover", 2),
                 SpreadAdapterItemMapper.Unit.Pair("page-a", 3, "page-b", 4),
             ),
             SpreadAdapterItemMapper.map(
                 items = items,
+                isBoundary = { it == "transition" },
                 firstPageSingle = true,
                 firstPageIndex = 2,
             ),
