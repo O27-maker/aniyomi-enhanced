@@ -29,11 +29,27 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context) {
      * This container only arranges them; permanent disposal remains the pager adapter's
      * responsibility when it recursively disposes the removed view tree.
      */
-    fun setPageHolders(
+    fun bind(
+        unit: SpreadAdapterItemMapper.Unit<Any>,
         first: PagerPageHolder,
         second: PagerPageHolder? = null,
         isR2L: Boolean = false,
     ) {
+        when (unit) {
+            is SpreadAdapterItemMapper.Unit.Single -> {
+                require(unit.item === first.item) {
+                    "The first holder does not match the projected page"
+                }
+                require(second == null) {
+                    "A single-page display unit cannot contain a second holder"
+                }
+            }
+            is SpreadAdapterItemMapper.Unit.Pair -> {
+                require(unit.first === first.item && unit.second === second?.item) {
+                    "Page holders do not match the projected spread"
+                }
+            }
+        }
         require(first !== second) { "A page holder cannot occupy both spread slots" }
         require(first.parent == null || first.parent === this) {
             "The first page holder is already attached to another parent"
