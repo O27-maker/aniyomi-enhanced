@@ -21,6 +21,7 @@ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
 import eu.kanade.tachiyomi.util.system.createReaderThemeContext
@@ -34,7 +35,7 @@ import kotlin.math.min
  * Implementation of a [Viewer] to display pages with a [ViewPager].
  */
 @Suppress("LeakingThis")
-abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
+abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoomStateOwner {
 
     val downloadManager: MangaDownloadManager by injectLazy()
 
@@ -200,7 +201,6 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
 
         // The adapter has now disposed instantiated holders; release its remaining page models.
         adapter.clear()
-        pageZoomStates.clear()
         currentPage = null
         awaitingIdleViewerChapters = null
 
@@ -376,6 +376,15 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         pageZoomStates.remove(page)?.let(holder::restoreZoomState)
     }
 
+    override fun exportPageZoomStates(): java.util.IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState> =
+        java.util.IdentityHashMap(pageZoomStates).also { pageZoomStates.clear() }
+
+    override fun importPageZoomStates(
+        states: java.util.IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>,
+    ) {
+        pageZoomStates.putAll(states)
+    }
+
     internal fun onSplitScrollPageHolderBound(page: ReaderPage, holder: PagerPageHolder) {
         if (currentPage === page) holder.onPageSelected(currentPageForward)
     }
@@ -530,9 +539,8 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         }
         activeSpreadProjection = null
         adapter.setChapters(chapters, forceTransition)
-        // Old holders capture their final zoom as they are disposed; discard those states
-        // after the source sequence changes so a previous chapter cannot leak into the next.
-        pageZoomStates.clear()
+        // Keep cached zoom only for exact page instances in the new source sequence.
+        pageZoomStates.keys.removeAll { cachedPage -> adapter.items.none { it === cachedPage } }
 
         // Layout the active presentation once a chapter is being set
         if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
