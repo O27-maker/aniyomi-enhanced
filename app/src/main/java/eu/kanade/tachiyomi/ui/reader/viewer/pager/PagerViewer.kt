@@ -539,7 +539,9 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         if (pager.isGone && splitScrollHost == null) {
             logcat { "Pager first layout" }
             val pages = chapters.currChapter.pages ?: return
-            moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
+            val requestedPage = chapters.currChapter.requestedPage.coerceAtLeast(0)
+            val page = pages.getOrNull(requestedPage) ?: pages.lastOrNull() ?: return
+            moveToPage(page)
             pager.isVisible = true
         } else if (splitScrollHost != null && currentPage == null) {
             chapters.currChapter.pages?.getOrNull(chapters.currChapter.requestedPage)?.let(::moveToPage)
