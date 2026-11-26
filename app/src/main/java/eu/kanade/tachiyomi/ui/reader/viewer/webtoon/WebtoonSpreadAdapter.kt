@@ -5,7 +5,6 @@ import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
 import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
-import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 
@@ -55,16 +54,15 @@ internal class WebtoonSpreadAdapter(
         }
 
         private fun addPage(page: ReaderPage, paired: Boolean) {
-            val image = ReaderPageImageView(container.context, isWebtoon = true)
-            val holder = WebtoonPageHolder(image, viewer, viewer.recycler)
+            val holder = viewer.createSpreadPageHolder()
             holder.bind(page)
-            image.layoutParams = LinearLayout.LayoutParams(
+            holder.itemView.layoutParams = LinearLayout.LayoutParams(
                 if (paired) 0 else MATCH_PARENT,
                 WRAP_CONTENT,
                 if (paired) 1f else 0f,
             )
             pageHolders += holder
-            container.addView(image)
+            container.addView(holder.itemView)
         }
 
         fun recycleChildren() {
