@@ -298,10 +298,12 @@ class PagerPageHolder(
     override fun onImageLoaded() {
         super.onImageLoaded()
         progressIndicator?.hide()
+        // Restore before notifying Spread: the orientation callback may rebuild the
+        // projection and dispose this holder as part of regrouping.
+        viewer.restorePageZoomState(page, this)
         // Decoded dimensions are now available to a Spread projection. The listener
         // decides whether a safe, anchor-preserving projection rebuild is possible.
         viewer.onSpreadPageOrientationReady(page)
-        viewer.restorePageZoomState(page, this)
     }
 
     /**
