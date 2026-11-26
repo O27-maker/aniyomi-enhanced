@@ -225,8 +225,8 @@ internal class WebtoonSplitScrollHostView(
 
     companion object {
         const val DEFAULT_LEFT_WIDTH_PERCENT = 50
-        const val MIN_WIDTH_PERCENT = 20
-        const val MAX_WIDTH_PERCENT = 80
+        const val MIN_WIDTH_PERCENT = WebtoonSplitScrollColumnWidths.MIN_PERCENT
+        const val MAX_WIDTH_PERCENT = WebtoonSplitScrollColumnWidths.MAX_PERCENT
         private const val SPLIT_SCROLL_CACHE_SIZE = 4
     }
 }
