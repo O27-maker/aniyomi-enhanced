@@ -181,11 +181,13 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
         config.doubleTapZoomChangedListener = {
             frame.doubleTapZoom = it
+            spreadRecycler?.doubleTapZoom = it
             splitScrollHost?.setDoubleTapZoomEnabled(it)
         }
 
         config.zoomPropertyChangedListener = {
             frame.zoomOutDisabled = it
+            spreadRecycler?.zoomOutDisabled = it
             splitScrollHost?.setZoomOutDisabled(it)
         }
 
@@ -217,6 +219,8 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         host.setItemViewCacheSize(RECYCLER_VIEW_CACHE_SIZE)
         host.itemAnimator = null
         host.isFocusable = false
+        host.doubleTapZoom = config.doubleTapZoom
+        host.zoomOutDisabled = config.zoomOutDisabled
         host.layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         host.layoutManager = manager
         spreadOrientations.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
