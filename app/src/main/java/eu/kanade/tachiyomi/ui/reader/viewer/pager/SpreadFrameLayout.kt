@@ -8,9 +8,8 @@ import eu.kanade.tachiyomi.widget.ViewPagerAdapter
  * Lightweight display container for a Spread item.
  *
  * It owns no reader pages and performs no loading, selection, or navigation work.
- * Its children are supplied by a future adapter integration and remain the
- * original page-holder views. More than two children are rejected to prevent
- * accidental misuse while the feature is experimental.
+ * Its children are the original page-holder views created for the active adapter
+ * projection. More than two children are rejected to prevent accidental misuse.
  */
 internal class SpreadFrameLayout(context: Context) : ViewGroup(context), ViewPagerAdapter.PositionableView {
 
