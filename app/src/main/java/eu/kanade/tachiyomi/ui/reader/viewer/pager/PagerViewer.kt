@@ -316,19 +316,20 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         val allowPreload = checkAllowPreload(page as? ReaderPage)
         val forward = when {
             currentPage is ReaderPage && page is ReaderPage -> {
-                if (page.number == (currentPage as ReaderPage).number) page is InsertPage
-                else if (this is R2LPagerViewer) {
-                    page.number < (currentPage as ReaderPage).number
-                } else {
-                    page.number > (currentPage as ReaderPage).number
-                }
+                PagerSelectionDirection.isForwardBetweenPages(
+                    currentPageNumber = (currentPage as ReaderPage).number,
+                    nextPageNumber = page.number,
+                    isRightToLeft = this is R2LPagerViewer,
+                    nextIsInsertPage = page is InsertPage,
+                )
             }
             currentPage is ChapterTransition && page is ReaderPage -> {
                 val transition = currentPage as ChapterTransition
-                when (transition) {
-                    is ChapterTransition.Prev -> page.chapter == transition.from
-                    is ChapterTransition.Next -> page.chapter == transition.to
-                }
+                PagerSelectionDirection.isForwardFromTransition(
+                    isPreviousTransition = transition is ChapterTransition.Prev,
+                    pageMatchesFromChapter = page.chapter == transition.from,
+                    pageMatchesToChapter = page.chapter == transition.to,
+                )
             }
             else -> true
         }
