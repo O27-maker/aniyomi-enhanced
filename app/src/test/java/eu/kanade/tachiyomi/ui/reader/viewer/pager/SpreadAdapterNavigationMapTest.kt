@@ -26,6 +26,27 @@ class SpreadAdapterNavigationMapTest {
     }
 
     @Test
+    fun displayUnitResolvesBothOriginalIndicesInSourceOrder() {
+        assertEquals(listOf(4, 5), SpreadAdapterNavigationMap.adapterIndicesForDisplay(units, 0))
+        assertEquals(listOf(6), SpreadAdapterNavigationMap.adapterIndicesForDisplay(units, 1))
+        assertEquals(listOf(7, 8), SpreadAdapterNavigationMap.adapterIndicesForDisplay(units, 2))
+    }
+
+    @Test
+    fun displaySelectionPreservesPreferredPageInsideSpread() {
+        assertEquals(5, SpreadAdapterNavigationMap.adapterIndexForDisplay(units, 0, preferredAdapterIndex = 5))
+        assertEquals(4, SpreadAdapterNavigationMap.adapterIndexForDisplay(units, 0, preferredAdapterIndex = 99))
+        assertEquals(6, SpreadAdapterNavigationMap.adapterIndexForDisplay(units, 1, preferredAdapterIndex = 5))
+    }
+
+    @Test
+    fun invalidDisplayUnitHasNoSourceIndices() {
+        assertEquals(emptyList<Int>(), SpreadAdapterNavigationMap.adapterIndicesForDisplay(units, -1))
+        assertEquals(emptyList<Int>(), SpreadAdapterNavigationMap.adapterIndicesForDisplay(units, units.size))
+        assertNull(SpreadAdapterNavigationMap.adapterIndexForDisplay(units, units.size))
+    }
+
+    @Test
     fun requestedMemberIsRetainedInAnchor() {
         assertEquals(
             SpreadAdapterNavigationMap.Anchor(0, 5),
