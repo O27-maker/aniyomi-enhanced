@@ -317,7 +317,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
         val forward = when {
             currentPage is ReaderPage && page is ReaderPage -> {
                 if (page.number == (currentPage as ReaderPage).number) page is InsertPage
-                else page.number > (currentPage as ReaderPage).number
+                else if (this is R2LPagerViewer) {
+                    page.number < (currentPage as ReaderPage).number
+                } else {
+                    page.number > (currentPage as ReaderPage).number
+                }
             }
             currentPage is ChapterTransition.Prev && page is ReaderPage -> false
             else -> true
