@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.recyclerview.widget.RecyclerView
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 
@@ -37,25 +38,33 @@ internal class PagerSplitScrollColumnAdapter(
 
     override fun getItemId(position: Int): Long = placements[position].sourceIndex.toLong()
 
-    override fun getItemViewType(position: Int): Int = position
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
-        val page = placements.getOrNull(viewType)?.item as? ReaderPage
-            ?: error("Missing page placement for adapter view type $viewType")
-        return PageHolder(PagerPageHolder(viewer.activity.createReaderThemeContext(), viewer, page))
-    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder =
+        PageHolder(FrameLayout(parent.context))
 
     override fun onBindViewHolder(holder: PageHolder, position: Int) {
         val placement = placements[position]
         val page = placement.item as ReaderPage
-        check(holder.pageHolder.page === page) {
-            "A pager Split Scroll holder cannot be rebound to a different page identity"
+        if (holder.pageHolder?.page !== page) {
+            holder.clearPageHolder()
+            val pageHolder = PagerPageHolder(
+                viewer.activity.createReaderThemeContext(),
+                viewer,
+                page,
+            )
+            holder.pageHolder = pageHolder
+            holder.container.addView(
+                pageHolder,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
         }
         onPageBound(page, placement.sourceIndex)
     }
 
     override fun onViewRecycled(holder: PageHolder) {
-        holder.pageHolder.dispose()
+        holder.clearPageHolder()
     }
 
     fun sourceIndexAt(columnPosition: Int): Int? =
@@ -65,6 +74,14 @@ internal class PagerSplitScrollColumnAdapter(
         placements.getOrNull(columnPosition)?.item as? ReaderPage
 
     class PageHolder(
-        val pageHolder: PagerPageHolder,
-    ) : RecyclerView.ViewHolder(pageHolder)
+        val container: FrameLayout,
+    ) : RecyclerView.ViewHolder(container) {
+        var pageHolder: PagerPageHolder? = null
+
+        fun clearPageHolder() {
+            pageHolder?.dispose()
+            pageHolder = null
+            container.removeAllViews()
+        }
+    }
 }
