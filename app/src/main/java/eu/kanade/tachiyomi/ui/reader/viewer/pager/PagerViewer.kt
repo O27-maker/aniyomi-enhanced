@@ -129,7 +129,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
                 // In Spread mode the long-pressed page may not be the selected page.
                 val item = pager.findPageHolderAt(event.rawX, event.rawY)?.item as? ReaderPage
-                    ?: adapter.items.getOrNull(pager.currentItem) as? ReaderPage
+                    ?: adapter.sourceItemAtDisplay(pager.currentItem) as? ReaderPage
                 if (item != null) {
                     activity.onPageLongTap(item)
                     return@f true
@@ -442,9 +442,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private fun setChaptersInternal(chapters: ViewerChapters) {
         val forceTransition = config.alwaysShowChapterTransition ||
-            adapter.items.getOrNull(
-                pager.currentItem,
-            ) is ChapterTransition
+            currentPage is ChapterTransition
         adapter.setChapters(chapters, forceTransition)
         rebuildSpreadProjection()
 
