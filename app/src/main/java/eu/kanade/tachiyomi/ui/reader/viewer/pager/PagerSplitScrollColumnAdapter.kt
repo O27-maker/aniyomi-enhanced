@@ -56,7 +56,12 @@ internal class PagerSplitScrollColumnAdapter(
                 pageHeight,
             )
         }
-        return PageHolder(container)
+        return PageHolder(container) { pageHolder ->
+            pageHolder.captureZoomState()?.let { zoomStates[pageHolder.page] = it }
+            pageHolder.onSplitScrollImageLoaded = null
+            pageHolder.setOnLongClickListener(null)
+            pageHolder.dispose()
+        }
     }
 
     override fun onBindViewHolder(holder: PageHolder, position: Int) {
@@ -107,17 +112,13 @@ internal class PagerSplitScrollColumnAdapter(
 
     class PageHolder(
         val container: FrameLayout,
+        private val onDispose: (PagerPageHolder) -> Unit,
     ) : RecyclerView.ViewHolder(container) {
         var pageHolder: PagerPageHolder? = null
 
         fun clearPageHolder() {
             container.setOnLongClickListener(null)
-            pageHolder?.let { current ->
-                current.captureZoomState()?.let { zoomStates[current.page] = it }
-                current.onSplitScrollImageLoaded = null
-                current.setOnLongClickListener(null)
-                current.dispose()
-            }
+            pageHolder?.let(onDispose)
             pageHolder = null
             container.removeAllViews()
         }
