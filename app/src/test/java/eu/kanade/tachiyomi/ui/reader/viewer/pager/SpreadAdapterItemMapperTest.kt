@@ -65,6 +65,32 @@ class SpreadAdapterItemMapperTest {
     }
 
     @Test
+    fun firstPageSingleAppliesAtTheSpecifiedChapterPageIndex() {
+        val items = listOf("previous", "transition", "cover", "page-a", "page-b")
+        assertEquals(
+            listOf(
+                SpreadAdapterItemMapper.Unit.Pair("previous", 0, "transition", 1),
+                SpreadAdapterItemMapper.Unit.Single("cover", 2),
+                SpreadAdapterItemMapper.Unit.Pair("page-a", 3, "page-b", 4),
+            ),
+            SpreadAdapterItemMapper.map(
+                items = items,
+                firstPageSingle = true,
+                firstPageIndex = 2,
+            ),
+        )
+    }
+
+    @Test
+    fun invalidFirstPageIndexDoesNotDropItems() {
+        val items = listOf("a", "b")
+        assertEquals(
+            listOf(SpreadAdapterItemMapper.Unit.Pair("a", 0, "b", 1)),
+            SpreadAdapterItemMapper.map(items, firstPageSingle = true, firstPageIndex = 8),
+        )
+    }
+
+    @Test
     fun consecutiveBoundaryItemsRemainIndividual() {
         val items = listOf("page-a", "transition-1", "transition-2", "page-b", "page-c")
         assertEquals(
