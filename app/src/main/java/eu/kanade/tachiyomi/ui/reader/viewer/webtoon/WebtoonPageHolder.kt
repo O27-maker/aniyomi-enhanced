@@ -71,6 +71,8 @@ class WebtoonPageHolder(
      */
     private var page: ReaderPage? = null
 
+    /** Apply cached zoom only after the replacement image has decoded. */
+
     private val scope = MainScope()
 
     /**
@@ -115,6 +117,8 @@ class WebtoonPageHolder(
      * Called when the view is recycled and added to the view pool.
      */
     override fun recycle() {
+        // Capture before clearing identity and recycling the image view.
+        page?.let { current -> frame.captureZoomState()?.let { viewer.savePageZoomState(current, it) } }
         // Clear the page identity before cancellation so stale retry actions cannot target it.
         page = null
         loadJob?.cancel()
@@ -261,7 +265,10 @@ class WebtoonPageHolder(
     private fun onImageDecoded() {
         progressContainer.isVisible = false
         removeErrorLayout()
-        page?.let { viewer.onSpreadPageOrientationReady(it, frame.isPortraitImage()) }
+        page?.let { current ->
+            viewer.restorePageZoomState(current, this)
+            viewer.onSpreadPageOrientationReady(current, frame.isPortraitImage())
+        }
     }
 
     /**
