@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
+import eu.kanade.tachiyomi.ui.reader.model.InsertPage
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -158,6 +159,30 @@ class SpreadAdapterProjectionTest {
             ),
             projection.units,
         )
+    }
+
+    @Test
+    fun readerProjectionKeepsInsertedSplitPagesStandaloneAndDoesNotPairAcrossThem() {
+        val first = ReaderPage(0)
+        val split = InsertPage(ReaderPage(1))
+        val afterSplit = ReaderPage(2)
+        val next = ReaderPage(3)
+
+        val projection = SpreadAdapterProjection.buildReaderPages(
+            adapterItems = listOf(first, split, afterSplit, next),
+            selectedAdapterIndex = 2,
+            isPortraitPage = { true },
+        )
+
+        assertEquals(
+            listOf(
+                SpreadAdapterItemMapper.Unit.Single(first, 0),
+                SpreadAdapterItemMapper.Unit.Single(split, 1),
+                SpreadAdapterItemMapper.Unit.Pair(afterSplit, 2, next, 3),
+            ),
+            projection.units,
+        )
+        assertEquals(SpreadAdapterNavigationMap.Anchor(2, 2), projection.selectedAnchor)
     }
 
     @Test
