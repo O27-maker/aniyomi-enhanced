@@ -175,13 +175,13 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             when (config.dualPagePresentationMode) {
                 DualPagePresentationMode.SPLIT_SCROLL -> {
                     if (adapter.items.isNotEmpty()) {
-                        installSplitScrollHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
+                        installSplitScrollHost(adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 })
                     }
                 }
                 DualPagePresentationMode.SPREAD -> {
                     if (adapter.items.isNotEmpty()) {
                         spreadOrientations.keys.retainAll(adapter.items.filterIsInstance<ReaderPage>().toSet())
-                        installSpreadHost(adapter.items.indexOf(currentPage).takeIf { it >= 0 })
+                        installSpreadHost(adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 })
                     }
                 }
                 DualPagePresentationMode.NONE -> refreshAdapter()
@@ -342,7 +342,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             val projection = spreadAdapter ?: return@post
             val firstVisible = manager.findFirstVisibleItemPosition()
             val sourceAnchor = projection.sourceIndexAt(firstVisible)
-            val selectedSource = adapter.items.indexOf(currentPage).takeIf { it >= 0 }
+            val selectedSource = adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 }
             val anchorView = manager.findViewByPosition(firstVisible)
             val offset = anchorView?.top ?: 0
             val nextPlan = createSpreadPlan()
@@ -726,7 +726,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      * Tells this viewer to move to the given [page].
      */
     override fun moveToPage(page: ReaderPage) {
-        val position = adapter.items.indexOf(page)
+        val position = adapter.items.indexOfFirst { it === page }
         if (position != -1 && config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
             splitScrollController?.moveToSourceIndex(position)
             return
