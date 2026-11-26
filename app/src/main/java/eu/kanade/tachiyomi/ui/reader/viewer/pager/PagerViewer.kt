@@ -568,7 +568,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     }
 
     private fun moveLeftAt(rawX: Float, rawY: Float) {
-        val holder = pager.findPageHolderAt(rawX, rawY)
+        val holder = root.findPageHolderAt(rawX, rawY)
             ?: (currentPage as? ReaderPage)?.let(::getPageHolder)
         if (config.navigateToPan && holder?.canPanLeft() == true) {
             holder.panLeft()
