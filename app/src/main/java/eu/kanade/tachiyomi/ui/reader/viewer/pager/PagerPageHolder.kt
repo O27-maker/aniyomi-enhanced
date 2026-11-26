@@ -67,9 +67,6 @@ class PagerPageHolder(
 
     private var disposed = false
 
-    /** Called by Split Scroll when this page's image is ready for zoom restoration. */
-    var onSplitScrollImageLoaded: (() -> Unit)? = null
-
     init {
         startLoading()
     }
@@ -96,7 +93,7 @@ class PagerPageHolder(
     fun dispose() {
         if (disposed) return
         disposed = true
-        onSplitScrollImageLoaded = null
+        captureZoomState()?.let { viewer.savePageZoomState(page, it) }
         loadJob?.cancel()
         loadJob = null
         scope.cancel()
@@ -304,7 +301,7 @@ class PagerPageHolder(
         // Decoded dimensions are now available to a Spread projection. The listener
         // decides whether a safe, anchor-preserving projection rebuild is possible.
         viewer.onSpreadPageOrientationReady(page)
-        onSplitScrollImageLoaded?.invoke()
+        viewer.restorePageZoomState(page, this)
     }
 
     /**
