@@ -198,8 +198,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
      */
     private fun installSplitScrollHost(initialSourceIndex: Int?) {
         splitScrollController?.dispose()
+        val splitWidthPreference = Injekt.get<ReaderPreferences>().dualPageSplitLeftWidth()
         val host = WebtoonSplitScrollHostView(activity).apply {
             layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+            setLeftWidthPercent(splitWidthPreference.get())
+            onLeftWidthChanged = { splitWidthPreference.set(it) }
             setDoubleTapZoomEnabled(config.doubleTapZoom)
             setZoomOutDisabled(config.zoomOutDisabled)
         }
