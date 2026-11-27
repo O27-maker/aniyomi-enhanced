@@ -250,7 +250,11 @@ class ReaderActivity : BaseActivity() {
      */
     override fun onDestroy() {
         super.onDestroy()
-        viewModel.state.value.viewer?.destroy()
+        val activeViewer = viewModel.state.value.viewer
+        viewModel.retainPageViewportState(
+            (activeViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState(),
+        )
+        activeViewer?.destroy()
         config = null
         menuToggleToast?.cancel()
         readingModeToast?.cancel()
@@ -541,7 +545,8 @@ class ReaderActivity : BaseActivity() {
         if (prevViewer != null) {
             // Capture per-page state before teardown; configuration changes recreate the Activity
             // and its viewer while the retained ViewModel keeps the authoritative page objects.
-            val viewportState = (prevViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState()
+            val viewportState = viewModel.consumePageViewportState()
+                ?: (prevViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState()
             val zoomStates = (prevViewer as? ReaderPageZoomStateOwner)?.exportPageZoomStates()
             prevViewer.destroy()
             if (zoomStates != null) {
