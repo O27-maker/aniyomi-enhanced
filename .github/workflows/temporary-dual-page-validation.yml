@@ -40,13 +40,16 @@ jobs:
       - name: Build release APKs
         run: ./gradlew assembleRelease
       - name: Run release unit tests
+        if: always()
         run: ./gradlew testReleaseUnitTest
       - name: Upload APKs
+        if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dual-page-release-apks-${{ github.sha }}
           path: app/build/outputs/apk/release/*.apk
       - name: Upload mapping
+        if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dual-page-release-mapping-${{ github.sha }}
