@@ -82,6 +82,11 @@ class WebtoonTransitionHolder(
      */
     override fun recycle() {
         stateJob?.cancel()
+        stateJob = null
+        // A pooled holder can remain idle for a long time. Remove transient controls,
+        // especially retry listeners that capture the previous chapter and viewer.
+        pagesContainer.removeAllViews()
+        pagesContainer.isVisible = false
     }
 
     /**
