@@ -748,6 +748,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
         val selectedIndex = preferredSourceIndex
             ?: pendingSourceSelectionIndex?.takeIf { it in adapter.items.indices }
             ?: currentPage?.let { selected -> adapter.items.indexOfFirst { it === selected } }?.takeIf { it >= 0 }
+        val viewportSnapshot = splitScrollController?.captureViewportSnapshot()
         splitScrollController?.dispose()
         splitScrollController = null
         activeBoundaryHolder?.dispose()
@@ -794,6 +795,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
             pendingSourceSelectionIndex = null
             splitScrollController?.moveToSourceIndex(it)
         }
+        viewportSnapshot?.let { splitScrollController?.restoreViewportSnapshot(it) }
     }
 
     /** Restore the ordinary pager before changing to Spread or normal single-page mode. */
