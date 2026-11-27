@@ -240,6 +240,17 @@ class SpreadAdapterProjectionTest {
     }
 
     @Test
+    fun readerProjectionRequiresExactChapterIdentityForPairing() {
+        val firstChapter = String(charArrayOf('c', 'h', 'a', 'p', 't', 'e', 'r'))
+        val equalButDifferentChapter = String(charArrayOf('c', 'h', 'a', 'p', 't', 'e', 'r'))
+
+        assertEquals(firstChapter, equalButDifferentChapter)
+        assertEquals(true, SpreadAdapterProjection.sameChapterIdentity(firstChapter, firstChapter))
+        assertEquals(false, SpreadAdapterProjection.sameChapterIdentity(firstChapter, equalButDifferentChapter))
+        assertEquals(true, SpreadAdapterProjection.sameChapterIdentity(null, equalButDifferentChapter))
+    }
+
+    @Test
     fun projectionRejectsMutatedOrReplacedSourceItems() {
         val original = listOf(Any(), Any())
         val projection = SpreadAdapterProjection.build(
