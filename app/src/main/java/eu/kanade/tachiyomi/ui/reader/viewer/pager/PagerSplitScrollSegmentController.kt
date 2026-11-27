@@ -36,6 +36,75 @@ internal class PagerSplitScrollSegmentController(
         bindSegment()
     }
 
+    internal data class ViewportAnchor(val page: ReaderPage, val offsetPx: Int)
+
+    internal data class ViewportSnapshot(
+        val left: ViewportAnchor?,
+        val right: ViewportAnchor?,
+    )
+
+    /** Capture each column's own first-visible page and decorated top offset. */
+    fun captureViewportSnapshot(): ViewportSnapshot = ViewportSnapshot(
+        left = captureColumnViewport(PagerSplitScrollPlan.Column.LEFT),
+        right = captureColumnViewport(PagerSplitScrollPlan.Column.RIGHT),
+    )
+
+    private fun captureColumnViewport(column: PagerSplitScrollPlan.Column): ViewportAnchor? {
+        val recycler = recyclerFor(column)
+        val adapter = adapterFor(column) ?: return null
+        val manager = recycler.layoutManager as? LinearLayoutManager ?: return null
+        val position = manager.findFirstVisibleItemPosition()
+        if (position == RecyclerView.NO_POSITION) return null
+        val page = adapter.pageAt(position) ?: return null
+        val child = manager.findViewByPosition(position) ?: return null
+        return ViewportAnchor(page, manager.getDecoratedTop(child))
+    }
+
+    /** Restore both anchors only when they still belong to the same chapter segment. */
+    fun restoreViewportSnapshot(snapshot: ViewportSnapshot): Boolean {
+        if (disposed) return false
+        val leftIndex = snapshot.left?.let { anchor ->
+            plan.segments.asSequence().flatMap { it.left.asSequence() }
+                .firstOrNull { it.item === anchor.page }?.sourceIndex
+        }
+        val rightIndex = snapshot.right?.let { anchor ->
+            plan.segments.asSequence().flatMap { it.right.asSequence() }
+                .firstOrNull { it.item === anchor.page }?.sourceIndex
+        }
+        val leftSegment = leftIndex?.let(plan::segmentIndexForSourceIndex)
+        val rightSegment = rightIndex?.let(plan::segmentIndexForSourceIndex)
+        val targetSegment = when {
+            leftSegment != null && leftSegment >= 0 && leftSegment == rightSegment -> leftSegment
+            leftSegment != null && leftSegment >= 0 && rightSegment == null -> leftSegment
+            rightSegment != null && rightSegment >= 0 && leftSegment == null -> rightSegment
+            else -> return false
+        }
+        if (targetSegment != segmentIndex || boundaryNotified) {
+            host.hideBoundary()
+            segmentIndex = targetSegment
+            bindSegment()
+        }
+        restoreColumnViewport(PagerSplitScrollPlan.Column.LEFT, leftIndex, snapshot.left)
+        restoreColumnViewport(PagerSplitScrollPlan.Column.RIGHT, rightIndex, snapshot.right)
+        return true
+    }
+
+    private fun restoreColumnViewport(
+        column: PagerSplitScrollPlan.Column,
+        sourceIndex: Int?,
+        anchor: ViewportAnchor?,
+    ) {
+        if (sourceIndex == null || anchor == null) return
+        val position = plan.columnPositionForSourceIndex(sourceIndex) ?: return
+        if (position.first != column) return
+        val recycler = recyclerFor(column)
+        recycler.post {
+            if (disposed || segmentIndex != plan.segmentIndexForSourceIndex(sourceIndex)) return@post
+            (recycler.layoutManager as? LinearLayoutManager)
+                ?.scrollToPositionWithOffset(position.second, anchor.offsetPx)
+        }
+    }
+
     fun moveToSourceIndex(sourceIndex: Int): Boolean {
         if (disposed) return false
 
