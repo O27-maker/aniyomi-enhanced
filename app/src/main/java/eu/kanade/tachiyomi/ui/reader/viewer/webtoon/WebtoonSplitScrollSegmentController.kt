@@ -49,6 +49,7 @@ internal class WebtoonSplitScrollSegmentController(
         column: WebtoonSplitScrollHostState.Column,
         endVisiblePosition: Int,
         scrollOffsetPx: Int,
+        notifySelection: Boolean = true,
     ) {
         if (disposed) return
 
@@ -73,7 +74,11 @@ internal class WebtoonSplitScrollSegmentController(
         if (!result.accepted) return
 
         state = result.state
-        onSelection(result)
+        // Programmatic viewport restoration can dispatch idle layout callbacks.
+        // Keep their end-of-column bookkeeping, but do not let them replace the
+        // explicitly selected progress page. A newly completed boundary is real
+        // navigation state and must still be surfaced.
+        if (notifySelection || result.boundaryReady) onSelection(result)
         if (result.boundaryReady && !boundaryNotified) {
             boundaryNotified = true
             onBoundaryReady(plan.segments.getOrNull(segmentIndex)?.boundaryAfter)
@@ -239,7 +244,12 @@ internal class WebtoonSplitScrollSegmentController(
             val endVisiblePosition = layoutManager.findLastEndVisibleItemPosition()
             if (endVisiblePosition == RecyclerView.NO_POSITION) return
             val offset = layoutManager.findViewByPosition(endVisiblePosition)?.top?.coerceAtLeast(0) ?: 0
-            onColumnScrolled(column, endVisiblePosition, offset)
+            onColumnScrolled(
+                column = column,
+                endVisiblePosition = endVisiblePosition,
+                scrollOffsetPx = offset,
+                notifySelection = recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE,
+            )
         }
     }
 
