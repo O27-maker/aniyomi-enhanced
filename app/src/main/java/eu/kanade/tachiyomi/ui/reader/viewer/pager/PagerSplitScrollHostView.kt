@@ -3,7 +3,7 @@ package eu.kanade.tachiyomi.ui.reader.viewer.pager
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
-import android.view.GestureDetector
+import eu.kanade.tachiyomi.ui.reader.viewer.GestureDetectorWithLongTap
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -91,6 +91,7 @@ internal class PagerSplitScrollHostView(
 
     var onLeftWidthChanged: ((Int) -> Unit)? = null
     var onTap: ((MotionEvent) -> Unit)? = null
+    var onLongTap: ((RecyclerView, MotionEvent) -> Boolean)? = null
     private var dragStartWidthPercent = DEFAULT_LEFT_WIDTH_PERCENT
 
     var leftWidthPercent: Int = DEFAULT_LEFT_WIDTH_PERCENT
@@ -122,12 +123,18 @@ internal class PagerSplitScrollHostView(
      * Double taps are left to PagerPageHolder and are not forwarded as navigation taps.
      */
     private fun installTapListener(recycler: RecyclerView) {
-        val detector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+        val detector = GestureDetectorWithLongTap(context, object : GestureDetectorWithLongTap.Listener() {
             override fun onDown(event: MotionEvent): Boolean = true
 
             override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
                 onTap?.invoke(event)
                 return true
+            }
+
+            override fun onLongTapConfirmed(event: MotionEvent) {
+                if (onLongTap?.invoke(recycler, event) == true) {
+                    recycler.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                }
             }
         })
         recycler.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
