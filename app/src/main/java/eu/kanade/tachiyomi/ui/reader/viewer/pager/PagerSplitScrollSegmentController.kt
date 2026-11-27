@@ -151,8 +151,8 @@ internal class PagerSplitScrollSegmentController(
         val recycler = recyclerFor(column)
         val adapter = adapterFor(column) ?: return
         val manager = recycler.layoutManager as? LinearLayoutManager ?: return
-        val lastVisible = manager.findLastVisibleItemPosition()
-        if (adapter.itemCount == 0 || lastVisible >= adapter.itemCount - 1) {
+        val lastCompletelyVisible = manager.findLastCompletelyVisibleItemPosition()
+        if (adapter.itemCount == 0 || lastCompletelyVisible >= adapter.itemCount - 1) {
             markAtEnd(column)
         }
     }
@@ -163,10 +163,11 @@ internal class PagerSplitScrollSegmentController(
                 if (disposed || boundaryNotified) return
                 val manager = recyclerView.layoutManager as? LinearLayoutManager ?: return
                 val position = manager.findLastVisibleItemPosition()
+                val lastCompletelyVisible = manager.findLastCompletelyVisibleItemPosition()
                 val adapter = adapterFor(column) ?: return
                 if (position == RecyclerView.NO_POSITION) return
                 adapter.sourceIndexAt(position)?.let(onSelection)
-                if (position >= adapter.itemCount - 1) markAtEnd(column)
+                if (lastCompletelyVisible >= adapter.itemCount - 1) markAtEnd(column)
                 else markNotAtEnd(column)
             }
         }
