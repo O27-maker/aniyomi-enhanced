@@ -136,6 +136,16 @@ class WebtoonSpreadPlanTest {
     }
 
     @Test
+    fun `source retention membership uses exact object identity`() {
+        val original = String(charArrayOf('p', 'a', 'g', 'e'))
+        val equalReplacement = String(charArrayOf('p', 'a', 'g', 'e'))
+
+        assertEquals(original, equalReplacement)
+        assertTrue(containsSpreadSourceIdentity(listOf(original), original))
+        assertFalse(containsSpreadSourceIdentity(listOf(original), equalReplacement))
+    }
+
+    @Test
     fun `source validation rejects reordered or replaced entries`() {
         val original = listOf("one", "two")
         val plan = WebtoonSpreadPlan.create(original, { false }, { true })
