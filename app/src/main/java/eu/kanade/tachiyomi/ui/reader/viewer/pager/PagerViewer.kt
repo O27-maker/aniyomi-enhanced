@@ -555,7 +555,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
             splitScrollController = null
         }
         activeSpreadProjection = null
-        adapter.setChapters(chapters, forceTransition)
+        val insertPageToSelect = adapter.setChapters(chapters, forceTransition)
         // Keep cached zoom only for exact page instances in the new source sequence.
         pageZoomStates.keys.removeAll { cachedPage -> adapter.items.none { it === cachedPage } }
 
@@ -585,6 +585,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
                     ?.let(::moveToPage)
             }
         }
+
+        // Select a preprocessed split page only after the new pager/column projection exists.
+        // This preserves the adapter's historical landing-page behavior in every presentation.
+        insertPageToSelect?.let(::moveToPage)
     }
 
     /**
