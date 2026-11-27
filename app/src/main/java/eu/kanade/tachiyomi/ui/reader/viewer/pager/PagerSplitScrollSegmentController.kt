@@ -286,7 +286,13 @@ internal class PagerSplitScrollSegmentController(
                 val lastCompletelyVisible = manager.findLastCompletelyVisibleItemPosition()
                 val adapter = adapterFor(column) ?: return
                 if (position == RecyclerView.NO_POSITION) return
-                adapter.sourceIndexAt(position)?.let(onSelection)
+                // Viewport restoration and layout/rebind passes can emit onScrolled while
+                // idle. They must not replace the explicitly preserved active page with
+                // whichever column happened to finish laying out last. User-driven drags
+                // and flings still update progress independently in each column.
+                if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
+                    adapter.sourceIndexAt(position)?.let(onSelection)
+                }
                 if (lastCompletelyVisible >= adapter.itemCount - 1) markAtEnd(column)
                 else markNotAtEnd(column)
             }
