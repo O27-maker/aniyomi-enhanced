@@ -446,7 +446,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
                     right = state.right?.let { SplitScrollViewportAnchor(it.page, it.topOffsetPx) },
                 )
             }
-        splitScrollController?.dispose()
+        // Remove the old column adapters before dropping the host. Detaching only
+        // the host view leaves its RecyclerViews holding page holders and collectors.
+        disposeSplitScrollHost()
         val splitWidthPreference = Injekt.get<ReaderPreferences>().dualPageSplitLeftWidth()
         val host = WebtoonSplitScrollHostView(activity).apply {
             layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
@@ -455,7 +457,6 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             setDoubleTapZoomEnabled(config.doubleTapZoom)
             setZoomOutDisabled(config.zoomOutDisabled)
         }
-        splitScrollHost?.let(root::removeView)
         splitScrollHost = host
         frame.isVisible = false
         root.addView(host, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
