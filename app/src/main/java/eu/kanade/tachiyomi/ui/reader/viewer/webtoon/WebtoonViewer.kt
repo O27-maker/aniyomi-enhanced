@@ -21,6 +21,9 @@ import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportAnchor
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportState
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
@@ -37,7 +40,7 @@ import java.util.IdentityHashMap
 /**
  * Implementation of a [Viewer] to display pages with a [RecyclerView].
  */
-class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = true) : Viewer {
+class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = true) : Viewer, ReaderPageZoomStateOwner, ReaderPageViewportStateOwner {
 
     val downloadManager: MangaDownloadManager by injectLazy()
 
@@ -87,6 +90,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     /** Experimental two-column host; the normal reader remains the fallback. */
     private var splitScrollHost: WebtoonSplitScrollHostView? = null
     private var splitScrollController: WebtoonSplitScrollSegmentController? = null
+    private var pendingSplitScrollViewportState: ReaderPageViewportState? = null
     private var activeSplitRecycler: WebtoonRecyclerView? = null
 
     /**
@@ -226,6 +230,19 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
     internal fun savePageZoomState(page: ReaderPage, state: ReaderPageImageView.ImageZoomState) {
         if (adapter.items.any { it === page }) pageZoomStates[page] = state
+    }
+
+    override fun exportPageViewportState(): ReaderPageViewportState? {
+        if (config.dualPagePresentationMode != DualPagePresentationMode.SPLIT_SCROLL) return null
+        val snapshot = captureSplitScrollViewport() ?: return null
+        return ReaderPageViewportState(
+            left = snapshot.left?.let { ReaderPageViewportAnchor(it.page, it.topOffset) },
+            right = snapshot.right?.let { ReaderPageViewportAnchor(it.page, it.topOffset) },
+        )
+    }
+
+    override fun importPageViewportState(state: ReaderPageViewportState?) {
+        pendingSplitScrollViewportState = state
     }
 
     internal fun restorePageZoomState(page: ReaderPage, holder: WebtoonPageHolder) {
@@ -423,6 +440,12 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         restoreViewport: Boolean = true,
     ) {
         val previousViewport = if (restoreViewport) captureSplitScrollViewport() else null
+            ?: pendingSplitScrollViewportState?.let { state ->
+                SplitScrollViewportSnapshot(
+                    left = state.left?.let { SplitScrollViewportAnchor(it.page, it.topOffsetPx) },
+                    right = state.right?.let { SplitScrollViewportAnchor(it.page, it.topOffsetPx) },
+                )
+            }
         splitScrollController?.dispose()
         val splitWidthPreference = Injekt.get<ReaderPreferences>().dualPageSplitLeftWidth()
         val host = WebtoonSplitScrollHostView(activity).apply {
@@ -490,6 +513,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         if (!restoredViewport) {
             initialSourceIndex?.let { splitScrollController?.moveToSourceIndex(it) }
         }
+        pendingSplitScrollViewportState = null
     }
 
     /** Capture independent first-visible page anchors before rebuilding the two-column host. */
