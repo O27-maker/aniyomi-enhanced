@@ -17,7 +17,8 @@ sealed class ChapterTransition {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null || javaClass != other.javaClass) return false
+        if (other !is ChapterTransition) return false
+        if (javaClass != other.javaClass) return false
         return from == other.from && to == other.to
     }
 
