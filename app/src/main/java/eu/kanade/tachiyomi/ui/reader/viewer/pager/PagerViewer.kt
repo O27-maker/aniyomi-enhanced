@@ -792,11 +792,13 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
             },
             deferInitialViewportChecks = viewportSnapshot != null,
         )
-        selectedIndex?.let {
-            pendingSourceSelectionIndex = null
-            splitScrollController?.moveToSourceIndex(it)
+        pendingSourceSelectionIndex = null
+        val restoredViewport = viewportSnapshot?.let {
+            splitScrollController?.restoreViewportSnapshot(it)
+        } == true
+        if (!restoredViewport) {
+            selectedIndex?.let { splitScrollController?.moveToSourceIndex(it) }
         }
-        viewportSnapshot?.let { splitScrollController?.restoreViewportSnapshot(it) }
     }
 
     /** Restore the ordinary pager before changing to Spread or normal single-page mode. */
