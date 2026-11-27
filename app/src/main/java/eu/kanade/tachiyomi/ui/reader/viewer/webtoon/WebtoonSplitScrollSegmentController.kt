@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.WebtoonLayoutManager
+import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 
 /**
  * Binds one immutable Split Scroll segment to the host's two independent RecyclerViews.
