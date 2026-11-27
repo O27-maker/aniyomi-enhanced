@@ -27,6 +27,7 @@ internal class PagerSplitScrollSegmentController(
     private var rightAtEnd = false
     private var boundaryNotified = false
     private var disposed = false
+    private var segmentGeneration = 0L
 
     private val leftListener = createScrollListener(PagerSplitScrollPlan.Column.LEFT)
     private val rightListener = createScrollListener(PagerSplitScrollPlan.Column.RIGHT)
@@ -79,8 +80,9 @@ internal class PagerSplitScrollSegmentController(
             leftSegment != null && leftSegment >= 0 && rightSegment == null -> leftSegment
             rightSegment != null && rightSegment >= 0 && leftSegment == null -> rightSegment
             else -> {
-                host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
-                host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
+                val generation = segmentGeneration
+                host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT, generation) }
+                host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT, generation) }
                 return false
             }
         }
@@ -91,8 +93,9 @@ internal class PagerSplitScrollSegmentController(
         }
         restoreColumnViewport(PagerSplitScrollPlan.Column.LEFT, leftIndex, snapshot.left)
         restoreColumnViewport(PagerSplitScrollPlan.Column.RIGHT, rightIndex, snapshot.right)
-        host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
-        host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
+        val generation = segmentGeneration
+        host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT, generation) }
+        host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT, generation) }
         return true
     }
 
@@ -105,8 +108,9 @@ internal class PagerSplitScrollSegmentController(
         val position = plan.columnPositionForSourceIndex(sourceIndex) ?: return
         if (position.first != column) return
         val recycler = recyclerFor(column)
+        val generation = segmentGeneration
         recycler.post {
-            if (disposed || segmentIndex != plan.segmentIndexForSourceIndex(sourceIndex)) return@post
+            if (disposed || generation != segmentGeneration || segmentIndex != plan.segmentIndexForSourceIndex(sourceIndex)) return@post
             (recycler.layoutManager as? LinearLayoutManager)
                 ?.scrollToPositionWithOffset(position.second, anchor.offsetPx)
         }
@@ -210,6 +214,7 @@ internal class PagerSplitScrollSegmentController(
 
     private fun bindSegment(checkInitialViewport: Boolean = true) {
         if (disposed) return
+        segmentGeneration++
         boundaryNotified = false
         leftAtEnd = false
         rightAtEnd = false
@@ -227,13 +232,14 @@ internal class PagerSplitScrollSegmentController(
         rightAtEnd = segment.right.isEmpty()
         if (leftAtEnd && rightAtEnd) notifyBoundary(segment.boundaryAfter)
         if (checkInitialViewport) {
-            host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
-            host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
+            val generation = segmentGeneration
+            host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT, generation) }
+            host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT, generation) }
         }
     }
 
-    private fun checkInitialEnd(column: PagerSplitScrollPlan.Column) {
-        if (disposed || boundaryNotified) return
+    private fun checkInitialEnd(column: PagerSplitScrollPlan.Column, expectedGeneration: Long) {
+        if (disposed || expectedGeneration != segmentGeneration || boundaryNotified) return
         val recycler = recyclerFor(column)
         val adapter = adapterFor(column) ?: return
         val manager = recycler.layoutManager as? LinearLayoutManager ?: return
