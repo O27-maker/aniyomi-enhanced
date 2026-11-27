@@ -78,7 +78,11 @@ internal class PagerSplitScrollSegmentController(
             leftSegment != null && leftSegment >= 0 && leftSegment == rightSegment -> leftSegment
             leftSegment != null && leftSegment >= 0 && rightSegment == null -> leftSegment
             rightSegment != null && rightSegment >= 0 && leftSegment == null -> rightSegment
-            else -> return false
+            else -> {
+                host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
+                host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
+                return false
+            }
         }
         if (targetSegment != segmentIndex || boundaryNotified) {
             host.hideBoundary()
