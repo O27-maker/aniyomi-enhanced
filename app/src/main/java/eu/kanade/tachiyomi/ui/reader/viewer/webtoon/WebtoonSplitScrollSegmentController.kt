@@ -111,6 +111,15 @@ internal class WebtoonSplitScrollSegmentController(
      */
     fun segmentIndexForSourceIndex(sourceIndex: Int): Int = plan.segmentIndexForSourceIndex(sourceIndex)
 
+    /** Update the active progress page without changing either column's viewport. */
+    fun selectSourceIndex(sourceIndex: Int): Boolean {
+        if (disposed) return false
+        val result = coordinator.selectSourceIndex(state, sourceIndex) ?: return false
+        state = result.state
+        onSelection(result)
+        return true
+    }
+
     fun moveToSourceIndex(sourceIndex: Int, offsetPx: Int = 0): Boolean {
         if (disposed) return false
         val boundarySegmentIndex = plan.segments.indexOfFirst {
