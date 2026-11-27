@@ -757,6 +757,26 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
             onLeftWidthChanged = { splitWidthPreference.set(it) }
         }
         host.onTap = { event -> handleTap(event, host) }
+        host.onLongTap = { recycler, event ->
+            if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
+                val child = recycler.findChildViewUnder(event.x, event.y)
+                val position = child?.let(recycler::getChildAdapterPosition) ?: RecyclerView.NO_POSITION
+                val column = if (recycler === host.leftRecycler) {
+                    PagerSplitScrollPlan.Column.LEFT
+                } else {
+                    PagerSplitScrollPlan.Column.RIGHT
+                }
+                val page = splitScrollController?.pageAt(column, position)
+                if (page != null) {
+                    activity.onPageLongTap(page)
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
         splitScrollHost = host
         root.removeView(pager)
         root.addView(host, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
