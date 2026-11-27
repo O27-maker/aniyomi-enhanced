@@ -34,7 +34,7 @@ class WebtoonSplitScrollHostRebuildSnapshotTest {
 
         val restored = WebtoonSplitScrollHostRebuildSnapshot.restore(rebuild, snapshot)
 
-        assertEquals(2, restored?.selection.segmentIndex)
+        assertEquals(2, restored?.selection?.segmentIndex)
         assertSame(selected, restored?.selection?.item)
         assertEquals(
             Destination.Column(WebtoonSplitScrollPlan.Column.LEFT, 0),
