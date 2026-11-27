@@ -65,7 +65,7 @@ internal class WebtoonSplitScrollHostView(
         }
 
         columnsRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
+            orientation = LinearLayout.HORIZONTAL
             addView(leftFrame)
             addView(rightFrame)
         }
