@@ -539,13 +539,15 @@ class ReaderActivity : BaseActivity() {
 
         // Destroy previous viewer if there was one
         if (prevViewer != null) {
-            // Detaching the old viewer disposes its page holders and captures their final
-            // zoom/pan state. Transfer those identity-keyed states before the new viewer binds.
-            prevViewer.destroy()
+            // Capture per-page state before teardown; configuration changes recreate the Activity
+            // and its viewer while the retained ViewModel keeps the authoritative page objects.
+            val viewportState = (prevViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState()
             val zoomStates = (prevViewer as? ReaderPageZoomStateOwner)?.exportPageZoomStates()
+            prevViewer.destroy()
             if (zoomStates != null) {
                 (newViewer as? ReaderPageZoomStateOwner)?.importPageZoomStates(zoomStates)
             }
+            (newViewer as? ReaderPageViewportStateOwner)?.importPageViewportState(viewportState)
             binding.viewerContainer.removeAllViews()
         }
         viewModel.onViewerLoaded(newViewer)
