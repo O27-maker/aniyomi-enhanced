@@ -38,7 +38,7 @@ internal object WebtoonSplitScrollRebuildTargetResolver {
         isBoundary: (T) -> Boolean,
     ): Rebuild<T> {
         val snapshot = currentItems.toList()
-        val plan = WebtoonSplitScrollPlan.create(snapshot, isBoundary)
+        val plan = WebtoonSplitScrollPlan.create(snapshot, isBoundary = isBoundary)
         return Rebuild(
             plan = plan,
             target = resolve(plan, selectedItem),
