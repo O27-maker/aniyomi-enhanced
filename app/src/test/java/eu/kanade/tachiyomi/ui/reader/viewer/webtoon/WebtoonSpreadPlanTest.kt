@@ -118,6 +118,8 @@ class WebtoonSpreadPlanTest {
 
         assertEquals(0, plan.sourceIndexAtHorizontalPosition(0, secondHalf = false))
         assertEquals(1, plan.sourceIndexAtHorizontalPosition(0, secondHalf = true))
+        assertEquals(1, plan.sourceIndexAtHorizontalPosition(0, secondHalf = false, invert = true))
+        assertEquals(0, plan.sourceIndexAtHorizontalPosition(0, secondHalf = true, invert = true))
     }
 
     @Test
