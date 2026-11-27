@@ -53,7 +53,6 @@ class DualPagePresentationModeTest {
         assertEquals(1, DualPagePresentationMode.SPLIT_SCROLL.preferenceValue)
         assertEquals(2, DualPagePresentationMode.NONE.preferenceValue)
     }
-}
 
     @Test
     fun selectingDisabledStateKeepsPresentationDisabled() {
@@ -82,3 +81,4 @@ class DualPagePresentationModeTest {
             DualPagePresentationMode.NONE.toggleTo(DualPagePresentationMode.SPLIT_SCROLL),
         )
     }
+}
