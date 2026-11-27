@@ -163,7 +163,8 @@ internal class PagerSplitScrollSegmentController(
 
         val targetSegment = plan.segmentIndexForSourceIndex(sourceIndex)
         if (targetSegment < 0) return false
-        if (targetSegment != segmentIndex || boundaryNotified) {
+        val rebound = targetSegment != segmentIndex || boundaryNotified
+        if (rebound) {
             // A direct navigation request can move back from a displayed chapter barrier.
             host.hideBoundary()
             segmentIndex = targetSegment
@@ -180,7 +181,8 @@ internal class PagerSplitScrollSegmentController(
         }
         (recycler.layoutManager as? LinearLayoutManager)
             ?.scrollToPositionWithOffset(position.second, 0)
-        onSelection(sourceIndex)
+        // Rebinding already selected the requested source item.
+        if (!rebound) onSelection(sourceIndex)
         return true
     }
 
