@@ -156,14 +156,14 @@ class WebtoonPageHolder(
             }
             page.statusFlow.collectLatest { state ->
                 // Ignore any status emission from a page that no longer owns this holder.
-                if (this.page !== page) return@collectLatest
+                if (this@WebtoonPageHolder.page !== page) return@collectLatest
                 when (state) {
                     Page.State.QUEUE -> setQueued()
                     Page.State.LOAD_PAGE -> setLoading()
                     Page.State.DOWNLOAD_IMAGE -> {
                         setDownloading()
                         page.progressFlow.collectLatest { value ->
-                            if (this.page === page) progressIndicator.setProgress(value)
+                            if (this@WebtoonPageHolder.page === page) progressIndicator.setProgress(value)
                         }
                     }
                     Page.State.READY -> setImage(page)
@@ -217,7 +217,7 @@ class WebtoonPageHolder(
             withUIContext {
                 // A holder may be recycled and rebound while image processing is running
                 // off the UI thread. Never let an old page replace the newly bound image.
-                if (this.page !== expectedPage) return@withUIContext
+                if (this@WebtoonPageHolder.page !== expectedPage) return@withUIContext
                 frame.setImage(
                     source,
                     isAnimated,
@@ -235,9 +235,13 @@ class WebtoonPageHolder(
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
-                if (this.page === expectedPage) setError()
+                if (this@WebtoonPageHolder.page === expectedPage) setError()
             }
         }
+    }
+
+    internal fun restoreZoomState(state: ReaderPageImageView.ImageZoomState) {
+        frame.restoreZoomState(state)
     }
 
     private fun process(imageSource: BufferedSource): BufferedSource {
