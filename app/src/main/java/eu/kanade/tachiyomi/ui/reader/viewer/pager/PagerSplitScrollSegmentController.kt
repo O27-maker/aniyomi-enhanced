@@ -82,10 +82,14 @@ internal class PagerSplitScrollSegmentController(
         if (targetSegment != segmentIndex || boundaryNotified) {
             host.hideBoundary()
             segmentIndex = targetSegment
-            bindSegment()
+            bindSegment(checkInitialViewport = false)
         }
         restoreColumnViewport(PagerSplitScrollPlan.Column.LEFT, leftIndex, snapshot.left)
         restoreColumnViewport(PagerSplitScrollPlan.Column.RIGHT, rightIndex, snapshot.right)
+        if (checkInitialViewport) {
+            host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
+            host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
+        }
         return true
     }
 
@@ -193,7 +197,7 @@ internal class PagerSplitScrollSegmentController(
         rightAdapter = null
     }
 
-    private fun bindSegment() {
+    private fun bindSegment(checkInitialViewport: Boolean = true) {
         if (disposed) return
         boundaryNotified = false
         leftAtEnd = false
