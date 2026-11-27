@@ -143,7 +143,8 @@ internal class PagerSplitScrollSegmentController(
             it.boundaryAfter?.sourceIndex == sourceIndex
         }
         if (boundarySegment >= 0) {
-            if (boundarySegment != segmentIndex || boundaryNotified) {
+            val rebound = boundarySegment != segmentIndex || boundaryNotified
+            if (rebound) {
                 host.hideBoundary()
                 segmentIndex = boundarySegment
                 // Select the requested boundary directly; binding the segment's first
@@ -153,7 +154,8 @@ internal class PagerSplitScrollSegmentController(
             if (!boundaryNotified) {
                 val boundary = plan.segments.getOrNull(segmentIndex)?.boundaryAfter
                 boundaryNotified = true
-                onSelection(sourceIndex)
+                // bindSegment already emitted this exact selection when it rebound.
+                if (!rebound) onSelection(sourceIndex)
                 onBoundaryReady(boundary)
             }
             return true
