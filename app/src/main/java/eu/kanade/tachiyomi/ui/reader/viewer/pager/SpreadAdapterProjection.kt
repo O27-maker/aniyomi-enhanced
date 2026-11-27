@@ -79,8 +79,19 @@ internal data class SpreadAdapterProjection<T>(
             val secondChapter = runCatching { second.chapter }.getOrNull()
             // ReaderPage instances created without a chapter occur in projection-only tests.
             // Live reader pages always have chapters, and must never pair across chapters.
-            return firstChapter == null || secondChapter == null || firstChapter == secondChapter
+            return sameChapterIdentity(firstChapter, secondChapter)
         }
+
+        /**
+         * ReaderChapter is a data class, so structural equality can treat two distinct
+         * chapter wrappers as the same chapter. Spread pairing must follow the actual
+         * chapter instance attached to each source page.
+         *
+         * Null is retained as a permissive case for projection-only pages in unit tests;
+         * live reader pages always carry a chapter instance.
+         */
+        internal fun sameChapterIdentity(first: Any?, second: Any?): Boolean =
+            first == null || second == null || first === second
 
         fun <T> build(
             adapterItems: List<T>,
