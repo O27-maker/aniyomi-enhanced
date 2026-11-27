@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
 import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonSplitScrollHostRestore.Destination
-import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonSplitScrollPlan.Column
+import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonSplitScrollHostState.Column
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
