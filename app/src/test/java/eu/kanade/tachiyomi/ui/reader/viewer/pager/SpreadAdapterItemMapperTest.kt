@@ -7,7 +7,7 @@ class SpreadAdapterItemMapperTest {
 
     @Test
     fun emptySequenceMapsToNoUnits() {
-        assertEquals(emptyList<SpreadAdapterItemMapper.Unit<Int>>(), SpreadAdapterItemMapper.map(emptyList()))
+        assertEquals(emptyList<SpreadAdapterItemMapper.Unit<Int>>(), SpreadAdapterItemMapper.map(emptyList<Int>()))
     }
 
     @Test
