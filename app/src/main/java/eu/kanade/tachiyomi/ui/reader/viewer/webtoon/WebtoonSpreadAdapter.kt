@@ -154,6 +154,12 @@ internal class WebtoonSpreadAdapter(
     fun sourceIndexAt(displayIndex: Int): Int? =
         plan().units.getOrNull(displayIndex)?.sourceIndices?.firstOrNull()
 
+    /** Resolve the visible half of a spread row, respecting the configured page inversion. */
+    fun sourceIndexAtHorizontalPosition(displayIndex: Int, secondHalf: Boolean): Int? {
+        val displayedSecondHalf = if (viewer.config.dualPageInvert) !secondHalf else secondHalf
+        return plan().sourceIndexAtHorizontalPosition(displayIndex, displayedSecondHalf)
+    }
+
     /** Last source page in a visible row, used for continuous reading progress. */
     fun lastSourceIndexAt(displayIndex: Int): Int? =
         plan().units.getOrNull(displayIndex)?.sourceIndices?.lastOrNull()
