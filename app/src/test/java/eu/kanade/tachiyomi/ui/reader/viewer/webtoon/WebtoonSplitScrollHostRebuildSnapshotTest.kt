@@ -36,7 +36,10 @@ class WebtoonSplitScrollHostRebuildSnapshotTest {
 
         assertEquals(2, restored?.selection.segmentIndex)
         assertSame(selected, restored?.selection?.item)
-        assertEquals(Destination.Column(Column.LEFT, 0), restored?.selection?.destination)
+        assertEquals(
+            Destination.Column(WebtoonSplitScrollPlan.Column.LEFT, 0),
+            restored?.selection?.destination,
+        )
         assertEquals(43, restored?.viewportState?.left?.widthPercent)
         assertEquals(57, restored?.viewportState?.right?.widthPercent)
         assertEquals(1.5f, restored?.viewportState?.left?.zoom)
