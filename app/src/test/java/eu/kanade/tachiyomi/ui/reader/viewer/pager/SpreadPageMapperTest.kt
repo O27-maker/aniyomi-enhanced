@@ -7,7 +7,7 @@ class SpreadPageMapperTest {
 
     @Test
     fun emptyInputProducesNoGroups() {
-        assertEquals(emptyList<SpreadPageMapper.Group<Int>>(), SpreadPageMapper.map(emptyList()))
+        assertEquals(emptyList<SpreadPageMapper.Group<Int>>(), SpreadPageMapper.map(emptyList<Int>()))
     }
 
     @Test
