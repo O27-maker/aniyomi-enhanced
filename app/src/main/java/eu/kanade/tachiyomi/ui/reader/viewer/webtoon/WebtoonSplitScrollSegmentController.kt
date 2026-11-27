@@ -160,6 +160,12 @@ internal class WebtoonSplitScrollSegmentController(
                     ?.scrollToPositionWithOffset(position.second, offsetPx)
             WebtoonSplitScrollPlan.Column.FULL_WIDTH -> return false
         }
+        // Do not depend on RecyclerView emitting onScrolled: a direct navigation to an
+        // already-visible page may leave the viewport unchanged and emit no callback.
+        coordinator.selectSourceIndex(state, sourceIndex)?.let { result ->
+            state = result.state
+            onSelection(result)
+        } ?: return false
         return true
     }
 
