@@ -87,6 +87,7 @@ sqldelight-android-paging = { module = "app.cash.sqldelight:androidx-paging3-ext
 sqldelight-dialects-sql = { module = "app.cash.sqldelight:sqlite-3-38-dialect", version.ref = "sqldelight" }
 
 junit = "org.junit.jupiter:junit-jupiter:5.11.4"
+junit4 = "junit:junit:4.13.2"
 kotest-assertions = "io.kotest:kotest-assertions-core:5.9.1"
 mockk = "io.mockk:mockk:1.13.17"
 
@@ -112,4 +113,4 @@ shizuku = ["shizuku-api", "shizuku-provider"]
 sqldelight = ["sqldelight-android-driver", "sqldelight-coroutines", "sqldelight-android-paging"]
 voyager = ["voyager-navigator", "voyager-screenmodel", "voyager-tab-navigator", "voyager-transitions"]
 richtext = ["richtext-commonmark", "richtext-m3"]
-test = ["junit", "kotest-assertions", "mockk"]
+test = ["junit", "junit4", "kotest-assertions", "mockk"]
