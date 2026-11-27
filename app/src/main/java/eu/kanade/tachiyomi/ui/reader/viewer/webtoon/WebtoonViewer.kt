@@ -439,7 +439,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         initialSourceIndex: Int?,
         restoreViewport: Boolean = true,
     ) {
-        val previousViewport = if (restoreViewport) captureSplitScrollViewport() else null
+        val previousViewport = (if (restoreViewport) captureSplitScrollViewport() else null)
             ?: pendingSplitScrollViewportState?.let { state ->
                 SplitScrollViewportSnapshot(
                     left = state.left?.let { SplitScrollViewportAnchor(it.page, it.topOffsetPx) },
