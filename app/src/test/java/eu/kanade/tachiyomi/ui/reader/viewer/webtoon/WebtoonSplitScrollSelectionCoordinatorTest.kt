@@ -61,6 +61,24 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
     }
 
     @Test
+    fun `direct page navigation updates selected source without waiting for scroll callback`() {
+        val coordinator = coordinator()
+        val result = coordinator.selectSourceIndex(coordinator.initialState(), 1)
+
+        assertTrue(result?.accepted == true)
+        assertEquals(1, result?.selection?.sourceIndex)
+        assertEquals("right-page", result?.selection?.item)
+        assertFalse(result?.selection?.isBoundary == true)
+        assertEquals(1, result?.state?.selectedSourceIndex)
+    }
+
+    @Test
+    fun `direct page navigation rejects pages outside active segment`() {
+        val coordinator = coordinator()
+        assertNull(coordinator.selectSourceIndex(coordinator.initialState(), 3))
+    }
+
+    @Test
     fun `direct transition navigation marks both columns complete`() {
         val coordinator = coordinator()
         val result = coordinator.selectBoundary(coordinator.initialState())
