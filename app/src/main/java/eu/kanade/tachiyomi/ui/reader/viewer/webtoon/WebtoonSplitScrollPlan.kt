@@ -121,8 +121,8 @@ internal data class WebtoonSplitScrollPlan<T>(
          */
         fun <T> create(
             items: List<T>,
-            isBoundary: (T) -> Boolean,
             firstColumn: Column = Column.LEFT,
+            isBoundary: (T) -> Boolean,
         ): WebtoonSplitScrollPlan<T> {
             val segments = mutableListOf<Segment<T>>()
             var left = mutableListOf<Placement<T>>()
