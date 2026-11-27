@@ -86,10 +86,8 @@ internal class PagerSplitScrollSegmentController(
         }
         restoreColumnViewport(PagerSplitScrollPlan.Column.LEFT, leftIndex, snapshot.left)
         restoreColumnViewport(PagerSplitScrollPlan.Column.RIGHT, rightIndex, snapshot.right)
-        if (checkInitialViewport) {
-            host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
-            host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
-        }
+        host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
+        host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
         return true
     }
 
@@ -215,8 +213,10 @@ internal class PagerSplitScrollSegmentController(
         leftAtEnd = segment.left.isEmpty()
         rightAtEnd = segment.right.isEmpty()
         if (leftAtEnd && rightAtEnd) notifyBoundary(segment.boundaryAfter)
-        host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
-        host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
+        if (checkInitialViewport) {
+            host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT) }
+            host.rightRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.RIGHT) }
+        }
     }
 
     private fun checkInitialEnd(column: PagerSplitScrollPlan.Column) {
