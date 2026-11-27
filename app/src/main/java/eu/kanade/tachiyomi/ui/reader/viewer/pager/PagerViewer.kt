@@ -818,6 +818,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
                 }
             },
             deferInitialViewportChecks = viewportSnapshot != null,
+            initialSelectionSourceIndex = selectedIndex,
         )
         pendingSourceSelectionIndex = null
         val restoredViewport = viewportSnapshot?.let {
