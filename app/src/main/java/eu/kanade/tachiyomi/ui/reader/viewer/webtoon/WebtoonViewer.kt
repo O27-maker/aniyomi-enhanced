@@ -325,7 +325,6 @@ class WebtoonViewer(
                 val sourceIndex = projection.sourceIndexAtHorizontalPosition(
                     displayIndex,
                     secondHalf,
-                    config.dualPageInvert,
                 )
                 val page = sourceIndex?.let { adapter.items.getOrNull(it) as? ReaderPage }
                 if (page != null) {
