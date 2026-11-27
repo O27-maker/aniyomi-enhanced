@@ -41,9 +41,26 @@ jobs:
           keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
+      - name: Verify and normalize signed APKs
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          signed_apks=(app/build/outputs/apk/release/*-unsigned-signed.apk)
+          if [[ ${#signed_apks[@]} -ne 5 ]]; then
+            echo "Expected 5 signed APKs, found ${#signed_apks[@]}"
+            exit 1
+          fi
+          for apk in "${signed_apks[@]}"; do
+            clean_name="${apk%-unsigned-signed.apk}.apk"
+            mv "$apk" "$clean_name"
+            echo "Verifying $clean_name"
+            apksigner verify --verbose --print-certs "$clean_name"
+          done
       - name: Upload signed APKs
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dual-page-signed-release-apks-${{ github.sha }}
-          path: app/build/outputs/apk/release/*-signed.apk
+          path: app/build/outputs/apk/release/*-release.apk
