@@ -51,7 +51,10 @@ internal class WebtoonSplitScrollSegmentController(
         scrollOffsetPx: Int,
         notifySelection: Boolean = true,
     ) {
-        if (disposed) return
+        // Once the full-width chapter barrier is visible, column callbacks are no
+        // longer authoritative. In particular, delayed idle layout callbacks must
+        // not re-emit the already selected boundary or overwrite its progress state.
+        if (disposed || boundaryNotified) return
 
         val adapter = when (column) {
             WebtoonSplitScrollHostState.Column.LEFT -> leftAdapter
