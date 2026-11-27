@@ -18,6 +18,7 @@ internal class PagerSplitScrollSegmentController(
     private val plan: PagerSplitScrollPlan<Any>,
     private val onSelection: (Int) -> Unit,
     private val onBoundaryReady: (PagerSplitScrollPlan.Placement<Any>?) -> Unit,
+    deferInitialViewportChecks: Boolean = false,
 ) {
     private var segmentIndex = 0
     private var leftAdapter: PagerSplitScrollColumnAdapter? = null
@@ -33,7 +34,7 @@ internal class PagerSplitScrollSegmentController(
     init {
         host.leftRecycler.addOnScrollListener(leftListener)
         host.rightRecycler.addOnScrollListener(rightListener)
-        bindSegment()
+        bindSegment(checkInitialViewport = !deferInitialViewportChecks)
     }
 
     internal data class ViewportAnchor(val page: ReaderPage, val offsetPx: Int)
