@@ -141,7 +141,7 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
         )
     }
 
-    if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
+    if (presentationMode == DualPagePresentationMode.SPREAD) {
         CheckboxItem(
             label = stringResource(MR.strings.dual_page_first_page_alone),
             pref = screenModel.preferences.dualPageFirstPageSingle(),
@@ -204,7 +204,7 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
         )
     }
 
-    if (dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue) {
+    if (presentationMode == DualPagePresentationMode.SPREAD) {
         CheckboxItem(
             label = stringResource(MR.strings.dual_page_first_page_alone),
             pref = screenModel.preferences.dualPageFirstPageSingle(),
