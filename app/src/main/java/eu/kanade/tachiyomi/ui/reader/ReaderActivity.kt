@@ -249,12 +249,12 @@ class ReaderActivity : BaseActivity() {
      * Called when the activity is destroyed. Cleans up the viewer, configuration and any view.
      */
     override fun onDestroy() {
-        super.onDestroy()
         val activeViewer = viewModel.state.value.viewer
         viewModel.retainPageViewportState(
             (activeViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState(),
         )
         activeViewer?.destroy()
+        super.onDestroy()
         config = null
         menuToggleToast?.cancel()
         readingModeToast?.cancel()
