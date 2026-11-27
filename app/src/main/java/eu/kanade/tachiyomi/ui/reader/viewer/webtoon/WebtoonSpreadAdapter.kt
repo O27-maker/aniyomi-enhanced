@@ -16,6 +16,10 @@ import java.util.IdentityHashMap
  * ReaderPage identity during regrouping so decoded images, zoom, pan, gestures,
  * and in-flight page state survive orientation-driven projection refreshes.
  */
+/** Check membership by object identity, matching the Spread holder cache semantics. */
+internal fun containsSpreadSourceIdentity(items: List<Any>, target: Any): Boolean =
+    items.any { it === target }
+
 internal class WebtoonSpreadAdapter(
     private val viewer: WebtoonViewer,
     private val sourceItems: () -> List<Any>,
@@ -116,11 +120,10 @@ internal class WebtoonSpreadAdapter(
 
     /** Release holders for pages that left the authoritative source sequence. */
     fun retainSourcePages(items: List<Any>) {
-        val retained = items.filterIsInstance<ReaderPage>().toSet()
         val iterator = pageHolderCache.entries.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
-            if (entry.key !in retained) {
+            if (!containsSpreadSourceIdentity(items, entry.key)) {
                 entry.value.recycle()
                 iterator.remove()
             }
