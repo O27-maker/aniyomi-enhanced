@@ -117,24 +117,23 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
     )
 
     val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
+    val presentationMode = DualPagePresentationMode.fromPreference(dualPageMode)
     SettingsChipRow(MR.strings.pager_viewer) {
         FilterChip(
-            selected = dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue,
+            selected = presentationMode == DualPagePresentationMode.SPREAD,
             onClick = {
                 screenModel.preferences.dualPageMode().set(
-                    DualPagePresentationMode.fromPreference(dualPageMode)
-                        .toggleTo(DualPagePresentationMode.SPREAD)
+                    presentationMode.toggleTo(DualPagePresentationMode.SPREAD)
                         .preferenceValue,
                 )
             },
             label = { Text(stringResource(MR.strings.dual_page_spread)) },
         )
         FilterChip(
-            selected = dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue,
+            selected = presentationMode == DualPagePresentationMode.SPLIT_SCROLL,
             onClick = {
                 screenModel.preferences.dualPageMode().set(
-                    DualPagePresentationMode.fromPreference(dualPageMode)
-                        .toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
+                    presentationMode.toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
                         .preferenceValue,
                 )
             },
@@ -181,24 +180,23 @@ private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenM
     val numberFormat = remember { NumberFormat.getPercentInstance() }
 
     val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
+    val presentationMode = DualPagePresentationMode.fromPreference(dualPageMode)
     SettingsChipRow(MR.strings.webtoon_viewer) {
         FilterChip(
-            selected = dualPageMode == DualPagePresentationMode.SPREAD.preferenceValue,
+            selected = presentationMode == DualPagePresentationMode.SPREAD,
             onClick = {
                 screenModel.preferences.dualPageMode().set(
-                    DualPagePresentationMode.fromPreference(dualPageMode)
-                        .toggleTo(DualPagePresentationMode.SPREAD)
+                    presentationMode.toggleTo(DualPagePresentationMode.SPREAD)
                         .preferenceValue,
                 )
             },
             label = { Text(stringResource(MR.strings.dual_page_spread)) },
         )
         FilterChip(
-            selected = dualPageMode == DualPagePresentationMode.SPLIT_SCROLL.preferenceValue,
+            selected = presentationMode == DualPagePresentationMode.SPLIT_SCROLL,
             onClick = {
                 screenModel.preferences.dualPageMode().set(
-                    DualPagePresentationMode.fromPreference(dualPageMode)
-                        .toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
+                    presentationMode.toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
                         .preferenceValue,
                 )
             },
