@@ -49,6 +49,7 @@ class WebtoonSplitScrollRebuildTargetTest {
         assertNull(WebtoonSplitScrollRebuildTargetResolver.resolve(plan, selected))
         assertNull(WebtoonSplitScrollRebuildTargetResolver.resolve(plan, null))
     }
+
     @Test
     fun `rebuild creates a fresh projection and resolves selection against its new indices`() {
         val selected = Item("selected")
@@ -79,5 +80,4 @@ class WebtoonSplitScrollRebuildTargetTest {
         assertEquals(emptyList<Item>(), rebuild.plan.inSourceOrder().map { it.item })
         assertNull(rebuild.target)
     }
-
 }

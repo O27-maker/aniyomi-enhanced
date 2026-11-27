@@ -87,46 +87,49 @@ class SpreadPageMapperTest {
     }
 }
 
-    @Test
-    fun standaloneLandscapePageDoesNotConsumeFollowingPortraitPage() {
-        val source = listOf("portrait-a", "landscape", "portrait-b", "portrait-c")
-        val groups = SpreadPageMapper.map(
-            pages = source,
-            isLandscape = { it == "landscape" },
-        )
+@Test
+fun standaloneLandscapePageDoesNotConsumeFollowingPortraitPage() {
+    val source = listOf("portrait-a", "landscape", "portrait-b", "portrait-c")
+    val groups = SpreadPageMapper.map(
+        pages = source,
+        isLandscape = { it == "landscape" },
+    )
 
-        assertEquals(
-            listOf(
-                SpreadPageMapper.Group.Single("portrait-a"),
-                SpreadPageMapper.Group.Single("landscape"),
-                SpreadPageMapper.Group.Pair("portrait-b", "portrait-c"),
-            ),
-            groups,
-        )
-    }
+    assertEquals(
+        listOf(
+            SpreadPageMapper.Group.Single("portrait-a"),
+            SpreadPageMapper.Group.Single("landscape"),
+            SpreadPageMapper.Group.Pair("portrait-b", "portrait-c"),
+        ),
+        groups,
+    )
+}
 
-    @Test
-    fun firstPageSingleAndLandscapeRulesComposeWithoutReordering() {
-        val source = listOf("cover", "portrait-a", "landscape", "portrait-b", "portrait-c")
-        val groups = SpreadPageMapper.map(
-            pages = source,
-            firstPageSingle = true,
-            isLandscape = { it == "landscape" },
-        )
+@Test
+fun firstPageSingleAndLandscapeRulesComposeWithoutReordering() {
+    val source = listOf("cover", "portrait-a", "landscape", "portrait-b", "portrait-c")
+    val groups = SpreadPageMapper.map(
+        pages = source,
+        firstPageSingle = true,
+        isLandscape = { it == "landscape" },
+    )
 
-        assertEquals(
-            listOf(
-                SpreadPageMapper.Group.Single("cover"),
-                SpreadPageMapper.Group.Single("portrait-a"),
-                SpreadPageMapper.Group.Single("landscape"),
-                SpreadPageMapper.Group.Pair("portrait-b", "portrait-c"),
-            ),
-            groups,
-        )
-        assertEquals(source, groups.flatMap { group ->
+    assertEquals(
+        listOf(
+            SpreadPageMapper.Group.Single("cover"),
+            SpreadPageMapper.Group.Single("portrait-a"),
+            SpreadPageMapper.Group.Single("landscape"),
+            SpreadPageMapper.Group.Pair("portrait-b", "portrait-c"),
+        ),
+        groups,
+    )
+    assertEquals(
+        source,
+        groups.flatMap { group ->
             when (group) {
                 is SpreadPageMapper.Group.Single -> listOf(group.page)
                 is SpreadPageMapper.Group.Pair -> listOf(group.first, group.second)
             }
-        })
-    }
+        },
+    )
+}

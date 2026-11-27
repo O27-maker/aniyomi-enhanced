@@ -25,10 +25,20 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         state = state.copy(host = bothHosts)
 
         val left = coordinator.onColumnScrolled(
-            state, leftBinding, 0, 0, 120, reachedSegmentEnd = true,
+            state,
+            leftBinding,
+            0,
+            0,
+            120,
+            reachedSegmentEnd = true,
         )
         val right = coordinator.onColumnScrolled(
-            left.state, rightBinding, 0, 1, 45, reachedSegmentEnd = true,
+            left.state,
+            rightBinding,
+            0,
+            1,
+            45,
+            reachedSegmentEnd = true,
         )
 
         assertTrue(left.accepted)
@@ -47,13 +57,23 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         state = state.copy(host = bothHosts)
 
         val left = coordinator.onColumnScrolled(
-            state, leftBinding, 0, 0, 200, reachedSegmentEnd = true,
+            state,
+            leftBinding,
+            0,
+            0,
+            200,
+            reachedSegmentEnd = true,
         )
         assertFalse(left.boundaryReady)
         assertEquals(0, left.selection?.sourceIndex)
 
         val right = coordinator.onColumnScrolled(
-            left.state, rightBinding, 0, 1, 300, reachedSegmentEnd = true,
+            left.state,
+            rightBinding,
+            0,
+            1,
+            300,
+            reachedSegmentEnd = true,
         )
         assertTrue(right.boundaryReady)
         assertEquals(2, right.selection?.sourceIndex)
@@ -99,7 +119,12 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         state = state.copy(host = reattached)
 
         val result = coordinator.onColumnScrolled(
-            state, oldBinding, 0, 0, 500, reachedSegmentEnd = true,
+            state,
+            oldBinding,
+            0,
+            0,
+            500,
+            reachedSegmentEnd = true,
         )
 
         assertFalse(result.accepted)
@@ -115,7 +140,12 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         state = state.copy(host = host)
 
         val result = coordinator.onColumnScrolled(
-            state, binding, 1, 0, 100, reachedSegmentEnd = false,
+            state,
+            binding,
+            1,
+            0,
+            100,
+            reachedSegmentEnd = false,
         )
 
         assertFalse(result.accepted)
@@ -132,16 +162,27 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         val (bothHosts, rightBinding) = leftHost.attach(Column.RIGHT)
         state = state.copy(host = bothHosts)
         state = coordinator.onColumnScrolled(
-            state, leftBinding, 0, 0, 100, reachedSegmentEnd = true,
+            state,
+            leftBinding,
+            0,
+            0,
+            100,
+            reachedSegmentEnd = true,
         ).state
         state = coordinator.onColumnScrolled(
-            state, rightBinding, 0, 1, 150, reachedSegmentEnd = true,
+            state,
+            rightBinding,
+            0,
+            1,
+            150,
+            reachedSegmentEnd = true,
         ).state
 
         val next = coordinator.advancePastBoundary(state)
         assertEquals(1, next?.barrier?.segmentIndex)
         assertNull(next?.selectedSourceIndex)
     }
+
     @Test
     fun `leading and consecutive empty segments expose their boundaries immediately`() {
         val plan = WebtoonSplitScrollPlan.create<Any>(
@@ -159,7 +200,6 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         assertEquals(1, second?.selection?.sourceIndex)
     }
 
-
     @Test
     fun `scrolling one column back from end cancels pending boundary arrival`() {
         val coordinator = coordinator()
@@ -169,13 +209,28 @@ class WebtoonSplitScrollSelectionCoordinatorTest {
         state = state.copy(host = bothHosts)
 
         val leftReachedEnd = coordinator.onColumnScrolled(
-            state, leftBinding, 0, 0, 200, reachedSegmentEnd = true,
+            state,
+            leftBinding,
+            0,
+            0,
+            200,
+            reachedSegmentEnd = true,
         )
         val leftMovedBack = coordinator.onColumnScrolled(
-            leftReachedEnd.state, leftBinding, 0, 0, 100, reachedSegmentEnd = false,
+            leftReachedEnd.state,
+            leftBinding,
+            0,
+            0,
+            100,
+            reachedSegmentEnd = false,
         )
         val rightReachedEnd = coordinator.onColumnScrolled(
-            leftMovedBack.state, rightBinding, 0, 1, 300, reachedSegmentEnd = true,
+            leftMovedBack.state,
+            rightBinding,
+            0,
+            1,
+            300,
+            reachedSegmentEnd = true,
         )
 
         assertFalse(leftMovedBack.boundaryReady)

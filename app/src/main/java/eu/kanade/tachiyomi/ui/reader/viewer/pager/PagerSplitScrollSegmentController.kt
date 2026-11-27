@@ -120,7 +120,12 @@ internal class PagerSplitScrollSegmentController(
         val recycler = recyclerFor(column)
         val generation = segmentGeneration
         recycler.post {
-            if (disposed || generation != segmentGeneration || segmentIndex != plan.segmentIndexForSourceIndex(sourceIndex)) return@post
+            if (disposed ||
+                generation != segmentGeneration ||
+                segmentIndex != plan.segmentIndexForSourceIndex(sourceIndex)
+            ) {
+                return@post
+            }
             (recycler.layoutManager as? LinearLayoutManager)
                 ?.scrollToPositionWithOffset(position.second, anchor.offsetPx)
         }
@@ -293,8 +298,11 @@ internal class PagerSplitScrollSegmentController(
                 if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
                     adapter.sourceIndexAt(position)?.let(onSelection)
                 }
-                if (lastCompletelyVisible >= adapter.itemCount - 1) markAtEnd(column)
-                else markNotAtEnd(column)
+                if (lastCompletelyVisible >= adapter.itemCount - 1) {
+                    markAtEnd(column)
+                } else {
+                    markNotAtEnd(column)
+                }
             }
         }
 

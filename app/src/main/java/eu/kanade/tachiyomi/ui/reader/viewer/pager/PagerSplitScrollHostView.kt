@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.ui.reader.viewer.pager
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
-import eu.kanade.tachiyomi.ui.reader.viewer.GestureDetectorWithLongTap
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +10,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import eu.kanade.tachiyomi.ui.reader.viewer.GestureDetectorWithLongTap
 import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonSplitScrollColumnWidths
 
 /**
@@ -47,11 +47,14 @@ internal class PagerSplitScrollHostView(
             setBackgroundColor(Color.GRAY)
             alpha = 0.65f
         }
-        addView(line, LayoutParams(
-            (2 * resources.displayMetrics.density).toInt().coerceAtLeast(2),
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            Gravity.CENTER,
-        ))
+        addView(
+            line,
+            LayoutParams(
+                (2 * resources.displayMetrics.density).toInt().coerceAtLeast(2),
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER,
+            ),
+        )
         setOnTouchListener { view, event ->
             fun update() {
                 val location = IntArray(2)
@@ -98,21 +101,30 @@ internal class PagerSplitScrollHostView(
         private set
 
     init {
-        addView(columnsRow, LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT,
-        ))
-        addView(boundarySlot, LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT,
-        ))
+        addView(
+            columnsRow,
+            LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        addView(
+            boundarySlot,
+            LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
         // Keep the drag target compact so it does not block page gestures or
         // independent vertical scrolling across the full height of the reader.
-        addView(resizeHandle, LayoutParams(
-            (48 * resources.displayMetrics.density).toInt().coerceAtLeast(48),
-            (72 * resources.displayMetrics.density).toInt().coerceAtLeast(72),
-            Gravity.CENTER_VERTICAL,
-        ))
+        addView(
+            resizeHandle,
+            LayoutParams(
+                (48 * resources.displayMetrics.density).toInt().coerceAtLeast(48),
+                (72 * resources.displayMetrics.density).toInt().coerceAtLeast(72),
+                Gravity.CENTER_VERTICAL,
+            ),
+        )
         setLeftWidthPercent(DEFAULT_LEFT_WIDTH_PERCENT)
         installTapListener(leftRecycler)
         installTapListener(rightRecycler)
@@ -123,20 +135,23 @@ internal class PagerSplitScrollHostView(
      * Double taps are left to PagerPageHolder and are not forwarded as navigation taps.
      */
     private fun installTapListener(recycler: RecyclerView) {
-        val detector = GestureDetectorWithLongTap(context, object : GestureDetectorWithLongTap.Listener() {
-            override fun onDown(event: MotionEvent): Boolean = true
+        val detector = GestureDetectorWithLongTap(
+            context,
+            object : GestureDetectorWithLongTap.Listener() {
+                override fun onDown(event: MotionEvent): Boolean = true
 
-            override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
-                onTap?.invoke(event)
-                return true
-            }
-
-            override fun onLongTapConfirmed(event: MotionEvent) {
-                if (onLongTap?.invoke(recycler, event) == true) {
-                    recycler.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
+                    onTap?.invoke(event)
+                    return true
                 }
-            }
-        })
+
+                override fun onLongTapConfirmed(event: MotionEvent) {
+                    if (onLongTap?.invoke(recycler, event) == true) {
+                        recycler.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                    }
+                }
+            },
+        )
         recycler.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
             override fun onInterceptTouchEvent(rv: RecyclerView, event: MotionEvent): Boolean {
                 detector.onTouchEvent(event)
@@ -149,10 +164,14 @@ internal class PagerSplitScrollHostView(
         leftWidthPercent = WebtoonSplitScrollColumnWidths.normalize(percent)
         val (leftWeight, rightWeight) = WebtoonSplitScrollColumnWidths.weights(leftWidthPercent)
         leftFrame.layoutParams = LinearLayout.LayoutParams(
-            0, ViewGroup.LayoutParams.MATCH_PARENT, leftWeight,
+            0,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            leftWeight,
         )
         rightFrame.layoutParams = LinearLayout.LayoutParams(
-            0, ViewGroup.LayoutParams.MATCH_PARENT, rightWeight,
+            0,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            rightWeight,
         )
         columnsRow.requestLayout()
         updateHandlePosition()
@@ -180,10 +199,13 @@ internal class PagerSplitScrollHostView(
         view.setOnClickListener { onContinue() }
         view.isClickable = true
         boundarySlot.removeAllViews()
-        boundarySlot.addView(view, LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        ))
+        boundarySlot.addView(
+            view,
+            LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ),
+        )
         columnsRow.visibility = GONE
         resizeHandle.visibility = GONE
         boundarySlot.visibility = VISIBLE

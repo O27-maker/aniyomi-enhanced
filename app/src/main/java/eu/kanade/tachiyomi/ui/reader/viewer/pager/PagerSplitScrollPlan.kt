@@ -69,7 +69,9 @@ internal data class PagerSplitScrollPlan<T>(
                 if (placement.sourceIndex != expectedIndex ||
                     placement.column != expectedColumn ||
                     source.getOrNull(expectedIndex) !== placement.item
-                ) return false
+                ) {
+                    return false
+                }
                 expectedIndex++
                 expectedColumn = expectedColumn.other()
             }
@@ -77,7 +79,9 @@ internal data class PagerSplitScrollPlan<T>(
                 if (boundary.sourceIndex != expectedIndex ||
                     boundary.column != Column.FULL_WIDTH ||
                     source.getOrNull(expectedIndex) !== boundary.item
-                ) return false
+                ) {
+                    return false
+                }
                 expectedIndex++
             }
         }

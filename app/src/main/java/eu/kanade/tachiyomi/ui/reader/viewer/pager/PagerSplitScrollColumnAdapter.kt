@@ -27,10 +27,12 @@ internal class PagerSplitScrollColumnAdapter(
         require(placements.all { it.item is ReaderPage }) {
             "Chapter transitions must be hosted as full-width boundaries"
         }
-        require(placements.all {
-            it.column == PagerSplitScrollPlan.Column.LEFT ||
-                it.column == PagerSplitScrollPlan.Column.RIGHT
-        }) {
+        require(
+            placements.all {
+                it.column == PagerSplitScrollPlan.Column.LEFT ||
+                    it.column == PagerSplitScrollPlan.Column.RIGHT
+            },
+        ) {
             "A column adapter cannot contain full-width placements"
         }
         setHasStableIds(true)

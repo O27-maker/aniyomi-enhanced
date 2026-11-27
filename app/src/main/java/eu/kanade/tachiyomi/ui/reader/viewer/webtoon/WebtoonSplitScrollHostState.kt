@@ -57,7 +57,10 @@ internal data class WebtoonSplitScrollHostState(
     }
 
     fun resize(column: Column, widthPercent: Int): WebtoonSplitScrollHostState =
-        withColumn(column, stateFor(column).copy(widthPercent = widthPercent.coerceIn(MIN_WIDTH_PERCENT, MAX_WIDTH_PERCENT)))
+        withColumn(
+            column,
+            stateFor(column).copy(widthPercent = widthPercent.coerceIn(MIN_WIDTH_PERCENT, MAX_WIDTH_PERCENT)),
+        )
 
     fun setZoom(column: Column, zoom: Float): WebtoonSplitScrollHostState =
         withColumn(

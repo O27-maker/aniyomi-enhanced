@@ -28,6 +28,7 @@ class WebtoonSplitScrollColumnWidthsTest {
             assert(right in 20f..80f)
         }
     }
+
     @Test
     fun dividerPositionUsesContainerCoordinatesAndClampsToLimits() {
         assertEquals(
@@ -71,5 +72,4 @@ class WebtoonSplitScrollColumnWidthsTest {
             ),
         )
     }
-
 }

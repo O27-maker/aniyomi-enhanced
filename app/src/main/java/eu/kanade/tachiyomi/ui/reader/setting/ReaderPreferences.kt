@@ -123,7 +123,6 @@ class ReaderPreferences(
 
     fun dualPageFirstPageSingle() = preferenceStore.getBoolean("pref_dual_page_first_page_single", false)
 
-
     // endregion
 
     // region Color filter

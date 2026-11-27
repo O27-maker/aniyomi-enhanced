@@ -159,12 +159,14 @@ class WebtoonSplitScrollHostViewportSnapshotTest {
 
         assertNull(WebtoonSplitScrollHostViewportSnapshot.capture(plan, 1, WebtoonSplitScrollHostState()))
     }
+
     @Test
     fun `restores segment after earlier chapter boundary shifts its index`() {
         val firstBoundary = Item("chapter-one", boundary = true)
         val secondBoundary = Item("chapter-two", boundary = true)
         val selectedSegmentPages = listOf(Item("three"), Item("four"))
-        val originalItems = listOf(Item("one"), firstBoundary) + selectedSegmentPages + listOf(secondBoundary, Item("five"))
+        val originalItems =
+            listOf(Item("one"), firstBoundary) + selectedSegmentPages + listOf(secondBoundary, Item("five"))
         val original = WebtoonSplitScrollPlan.create(originalItems) { it.boundary }
         val snapshot = WebtoonSplitScrollHostViewportSnapshot.capture(
             original,
@@ -206,6 +208,7 @@ class WebtoonSplitScrollHostViewportSnapshotTest {
         assertEquals(1, WebtoonSplitScrollHostViewportSnapshot.resolveSegmentIndex(rebuilt, snapshot))
         assertTrue(WebtoonSplitScrollHostViewportSnapshot.restore(rebuilt, snapshot) != null)
     }
+
     @Test
     fun `capture and restore reject malformed source projections`() {
         val first = Item("first")
@@ -240,5 +243,4 @@ class WebtoonSplitScrollHostViewportSnapshotTest {
         assertNull(WebtoonSplitScrollHostViewportSnapshot.resolveSegmentIndex(malformed, snapshot))
         assertNull(WebtoonSplitScrollHostViewportSnapshot.restore(malformed, snapshot))
     }
-
 }

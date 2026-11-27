@@ -34,7 +34,8 @@ internal data class WebtoonSplitScrollHostRestore<T : Any>(
 
             val destination = when (target.column) {
                 WebtoonSplitScrollPlan.Column.LEFT,
-                WebtoonSplitScrollPlan.Column.RIGHT -> {
+                WebtoonSplitScrollPlan.Column.RIGHT,
+                -> {
                     val position = target.columnPosition ?: return null
                     val segment = rebuild.plan.segments.getOrNull(target.segmentIndex) ?: return null
                     val columnItems = if (target.column == WebtoonSplitScrollPlan.Column.LEFT) {

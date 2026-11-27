@@ -132,19 +132,25 @@ internal class WebtoonSplitScrollHostView(
                 setBackgroundColor(Color.GRAY)
                 alpha = 0.65f
             }
-            addView(line, FrameLayout.LayoutParams(
-                (2 * resources.displayMetrics.density).toInt().coerceAtLeast(2),
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                Gravity.CENTER,
-            ))
+            addView(
+                line,
+                FrameLayout.LayoutParams(
+                    (2 * resources.displayMetrics.density).toInt().coerceAtLeast(2),
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    Gravity.CENTER,
+                ),
+            )
         }
         // Keep the drag target compact so it does not block page gestures or
         // independent vertical scrolling across the full height of the reader.
-        addView(resizeHandle, FrameLayout.LayoutParams(
-            (48 * resources.displayMetrics.density).toInt().coerceAtLeast(48),
-            (72 * resources.displayMetrics.density).toInt().coerceAtLeast(72),
-            Gravity.CENTER_VERTICAL,
-        ))
+        addView(
+            resizeHandle,
+            FrameLayout.LayoutParams(
+                (48 * resources.displayMetrics.density).toInt().coerceAtLeast(48),
+                (72 * resources.displayMetrics.density).toInt().coerceAtLeast(72),
+                Gravity.CENTER_VERTICAL,
+            ),
+        )
         setLeftWidthPercent(DEFAULT_LEFT_WIDTH_PERCENT)
     }
 

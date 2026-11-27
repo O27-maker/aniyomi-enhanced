@@ -20,10 +20,10 @@ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
-import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportAnchor
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportState
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportStateOwner
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderTransitionView
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
@@ -33,14 +33,17 @@ import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import uy.kohesive.injekt.injectLazy
+import java.util.IdentityHashMap
 import kotlin.math.max
 import kotlin.math.min
-import java.util.IdentityHashMap
 
 /**
  * Implementation of a [Viewer] to display pages with a [RecyclerView].
  */
-class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = true) : Viewer, ReaderPageZoomStateOwner, ReaderPageViewportStateOwner {
+class WebtoonViewer(
+    val activity: ReaderActivity,
+    val isContinuous: Boolean = true,
+) : Viewer, ReaderPageZoomStateOwner, ReaderPageViewportStateOwner {
 
     val downloadManager: MangaDownloadManager by injectLazy()
 
@@ -86,6 +89,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     private var spreadPlan: WebtoonSpreadPlan<Any>? = null
     private val spreadOrientations = IdentityHashMap<ReaderPage, Boolean?>()
     private var spreadPreferredSourceIndex: Int? = null
+
     /** Invalidates orientation/layout work queued by an older Spread host. */
     private var spreadGeneration = 0L
 
@@ -228,8 +232,6 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         root.addView(frame, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
     }
 
-
-
     internal fun savePageZoomState(page: ReaderPage, state: ReaderPageImageView.ImageZoomState) {
         if (adapter.items.any { it === page }) pageZoomStates[page] = state
     }
@@ -320,13 +322,21 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
                 val child = host.findChildViewUnder(event.x, event.y)
                 val displayIndex = child?.let(host::getChildAdapterPosition) ?: RecyclerView.NO_POSITION
                 val secondHalf = child != null && event.x - child.left >= child.width / 2f
-                val sourceIndex = projection.sourceIndexAtHorizontalPosition(displayIndex, secondHalf, config.dualPageInvert)
+                val sourceIndex = projection.sourceIndexAtHorizontalPosition(
+                    displayIndex,
+                    secondHalf,
+                    config.dualPageInvert,
+                )
                 val page = sourceIndex?.let { adapter.items.getOrNull(it) as? ReaderPage }
                 if (page != null) {
                     activity.onPageLongTap(page)
                     true
-                } else false
-            } else false
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
         }
         frame.isVisible = false
         recycler.isVisible = false
@@ -433,8 +443,14 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     private fun disposeSplitScrollHost() {
         splitScrollController?.dispose()
         splitScrollController = null
-        splitScrollHost?.leftRecycler?.apply { tapListener = null; longTapListener = null }
-        splitScrollHost?.rightRecycler?.apply { tapListener = null; longTapListener = null }
+        splitScrollHost?.leftRecycler?.apply {
+            tapListener = null
+            longTapListener = null
+        }
+        splitScrollHost?.rightRecycler?.apply {
+            tapListener = null
+            longTapListener = null
+        }
         splitScrollHost?.setColumnAdapters(null, null)
         splitScrollHost?.let(root::removeView)
         splitScrollHost = null
@@ -509,7 +525,8 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             adapter.items.indexOfFirst { it === anchor.page }.takeIf { it >= 0 }
         }
         val controller = splitScrollController
-        val anchorsShareSegment = leftIndex == null || rightIndex == null ||
+        val anchorsShareSegment = leftIndex == null ||
+            rightIndex == null ||
             controller?.segmentIndexForSourceIndex(leftIndex) == controller?.segmentIndexForSourceIndex(rightIndex)
         val restoredViewport = if (anchorsShareSegment) {
             val restoredLeft = leftIndex?.let { index ->
@@ -673,8 +690,14 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
 
         splitScrollController?.dispose()
         splitScrollController = null
-        splitScrollHost?.leftRecycler?.apply { tapListener = null; longTapListener = null }
-        splitScrollHost?.rightRecycler?.apply { tapListener = null; longTapListener = null }
+        splitScrollHost?.leftRecycler?.apply {
+            tapListener = null
+            longTapListener = null
+        }
+        splitScrollHost?.rightRecycler?.apply {
+            tapListener = null
+            longTapListener = null
+        }
         splitScrollHost?.setColumnAdapters(null, null)
         splitScrollHost?.let(root::removeView)
         activeSplitRecycler = null
@@ -735,7 +758,10 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         val requestedPage = chapters.currChapter.pages?.let { pages ->
             pages.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0)) ?: pages.lastOrNull()
         }
-        val requestedSourceIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }?.takeIf { it >= 0 }
+        val requestedSourceIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }?.takeIf {
+            it >=
+                0
+        }
         when (config.dualPagePresentationMode) {
             DualPagePresentationMode.SPLIT_SCROLL -> {
                 disposeSpreadHost()

@@ -19,7 +19,6 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context), ViewPag
     override val item: Any
         get() = requireNotNull(projectedUnit) { "Spread frame has not been bound" }
 
-
     var isR2L: Boolean = false
         set(value) {
             if (field != value) {
@@ -27,7 +26,6 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context), ViewPag
                 requestLayout()
             }
         }
-
 
     /**
      * Attach the original page holders for one projected display unit.
@@ -104,7 +102,6 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context), ViewPag
         setMeasuredDimension(width, height)
     }
 
-
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         val width = right - left
         val slots = if (childCount == 2) SpreadLayoutGeometry.pair(isR2L) else listOf(SpreadLayoutGeometry.single())
@@ -116,17 +113,14 @@ internal class SpreadFrameLayout(context: Context) : ViewGroup(context), ViewPag
         }
     }
 
-
-    override fun generateDefaultLayoutParams(): LayoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-
+    override fun generateDefaultLayoutParams(): LayoutParams = LayoutParams(
+        LayoutParams.MATCH_PARENT,
+        LayoutParams.MATCH_PARENT,
+    )
 
     override fun generateLayoutParams(attrs: android.util.AttributeSet?): LayoutParams = LayoutParams(context, attrs)
 
-
     override fun generateLayoutParams(p: LayoutParams): LayoutParams = LayoutParams(p)
 
-
     override fun checkLayoutParams(p: LayoutParams): Boolean = p is LayoutParams
-
 }
-

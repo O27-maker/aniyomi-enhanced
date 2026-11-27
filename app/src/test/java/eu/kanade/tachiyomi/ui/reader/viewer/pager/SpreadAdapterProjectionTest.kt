@@ -59,12 +59,15 @@ class SpreadAdapterProjectionTest {
             projection.units,
         )
         assertEquals(SpreadAdapterNavigationMap.Anchor(0, 0), projection.selectedAnchor)
-        assertEquals(source, projection.units.flatMap { unit ->
-            when (unit) {
-                is SpreadAdapterItemMapper.Unit.Single -> listOf(unit.item)
-                is SpreadAdapterItemMapper.Unit.Pair -> listOf(unit.first, unit.second)
-            }
-        })
+        assertEquals(
+            source,
+            projection.units.flatMap { unit ->
+                when (unit) {
+                    is SpreadAdapterItemMapper.Unit.Single -> listOf(unit.item)
+                    is SpreadAdapterItemMapper.Unit.Pair -> listOf(unit.first, unit.second)
+                }
+            },
+        )
     }
 
     @Test

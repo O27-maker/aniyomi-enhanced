@@ -61,7 +61,11 @@ internal data class WebtoonSplitScrollHostViewportSnapshot<T : Any>(
                     boundaryAfter === snapshot.boundaryAfter &&
                     segment.left.map { it.item }.sameIdentitySequence(snapshot.leftItems) &&
                     segment.right.map { it.item }.sameIdentitySequence(snapshot.rightItems)
-                ) index else null
+                ) {
+                    index
+                } else {
+                    null
+                }
             }
             return matches.singleOrNull()
         }

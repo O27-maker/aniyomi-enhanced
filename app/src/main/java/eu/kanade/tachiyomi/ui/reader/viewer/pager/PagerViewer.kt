@@ -22,10 +22,10 @@ import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
 import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
-import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportAnchor
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportState
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportStateOwner
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
 import eu.kanade.tachiyomi.util.system.createReaderThemeContext
@@ -39,7 +39,9 @@ import kotlin.math.min
  * Implementation of a [Viewer] to display pages with a [ViewPager].
  */
 @Suppress("LeakingThis")
-abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoomStateOwner, ReaderPageViewportStateOwner {
+abstract class PagerViewer(
+    val activity: ReaderActivity,
+) : Viewer, ReaderPageZoomStateOwner, ReaderPageViewportStateOwner {
 
     val downloadManager: MangaDownloadManager by injectLazy()
 
@@ -372,6 +374,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
      * Called when a [ReaderPage] is marked as active. It notifies the
      * activity of the change and requests the preload of the next chapter if this is the last page.
      */
+
     /** A Split Scroll row can bind after its source page was already selected. */
     internal fun savePageZoomState(page: ReaderPage, state: ReaderPageImageView.ImageZoomState) {
         pageZoomStates[page] = state
@@ -567,8 +570,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
             }
             val requestedIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }
                 ?.takeIf { it >= 0 }
-            if (splitScrollHost == null) installSplitScrollPresentation(requestedIndex)
-            else rebuildSplitScrollPresentation(requestedIndex)
+            if (splitScrollHost == null) {
+                installSplitScrollPresentation(requestedIndex)
+            } else {
+                rebuildSplitScrollPresentation(requestedIndex)
+            }
         } else {
             rebuildSpreadProjection()
         }
@@ -598,8 +604,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
     override fun moveToPage(page: ReaderPage) {
         val sourceIndex = adapter.items.indexOfFirst { it === page }
         if (sourceIndex >= 0 && splitScrollHost != null) {
-            if (splitScrollController != null) splitScrollController?.moveToSourceIndex(sourceIndex)
-            else pendingSourceSelectionIndex = sourceIndex
+            if (splitScrollController != null) {
+                splitScrollController?.moveToSourceIndex(sourceIndex)
+            } else {
+                pendingSourceSelectionIndex = sourceIndex
+            }
             return
         }
         val position = if (sourceIndex >= 0) adapter.displayIndexForSource(sourceIndex) else -1
@@ -738,7 +747,6 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
         }
     }
 
-
     /** Build the independent columns from the pager adapter's exact effective source order. */
     private fun installSplitScrollPresentation(preferredSourceIndex: Int? = null) {
         if (adapter.items.isEmpty() || splitScrollHost != null) return
@@ -793,8 +801,12 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
         val viewportSnapshot = splitScrollController?.captureViewportSnapshot()
             ?: pendingSplitScrollViewportState?.let { state ->
                 PagerSplitScrollSegmentController.ViewportSnapshot(
-                    left = state.left?.let { PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx) },
-                    right = state.right?.let { PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx) },
+                    left = state.left?.let {
+                        PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx)
+                    },
+                    right = state.right?.let {
+                        PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx)
+                    },
                 )
             }
         splitScrollController?.dispose()
@@ -954,15 +966,21 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
             // Need to insert on UI thread else images will go blank
             activeSpreadProjection = null
             adapter.onPageSplit(currentPage, newPage)
-            if (splitScrollHost != null) rebuildSplitScrollPresentation()
-            else rebuildSpreadProjection()
+            if (splitScrollHost != null) {
+                rebuildSplitScrollPresentation()
+            } else {
+                rebuildSpreadProjection()
+            }
         }
     }
 
     private fun cleanupPageSplit() {
         activeSpreadProjection = null
         adapter.cleanupPageSplit()
-        if (splitScrollHost != null) rebuildSplitScrollPresentation()
-        else rebuildSpreadProjection()
+        if (splitScrollHost != null) {
+            rebuildSplitScrollPresentation()
+        } else {
+            rebuildSpreadProjection()
+        }
     }
 }

@@ -103,7 +103,6 @@ internal class WebtoonSplitScrollSegmentController(
         return true
     }
 
-
     /** Resolve a visible local row to its original page for long-press actions. */
     fun pageAt(column: WebtoonSplitScrollHostState.Column, position: Int): ReaderPage? {
         if (disposed) return null
@@ -233,7 +232,6 @@ internal class WebtoonSplitScrollSegmentController(
             }
         }
     }
-
 
     /**
      * Each RecyclerView reports only its own end-visible row and viewport offset.

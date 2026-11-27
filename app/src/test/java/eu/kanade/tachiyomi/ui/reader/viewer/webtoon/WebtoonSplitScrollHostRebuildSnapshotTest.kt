@@ -173,6 +173,7 @@ class WebtoonSplitScrollHostRebuildSnapshotTest {
         assertEquals(125, restored.left.scrollOffsetPx)
         assertEquals(875, restored.right.scrollOffsetPx)
     }
+
     @Test
     fun `restored host rejects both old bindings until each column reattaches`() {
         val selected = Item("selected")
@@ -214,5 +215,4 @@ class WebtoonSplitScrollHostRebuildSnapshotTest {
         assertEquals(true, afterNewCallbacks.left.attached)
         assertEquals(true, afterNewCallbacks.right.attached)
     }
-
 }

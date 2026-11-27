@@ -49,6 +49,7 @@ class WebtoonSplitScrollPlanTest {
         assertEquals(items, plan.inSourceOrder().map { it.item })
         assertEquals(true, plan.matchesSource(items))
     }
+
     @Test
     fun `chapter transition closes segment and starts following segment at left`() {
         val items = listOf("before-a", "before-b", "transition", "after-a", "after-b")
@@ -132,6 +133,7 @@ class WebtoonSplitScrollPlanTest {
         assertNull(plan.placementForSourceIndex(-1))
         assertNull(plan.placementForSourceIndex(0))
     }
+
     @Test
     fun `source snapshot validation rejects duplicate and missing original indices`() {
         val first = "first"
@@ -255,5 +257,4 @@ class WebtoonSplitScrollPlanTest {
 
         assertEquals(false, malformed.matchesSource(emptyList()))
     }
-
 }

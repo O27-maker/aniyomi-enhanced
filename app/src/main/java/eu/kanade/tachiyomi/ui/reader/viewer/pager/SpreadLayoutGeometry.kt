@@ -12,9 +12,7 @@ internal object SpreadLayoutGeometry {
         val width: Float get() = right - left
     }
 
-
     fun single(): Slot = Slot(0f, 1f)
-
 
     fun pair(isR2L: Boolean): List<Slot> = if (isR2L) {
         listOf(Slot(0.5f, 1f), Slot(0f, 0.5f))

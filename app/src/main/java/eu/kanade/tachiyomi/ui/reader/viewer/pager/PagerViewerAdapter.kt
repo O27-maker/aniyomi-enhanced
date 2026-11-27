@@ -284,8 +284,11 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
                     is PagerPageHolder -> -1 // Recreate source holders inside their SpreadFrame.
                     else -> {
                         val sourceIndex = items.indexOfFirst { it === identity }
-                        if (sourceIndex == -1) -1 else
+                        if (sourceIndex == -1) {
+                            -1
+                        } else {
                             SpreadAdapterNavigationMap.displayIndexForAdapter(projection.units, sourceIndex)
+                        }
                     }
                 }
                 if (position != -1) return position
