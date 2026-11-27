@@ -51,15 +51,14 @@ internal class WebtoonSplitScrollScrollBridge(
 
         if (!plan.matchesSource(sourceItems())) {
             invalidate()
-            return
-        }
+        } else {
+            leftRecycler.addOnScrollListener(leftListener)
+            rightRecycler.addOnScrollListener(rightListener)
 
-        leftRecycler.addOnScrollListener(leftListener)
-        rightRecycler.addOnScrollListener(rightListener)
-
-        coordinator.readyBoundary(state)?.let { result ->
-            state = result.state
-            onSelection(result)
+            coordinator.readyBoundary(state)?.let { result ->
+                state = result.state
+                onSelection(result)
+            }
         }
     }
 
