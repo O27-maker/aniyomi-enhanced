@@ -157,7 +157,10 @@ internal class PagerSplitScrollSegmentController(
             // A direct navigation request can move back from a displayed chapter barrier.
             host.hideBoundary()
             segmentIndex = targetSegment
-            bindSegment()
+            // Bind directly to the requested page. Selecting the segment's first page
+            // before the target can transiently overwrite reading progress or activate
+            // a chapter the user did not actually navigate to.
+            bindSegment(preferredSelectionSourceIndex = sourceIndex)
         }
         val position = plan.columnPositionForSourceIndex(sourceIndex) ?: return false
         val recycler = when (position.first) {
