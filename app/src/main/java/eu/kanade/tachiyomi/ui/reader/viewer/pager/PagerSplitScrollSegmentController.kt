@@ -146,7 +146,9 @@ internal class PagerSplitScrollSegmentController(
             if (boundarySegment != segmentIndex || boundaryNotified) {
                 host.hideBoundary()
                 segmentIndex = boundarySegment
-                bindSegment()
+                // Select the requested boundary directly; binding the segment's first
+                // page first can emit a misleading progress/chapter-selection callback.
+                bindSegment(preferredSelectionSourceIndex = sourceIndex)
             }
             if (!boundaryNotified) {
                 val boundary = plan.segments.getOrNull(segmentIndex)?.boundaryAfter
