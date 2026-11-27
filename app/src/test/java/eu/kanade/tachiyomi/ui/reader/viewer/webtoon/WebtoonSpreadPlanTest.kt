@@ -109,6 +109,31 @@ class WebtoonSpreadPlanTest {
     }
 
     @Test
+    fun `horizontal touch resolves the corresponding page in a spread`() {
+        val plan = WebtoonSpreadPlan.create(
+            items = listOf("left", "right"),
+            isBoundary = { false },
+            isPortrait = { true },
+        )
+
+        assertEquals(0, plan.sourceIndexAtHorizontalPosition(0, secondHalf = false))
+        assertEquals(1, plan.sourceIndexAtHorizontalPosition(0, secondHalf = true))
+    }
+
+    @Test
+    fun `horizontal touch resolves single pages and boundaries to themselves`() {
+        val plan = WebtoonSpreadPlan.create(
+            items = listOf("single", "boundary", "left", "right"),
+            isBoundary = { it == "boundary" },
+            isPortrait = { true },
+            canPair = { it != "single" && it != "boundary" },
+        )
+
+        assertEquals(0, plan.sourceIndexAtHorizontalPosition(0, secondHalf = true))
+        assertEquals(1, plan.sourceIndexAtHorizontalPosition(1, secondHalf = true))
+    }
+
+    @Test
     fun `source validation rejects reordered or replaced entries`() {
         val original = listOf("one", "two")
         val plan = WebtoonSpreadPlan.create(original, { false }, { true })
