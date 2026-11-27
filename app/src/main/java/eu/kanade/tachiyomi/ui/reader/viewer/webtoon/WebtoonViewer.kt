@@ -510,7 +510,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         } else {
             false
         }
-        if (!restoredViewport) {
+        if (restoredViewport) {
+            // Restoring the two anchors must not make the last-restored column the
+            // active progress page; restore the actual selected page without scrolling.
+            initialSourceIndex?.let { splitScrollController?.selectSourceIndex(it) }
+        } else {
             initialSourceIndex?.let { splitScrollController?.moveToSourceIndex(it) }
         }
         pendingSplitScrollViewportState = null
