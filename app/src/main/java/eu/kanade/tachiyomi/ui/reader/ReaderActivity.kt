@@ -548,8 +548,10 @@ class ReaderActivity : BaseActivity() {
             // and its viewer while the retained ViewModel keeps the authoritative page objects.
             val viewportState = viewModel.consumePageViewportState()
                 ?: (prevViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState()
-            val zoomStates = (prevViewer as? ReaderPageZoomStateOwner)?.exportPageZoomStates()
             prevViewer.destroy()
+            // Holder disposal records its final zoom/pan state in the viewer cache.
+            // Export only after destroy so active holders are included in the transfer.
+            val zoomStates = (prevViewer as? ReaderPageZoomStateOwner)?.exportPageZoomStates()
             if (zoomStates != null) {
                 (newViewer as? ReaderPageZoomStateOwner)?.importPageZoomStates(zoomStates)
             }
