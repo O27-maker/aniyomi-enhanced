@@ -44,7 +44,7 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * next/previous chapter to allow seamless transitions and inverting the pages if the viewer
      * has R2L direction.
      */
-    fun setChapters(chapters: ViewerChapters, forceTransition: Boolean) {
+    fun setChapters(chapters: ViewerChapters, forceTransition: Boolean): InsertPage? {
         val newItems = mutableListOf<Any>()
 
         // Forces chapter transition if there is missing chapters
@@ -131,10 +131,10 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         items = newItems
         notifyDataSetChanged()
 
-        // Will skip insert page otherwise
-        if (insertPageLastPage != null) {
-            viewer.moveToPage(insertPageLastPage!!)
-        }
+        // The owning viewer selects this page after rebuilding its active presentation.
+        // Split Scroll disposes its old controller before the source sequence is replaced,
+        // so navigation cannot safely happen from inside this adapter mutation.
+        return insertPageLastPage
     }
 
     /**
