@@ -819,7 +819,11 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
         val restoredViewport = viewportSnapshot?.let {
             splitScrollController?.restoreViewportSnapshot(it)
         } == true
-        if (!restoredViewport) {
+        if (restoredViewport) {
+            // bindSegment may select its first page; restore the real active page
+            // without changing either column's independently restored scroll offset.
+            selectedIndex?.let { splitScrollController?.selectSourceIndex(it) }
+        } else {
             selectedIndex?.let { splitScrollController?.moveToSourceIndex(it) }
         }
         pendingSplitScrollViewportState = null
