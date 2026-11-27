@@ -41,6 +41,16 @@ internal data class WebtoonSpreadPlan<T>(
     fun unitIndexForSourceIndex(sourceIndex: Int): Int =
         units.indexOfFirst { sourceIndex in it.sourceIndices }
 
+    /** Resolve the page under a horizontal touch within a displayed spread row. */
+    fun sourceIndexAtHorizontalPosition(unitIndex: Int, secondHalf: Boolean): Int? {
+        val unit = units.getOrNull(unitIndex) ?: return null
+        return when (unit) {
+            is Unit.Single -> unit.sourceIndex
+            is Unit.Boundary -> unit.sourceIndex
+            is Unit.Pair -> if (secondHalf) unit.secondSourceIndex else unit.firstSourceIndex
+        }
+    }
+
     fun sourceItemAt(unitIndex: Int, preferredSourceIndex: Int? = null): T? {
         val unit = units.getOrNull(unitIndex) ?: return null
         return when (unit) {
