@@ -22,6 +22,9 @@ import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportAnchor
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportState
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
 import eu.kanade.tachiyomi.util.system.createReaderThemeContext
@@ -35,7 +38,7 @@ import kotlin.math.min
  * Implementation of a [Viewer] to display pages with a [ViewPager].
  */
 @Suppress("LeakingThis")
-abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoomStateOwner {
+abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoomStateOwner, ReaderPageViewportStateOwner {
 
     val downloadManager: MangaDownloadManager by injectLazy()
 
@@ -80,6 +83,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
     private val root = FrameLayout(activity)
     private var splitScrollHost: PagerSplitScrollHostView? = null
     private var splitScrollController: PagerSplitScrollSegmentController? = null
+    private var pendingSplitScrollViewportState: ReaderPageViewportState? = null
     private var activeBoundaryHolder: PagerTransitionHolder? = null
 
     /** Immutable Spread projection currently installed in the pager adapter. */
@@ -370,6 +374,19 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
     /** A Split Scroll row can bind after its source page was already selected. */
     internal fun savePageZoomState(page: ReaderPage, state: ReaderPageImageView.ImageZoomState) {
         pageZoomStates[page] = state
+    }
+
+    override fun exportPageViewportState(): ReaderPageViewportState? {
+        if (config.dualPagePresentationMode != DualPagePresentationMode.SPLIT_SCROLL) return null
+        val snapshot = splitScrollController?.captureViewportSnapshot() ?: return null
+        return ReaderPageViewportState(
+            left = snapshot.left?.let { ReaderPageViewportAnchor(it.page, it.offsetPx) },
+            right = snapshot.right?.let { ReaderPageViewportAnchor(it.page, it.offsetPx) },
+        )
+    }
+
+    override fun importPageViewportState(state: ReaderPageViewportState?) {
+        pendingSplitScrollViewportState = state
     }
 
     internal fun restorePageZoomState(page: ReaderPage, holder: PagerPageHolder) {
@@ -749,6 +766,12 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
             ?: pendingSourceSelectionIndex?.takeIf { it in adapter.items.indices }
             ?: currentPage?.let { selected -> adapter.items.indexOfFirst { it === selected } }?.takeIf { it >= 0 }
         val viewportSnapshot = splitScrollController?.captureViewportSnapshot()
+            ?: pendingSplitScrollViewportState?.let { state ->
+                PagerSplitScrollSegmentController.ViewportSnapshot(
+                    left = state.left?.let { PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx) },
+                    right = state.right?.let { PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx) },
+                )
+            }
         splitScrollController?.dispose()
         splitScrollController = null
         activeBoundaryHolder?.dispose()
@@ -799,6 +822,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
         if (!restoredViewport) {
             selectedIndex?.let { splitScrollController?.moveToSourceIndex(it) }
         }
+        pendingSplitScrollViewportState = null
     }
 
     /** Restore the ordinary pager before changing to Spread or normal single-page mode. */
