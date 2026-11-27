@@ -56,7 +56,13 @@ jobs:
             clean_name="${apk%-unsigned-signed.apk}.apk"
             mv "$apk" "$clean_name"
             echo "Verifying $clean_name"
-            apksigner verify --verbose --print-certs "$clean_name"
+            sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+            apksigner_path="$(find "$sdk_root/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+            if [[ -z "$apksigner_path" ]]; then
+              echo "Could not locate apksigner under $sdk_root/build-tools"
+              exit 1
+            fi
+            "$apksigner_path" verify --verbose --print-certs "$clean_name"
           done
       - name: Upload signed APKs
         if: success()
