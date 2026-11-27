@@ -67,7 +67,10 @@ internal class PagerSplitScrollSegmentController(
     }
 
     /** Restore both anchors only when they still belong to the same chapter segment. */
-    fun restoreViewportSnapshot(snapshot: ViewportSnapshot): Boolean {
+    fun restoreViewportSnapshot(
+        snapshot: ViewportSnapshot,
+        preferredSelectionSourceIndex: Int? = null,
+    ): Boolean {
         if (disposed) return false
         val leftIndex = snapshot.left?.let { anchor ->
             plan.segments.asSequence().flatMap { it.left.asSequence() }
@@ -93,7 +96,10 @@ internal class PagerSplitScrollSegmentController(
         if (targetSegment != segmentIndex || boundaryNotified) {
             host.hideBoundary()
             segmentIndex = targetSegment
-            bindSegment(checkInitialViewport = false)
+            bindSegment(
+                checkInitialViewport = false,
+                preferredSelectionSourceIndex = preferredSelectionSourceIndex,
+            )
         }
         restoreColumnViewport(PagerSplitScrollPlan.Column.LEFT, leftIndex, snapshot.left)
         restoreColumnViewport(PagerSplitScrollPlan.Column.RIGHT, rightIndex, snapshot.right)
