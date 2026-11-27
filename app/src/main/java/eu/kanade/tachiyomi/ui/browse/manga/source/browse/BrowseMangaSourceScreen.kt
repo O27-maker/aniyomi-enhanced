@@ -16,6 +16,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -164,6 +165,11 @@ data class BrowseMangaSourceScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Favorite,
                                     contentDescription = null,
+                                    tint = if (state.listing == Listing.Popular) {
+                                        LocalContentColor.current
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
                                     modifier = Modifier
                                         .size(FilterChipDefaults.IconSize),
                                 )
@@ -183,6 +189,11 @@ data class BrowseMangaSourceScreen(
                                     Icon(
                                         imageVector = Icons.Outlined.NewReleases,
                                         contentDescription = null,
+                                        tint = if (state.listing == Listing.Latest) {
+                                            LocalContentColor.current
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
                                         modifier = Modifier
                                             .size(FilterChipDefaults.IconSize),
                                     )
@@ -200,6 +211,11 @@ data class BrowseMangaSourceScreen(
                                     Icon(
                                         imageVector = Icons.Outlined.FilterList,
                                         contentDescription = null,
+                                        tint = if (state.listing is Listing.Search) {
+                                            LocalContentColor.current
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
                                         modifier = Modifier
                                             .size(FilterChipDefaults.IconSize),
                                     )

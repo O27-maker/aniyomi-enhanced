@@ -1,6 +1,7 @@
 package eu.kanade.presentation.browse.manga
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.GetApp
@@ -20,8 +22,10 @@ import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VerifiedUser
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,7 +51,6 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.presentation.browse.BaseBrowseItem
 import eu.kanade.presentation.browse.manga.components.MangaExtensionIcon
 import eu.kanade.presentation.components.WarningBanner
-import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
 import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
@@ -85,6 +89,7 @@ fun MangaExtensionScreen(
     onOpenExtension: (MangaExtension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
     onRefresh: () -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val navigator = LocalNavigator.currentOrThrow
 
@@ -126,6 +131,7 @@ fun MangaExtensionScreen(
                     onTrustExtension = onTrustExtension,
                     onOpenExtension = onOpenExtension,
                     onClickUpdateAll = onClickUpdateAll,
+                    accentColor = accentColor,
                 )
             }
         }
@@ -145,6 +151,7 @@ private fun ExtensionContent(
     onTrustExtension: (MangaExtension.Untrusted) -> Unit,
     onOpenExtension: (MangaExtension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
+    accentColor: Color,
 ) {
     val context = LocalContext.current
     var trustState by remember { mutableStateOf<MangaExtension.Untrusted?>(null) }
@@ -174,7 +181,10 @@ private fun ExtensionContent(
                         val action: @Composable RowScope.() -> Unit =
                             if (header.textRes == MR.strings.ext_updates_pending) {
                                 {
-                                    Button(onClick = { onClickUpdateAll() }) {
+                                    Button(
+                                        onClick = { onClickUpdateAll() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                    ) {
                                         Text(
                                             text = stringResource(MR.strings.ext_update_all),
                                             style = LocalTextStyle.current.copy(
@@ -213,6 +223,7 @@ private fun ExtensionContent(
                 },
             ) { item ->
                 ExtensionItem(
+                    accentColor = accentColor,
                     modifier = Modifier.animateItemFastScroll(),
                     item = item,
                     onClickItem = {
@@ -279,6 +290,7 @@ private fun ExtensionItem(
     onClickItemAction: (MangaExtension) -> Unit,
     onClickItemSecondaryAction: (MangaExtension) -> Unit,
     modifier: Modifier = Modifier,
+    accentColor: Color,
 ) {
     val (extension, installStep) = item
     BaseBrowseItem(
@@ -300,6 +312,7 @@ private fun ExtensionItem(
                     CircularProgressIndicator(
                         modifier = Modifier.size(40.dp),
                         strokeWidth = 2.dp,
+                        color = accentColor,
                     )
                 }
 
@@ -322,12 +335,14 @@ private fun ExtensionItem(
                 onClickItemCancel = onClickItemCancel,
                 onClickItemAction = onClickItemAction,
                 onClickItemSecondaryAction = onClickItemSecondaryAction,
+                accentColor = accentColor,
             )
         },
     ) {
         ExtensionItemContent(
             extension = extension,
             installStep = installStep,
+            accentColor = accentColor,
             modifier = Modifier.weight(1f),
         )
     }
@@ -337,6 +352,7 @@ private fun ExtensionItem(
 private fun ExtensionItemContent(
     extension: MangaExtension,
     installStep: InstallStep,
+    accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -348,10 +364,9 @@ private fun ExtensionItemContent(
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
         )
-        // Won't look good but it's not like we can ellipsize overflowing content
         FlowRow(
-            modifier = Modifier.secondaryItemAlpha(),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             ProvideTextStyle(value = MaterialTheme.typography.bodySmall) {
                 if (extension is MangaExtension.Installed && extension.lang.isNotEmpty()) {
@@ -360,12 +375,21 @@ private fun ExtensionItemContent(
                             extension.lang,
                             LocalContext.current,
                         ),
+                        modifier = Modifier.secondaryItemAlpha(),
                     )
                 }
 
                 if (extension.versionName.isNotEmpty()) {
                     Text(
                         text = extension.versionName,
+                        modifier = Modifier.secondaryItemAlpha(),
+                    )
+                }
+
+                if (extension is MangaExtension.Installed && extension.loadError != null) {
+                    ExtensionStatusLabel(
+                        text = "Failed to load",
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
 
@@ -376,28 +400,50 @@ private fun ExtensionItemContent(
                     else -> null
                 }
                 if (warning != null) {
-                    Text(
+                    ExtensionStatusLabel(
                         text = stringResource(warning).uppercase(),
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        color = if (extension is MangaExtension.Installed && extension.isObsolete) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
                     )
                 }
 
                 if (!installStep.isCompleted()) {
-                    DotSeparatorNoSpaceText()
-                    Text(
+                    ExtensionStatusLabel(
                         text = when (installStep) {
                             InstallStep.Pending -> stringResource(MR.strings.ext_pending)
                             InstallStep.Downloading -> stringResource(MR.strings.ext_downloading)
                             InstallStep.Installing -> stringResource(MR.strings.ext_installing)
                             else -> error("Must not show non-install process text")
                         },
+                        color = accentColor,
                     )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ExtensionStatusLabel(
+    text: String,
+    color: Color,
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .background(
+                color = color.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(50),
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        color = color,
+        style = MaterialTheme.typography.labelSmall,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -408,8 +454,14 @@ private fun ExtensionItemActions(
     onClickItemCancel: (MangaExtension) -> Unit = {},
     onClickItemAction: (MangaExtension) -> Unit = {},
     onClickItemSecondaryAction: (MangaExtension) -> Unit = {},
+    accentColor: Color,
 ) {
     val isIdle = installStep.isCompleted()
+    val actionTint = if (!isIdle || installStep == InstallStep.Error) {
+        MaterialTheme.colorScheme.error
+    } else {
+        Color(0xFFAAAAAA)
+    }
 
     Row(
         modifier = modifier,
@@ -421,6 +473,7 @@ private fun ExtensionItemActions(
                     Icon(
                         imageVector = Icons.Outlined.Close,
                         contentDescription = stringResource(MR.strings.action_cancel),
+                        tint = actionTint,
                     )
                 }
             }
@@ -429,6 +482,7 @@ private fun ExtensionItemActions(
                     Icon(
                         imageVector = Icons.Outlined.Refresh,
                         contentDescription = stringResource(MR.strings.action_retry),
+                        tint = actionTint,
                     )
                 }
             }
@@ -439,6 +493,7 @@ private fun ExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.Settings,
                                 contentDescription = stringResource(MR.strings.action_settings),
+                                tint = actionTint,
                             )
                         }
 
@@ -447,6 +502,7 @@ private fun ExtensionItemActions(
                                 Icon(
                                     imageVector = Icons.Outlined.GetApp,
                                     contentDescription = stringResource(MR.strings.ext_update),
+                                    tint = actionTint,
                                 )
                             }
                         }
@@ -456,6 +512,7 @@ private fun ExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.VerifiedUser,
                                 contentDescription = stringResource(MR.strings.ext_trust),
+                                tint = actionTint,
                             )
                         }
                     }
@@ -467,6 +524,7 @@ private fun ExtensionItemActions(
                                 Icon(
                                     imageVector = Icons.Outlined.Public,
                                     contentDescription = stringResource(MR.strings.action_open_in_web_view),
+                                    tint = actionTint,
                                 )
                             }
                         }
@@ -475,6 +533,7 @@ private fun ExtensionItemActions(
                             Icon(
                                 imageVector = Icons.Outlined.GetApp,
                                 contentDescription = stringResource(MR.strings.ext_install),
+                                tint = actionTint,
                             )
                         }
                     }
@@ -525,6 +584,14 @@ fun ExtensionTrustDialog(
     onDismissRequest: () -> Unit,
 ) {
     AlertDialog(
+        icon = {
+            Icon(
+                imageVector = Icons.Outlined.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(32.dp),
+            )
+        },
         title = {
             Text(text = stringResource(MR.strings.untrusted_extension))
         },

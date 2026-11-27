@@ -487,6 +487,7 @@ private fun AnimeScreenSmallImpl(
                     ) {
                         AnimeInfoBox(
                             isTabletUi = false,
+                            isFromSource = state.isFromSource,
                             appBarPadding = topPadding,
                             anime = state.anime,
                             sourceName = remember { state.source.getNameForAnimeInfo() },
@@ -523,7 +524,7 @@ private fun AnimeScreenSmallImpl(
                         span = { GridItemSpan(maxLineSpan) },
                     ) {
                         ExpandableAnimeDescription(
-                            defaultExpandState = state.isFromSource,
+                            defaultExpandState = false,
                             description = state.anime.description,
                             tagsProvider = { state.anime.genre },
                             onTagSearch = onTagSearch,
@@ -826,6 +827,7 @@ fun AnimeScreenLargeImpl(
                         ) {
                             AnimeInfoBox(
                                 isTabletUi = true,
+                                isFromSource = state.isFromSource,
                                 appBarPadding = contentPadding.calculateTopPadding(),
                                 anime = state.anime,
                                 sourceName = remember { state.source.getNameForAnimeInfo() },
@@ -846,7 +848,7 @@ fun AnimeScreenLargeImpl(
                                 onEditCategory = onEditCategoryClicked,
                             )
                             ExpandableAnimeDescription(
-                                defaultExpandState = true,
+                                defaultExpandState = false,
                                 description = state.anime.description,
                                 tagsProvider = { state.anime.genre },
                                 onTagSearch = onTagSearch,

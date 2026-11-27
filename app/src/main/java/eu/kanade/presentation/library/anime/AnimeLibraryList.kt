@@ -54,6 +54,8 @@ internal fun AnimeLibraryList(
             EntryListItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },
                 title = anime.title,
+                author = anime.author ?: anime.artist,
+                description = anime.description,
                 coverData = AnimeCover(
                     animeId = anime.id,
                     sourceId = anime.source,

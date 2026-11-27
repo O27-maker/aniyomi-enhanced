@@ -18,6 +18,7 @@ import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.flow.collectLatest
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 class MangaExtensionReposScreen(
@@ -59,6 +60,7 @@ class MangaExtensionReposScreen(
                     onDismissRequest = screenModel::dismissDialog,
                     onCreate = { screenModel.createRepo(it) },
                     repoUrls = successState.repos.map { it.baseUrl }.toImmutableSet(),
+                    message = AYMR.strings.action_add_manga_repo_message,
                 )
             }
             is RepoDialog.Delete -> {

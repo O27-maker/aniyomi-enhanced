@@ -1,0 +1,2 @@
+-- Preserve source-specific chapter metadata required by manga extensions.
+ALTER TABLE chapters ADD COLUMN memo TEXT NOT NULL DEFAULT '{}';

@@ -54,7 +54,7 @@ abstract class HttpSource : CatalogueSource {
      *
      * Note: the generated ID sets the sign bit to `0`.
      */
-    override val id by lazy { generateId(name, lang, versionId) }
+    open override val id by lazy { generateId(name, lang, versionId) }
 
     /**
      * Headers used for requests.
@@ -239,7 +239,10 @@ abstract class HttpSource : CatalogueSource {
      *
      * @param response the response from the site.
      */
-    protected abstract fun mangaDetailsParse(response: Response): SManga
+    protected open fun mangaDetailsParse(response: Response): SManga =
+        throw UnsupportedOperationException(
+            "Default HttpSource.mangaDetailsParse() was called; extension override was not dispatched",
+        )
 
     /**
      * Get all the available chapters for a manga.
@@ -277,7 +280,10 @@ abstract class HttpSource : CatalogueSource {
      *
      * @param response the response from the site.
      */
-    protected abstract fun chapterListParse(response: Response): List<SChapter>
+    protected open fun chapterListParse(response: Response): List<SChapter> =
+        throw UnsupportedOperationException(
+            "Default HttpSource.chapterListParse() was called; extension override was not dispatched",
+        )
 
     /**
      * Parses the response from the site and returns a SChapter Object.
@@ -457,5 +463,5 @@ abstract class HttpSource : CatalogueSource {
     /**
      * Returns the list of filters for the source.
      */
-    override fun getFilterList() = FilterList()
+    open override fun getFilterList() = FilterList()
 }
