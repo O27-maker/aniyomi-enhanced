@@ -54,3 +54,20 @@ interface ReaderPageZoomStateOwner {
 
     fun importPageZoomStates(states: IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>)
 }
+
+/** Independent Split Scroll viewport anchors transferred across Activity recreation. */
+data class ReaderPageViewportAnchor(
+    val page: ReaderPage,
+    val topOffsetPx: Int,
+)
+
+data class ReaderPageViewportState(
+    val left: ReaderPageViewportAnchor?,
+    val right: ReaderPageViewportAnchor?,
+)
+
+interface ReaderPageViewportStateOwner {
+    fun exportPageViewportState(): ReaderPageViewportState?
+
+    fun importPageViewportState(state: ReaderPageViewportState?)
+}
