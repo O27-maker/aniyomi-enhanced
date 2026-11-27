@@ -88,6 +88,24 @@ internal class WebtoonSplitScrollSelectionCoordinator(
         return Result(updatedState, selection, boundaryReady = true, accepted = true)
     }
 
+    /**
+     * Resolve an explicit page navigation through the active segment's source identity.
+     * RecyclerView may not dispatch a scroll callback when the requested page is already
+     * at the target offset, so navigation must update progress synchronously as well.
+     */
+    fun selectSourceIndex(state: State, sourceIndex: Int): Result? {
+        val segment = plan.segments.getOrNull(state.barrier.segmentIndex) ?: return null
+        val placement = (segment.left + segment.right).firstOrNull { it.originalIndex == sourceIndex }
+            ?: return null
+        val selection = WebtoonSplitScrollSelection.Selection(
+            sourceIndex = placement.originalIndex,
+            item = placement.item,
+            isBoundary = false,
+        )
+        val updatedState = state.copy(selectedSourceIndex = sourceIndex)
+        return Result(updatedState, selection, boundaryReady = false, accepted = true)
+    }
+
     /** Mark both independent columns complete for an explicit transition-page navigation. */
     fun selectBoundary(state: State): Result? {
         val segmentIndex = state.barrier.segmentIndex
