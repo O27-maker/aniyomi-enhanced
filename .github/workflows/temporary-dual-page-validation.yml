@@ -30,9 +30,20 @@ jobs:
       - name: Run release unit tests
         if: always()
         run: ./gradlew testReleaseUnitTest
-      - name: Upload APKs
+      - name: Sign release APKs
+        if: success()
+        uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: '35.0.1'
+      - name: Upload signed APKs
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: dual-page-release-apks-${{ github.sha }}
-          path: app/build/outputs/apk/release/*.apk
+          name: dual-page-signed-release-apks-${{ github.sha }}
+          path: app/build/outputs/apk/release/*-signed.apk
