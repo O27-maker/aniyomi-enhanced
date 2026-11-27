@@ -790,6 +790,7 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
                     }
                 }
             },
+            deferInitialViewportChecks = viewportSnapshot != null,
         )
         selectedIndex?.let {
             pendingSourceSelectionIndex = null
