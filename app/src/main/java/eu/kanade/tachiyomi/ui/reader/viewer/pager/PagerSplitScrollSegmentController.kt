@@ -112,6 +112,14 @@ internal class PagerSplitScrollSegmentController(
         }
     }
 
+    /** Update progress selection without moving either independently restored viewport. */
+    fun selectSourceIndex(sourceIndex: Int): Boolean {
+        if (disposed || plan.segmentIndexForSourceIndex(sourceIndex) != segmentIndex) return false
+        if (plan.columnPositionForSourceIndex(sourceIndex) == null) return false
+        onSelection(sourceIndex)
+        return true
+    }
+
     fun moveToSourceIndex(sourceIndex: Int): Boolean {
         if (disposed) return false
 
