@@ -896,10 +896,6 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
         activity.runOnUiThread {
             // Need to insert on UI thread else images will go blank
             activeSpreadProjection = null
-            if (splitScrollHost != null) {
-                splitScrollController?.dispose()
-                splitScrollController = null
-            }
             adapter.onPageSplit(currentPage, newPage)
             if (splitScrollHost != null) rebuildSplitScrollPresentation()
             else rebuildSpreadProjection()
@@ -908,10 +904,6 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer, ReaderPageZoo
 
     private fun cleanupPageSplit() {
         activeSpreadProjection = null
-        if (splitScrollHost != null) {
-            splitScrollController?.dispose()
-            splitScrollController = null
-        }
         adapter.cleanupPageSplit()
         if (splitScrollHost != null) rebuildSplitScrollPresentation()
         else rebuildSpreadProjection()
