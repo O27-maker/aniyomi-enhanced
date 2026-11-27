@@ -319,7 +319,8 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
                 val child = host.findChildViewUnder(event.x, event.y)
                 val displayIndex = child?.let(host::getChildAdapterPosition) ?: RecyclerView.NO_POSITION
-                val sourceIndex = projection.sourceIndexAt(displayIndex)
+                val secondHalf = child != null && event.x - child.left >= child.width / 2f
+                val sourceIndex = projection.sourceIndexAtHorizontalPosition(displayIndex, secondHalf)
                 val page = sourceIndex?.let { adapter.items.getOrNull(it) as? ReaderPage }
                 if (page != null) {
                     activity.onPageLongTap(page)
