@@ -86,6 +86,8 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     private var spreadPlan: WebtoonSpreadPlan<Any>? = null
     private val spreadOrientations = IdentityHashMap<ReaderPage, Boolean?>()
     private var spreadPreferredSourceIndex: Int? = null
+    /** Invalidates orientation/layout work queued by an older Spread host. */
+    private var spreadGeneration = 0L
 
     /** Experimental two-column host; the normal reader remains the fallback. */
     private var splitScrollHost: WebtoonSplitScrollHostView? = null
@@ -263,6 +265,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         adapter.createPageHolder(requireNotNull(spreadRecycler))
 
     private fun installSpreadHost(initialSourceIndex: Int?) {
+        spreadGeneration++
         val host = spreadRecycler ?: WebtoonRecyclerView(activity).also { spreadRecycler = it }
         val manager = spreadLayoutManager
             ?: WebtoonLayoutManager(activity, scrollDistance).also { spreadLayoutManager = it }
@@ -363,7 +366,9 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
         if (spreadOrientations[page] == isPortrait) return
         spreadOrientations[page] = isPortrait
         val host = spreadRecycler ?: return
+        val expectedGeneration = spreadGeneration
         host.post {
+            if (expectedGeneration != spreadGeneration || host !== spreadRecycler) return@post
             if (config.dualPagePresentationMode != DualPagePresentationMode.SPREAD) return@post
             if (adapter.items.none { it === page } || spreadOrientations[page] != isPortrait) return@post
             val manager = spreadLayoutManager ?: return@post
@@ -381,7 +386,11 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
             val newDisplay = sourceAnchor?.let(projection::displayIndexForSource) ?: firstVisible
             if (newDisplay >= 0) manager.scrollToPositionWithOffset(newDisplay, offset)
             selectedSource?.let { onSpreadScrolled(projection.displayIndexForSource(it), it) }
-            host.post { projection.endProjectionRefreshAndPrune() }
+            host.post {
+                if (expectedGeneration == spreadGeneration && host === spreadRecycler && projection === spreadAdapter) {
+                    projection.endProjectionRefreshAndPrune()
+                }
+            }
         }
     }
 
@@ -404,6 +413,7 @@ class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = tr
     }
 
     private fun disposeSpreadHost() {
+        spreadGeneration++
         spreadRecycler?.apply {
             tapListener = null
             longTapListener = null
