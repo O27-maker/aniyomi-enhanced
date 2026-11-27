@@ -251,7 +251,12 @@ internal class PagerSplitScrollSegmentController(
         initialSelection?.let(onSelection)
         leftAtEnd = segment.left.isEmpty()
         rightAtEnd = segment.right.isEmpty()
-        if (leftAtEnd && rightAtEnd) notifyBoundary(segment.boundaryAfter)
+        if (leftAtEnd && rightAtEnd) {
+            notifyBoundary(
+                segment.boundaryAfter,
+                selectionAlreadyNotified = initialSelection == segment.boundaryAfter?.sourceIndex,
+            )
+        }
         if (checkInitialViewport) {
             val generation = segmentGeneration
             host.leftRecycler.post { checkInitialEnd(PagerSplitScrollPlan.Column.LEFT, generation) }
@@ -304,10 +309,13 @@ internal class PagerSplitScrollSegmentController(
         }
     }
 
-    private fun notifyBoundary(boundary: PagerSplitScrollPlan.Placement<Any>?) {
+    private fun notifyBoundary(
+        boundary: PagerSplitScrollPlan.Placement<Any>?,
+        selectionAlreadyNotified: Boolean = false,
+    ) {
         if (boundaryNotified) return
         boundaryNotified = true
-        (boundary?.item as? ChapterTransition)?.let {
+        if (!selectionAlreadyNotified && boundary?.item is ChapterTransition) {
             onSelection(boundary.sourceIndex)
         }
         onBoundaryReady(boundary)
