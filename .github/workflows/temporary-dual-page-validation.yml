@@ -15,7 +15,7 @@ jobs:
       - name: Checkout feature branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: feature/dual-page-reading
+          ref: ${{ github.sha }}
       - name: Set up JDK
         uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12
         with:
