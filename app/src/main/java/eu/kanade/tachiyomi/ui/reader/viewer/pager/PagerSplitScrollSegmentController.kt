@@ -19,6 +19,7 @@ internal class PagerSplitScrollSegmentController(
     private val onSelection: (Int) -> Unit,
     private val onBoundaryReady: (PagerSplitScrollPlan.Placement<Any>?) -> Unit,
     deferInitialViewportChecks: Boolean = false,
+    initialSelectionSourceIndex: Int? = null,
 ) {
     private var segmentIndex = 0
     private var leftAdapter: PagerSplitScrollColumnAdapter? = null
@@ -35,7 +36,10 @@ internal class PagerSplitScrollSegmentController(
     init {
         host.leftRecycler.addOnScrollListener(leftListener)
         host.rightRecycler.addOnScrollListener(rightListener)
-        bindSegment(checkInitialViewport = !deferInitialViewportChecks)
+        bindSegment(
+            checkInitialViewport = !deferInitialViewportChecks,
+            preferredSelectionSourceIndex = initialSelectionSourceIndex,
+        )
     }
 
     internal data class ViewportAnchor(val page: ReaderPage, val offsetPx: Int)
@@ -212,7 +216,10 @@ internal class PagerSplitScrollSegmentController(
         rightAdapter = null
     }
 
-    private fun bindSegment(checkInitialViewport: Boolean = true) {
+    private fun bindSegment(
+        checkInitialViewport: Boolean = true,
+        preferredSelectionSourceIndex: Int? = null,
+    ) {
         if (disposed) return
         segmentGeneration++
         boundaryNotified = false
@@ -222,12 +229,13 @@ internal class PagerSplitScrollSegmentController(
         leftAdapter = PagerSplitScrollColumnAdapter(viewer, segment.left)
         rightAdapter = PagerSplitScrollColumnAdapter(viewer, segment.right)
         host.setColumnAdapters(leftAdapter, rightAdapter)
-        // A newly entered chapter/segment becomes the active progress anchor immediately,
-        // even if RecyclerView's initial layout does not dispatch an onScrolled callback.
-        (segment.left + segment.right)
-            .minByOrNull { it.sourceIndex }
-            ?.sourceIndex
-            ?.let(onSelection)
+        // On first construction, prefer the chapter's requested resume page. Selecting
+        // the segment's first item first would transiently overwrite progress and trigger
+        // a redundant chapter activation before moveToSourceIndex restores the target.
+        val initialSelection = preferredSelectionSourceIndex
+            ?.takeIf { plan.segmentIndexForSourceIndex(it) == segmentIndex }
+            ?: (segment.left + segment.right).minByOrNull { it.sourceIndex }?.sourceIndex
+        initialSelection?.let(onSelection)
         leftAtEnd = segment.left.isEmpty()
         rightAtEnd = segment.right.isEmpty()
         if (leftAtEnd && rightAtEnd) notifyBoundary(segment.boundaryAfter)
