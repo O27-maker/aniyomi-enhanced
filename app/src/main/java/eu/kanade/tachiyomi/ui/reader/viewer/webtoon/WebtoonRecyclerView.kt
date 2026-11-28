@@ -39,6 +39,9 @@ class WebtoonRecyclerView @JvmOverloads constructor(
             field = value
             if (value && currentScale < DEFAULT_RATE) {
                 zoom(currentScale, DEFAULT_RATE, x, 0f, y, 0f)
+                layoutParams.height = originalHeight
+                halfHeight = layoutParams.height / 2
+                requestLayout()
             }
         }
     private val minRate

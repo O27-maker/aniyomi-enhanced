@@ -70,6 +70,8 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportStateOwner
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.util.system.hasDisplayCutout
@@ -254,8 +256,12 @@ class ReaderActivity : BaseActivity() {
      * Called when the activity is destroyed. Cleans up the viewer, configuration and any view.
      */
     override fun onDestroy() {
+        val activeViewer = viewModel.state.value.viewer
+        viewModel.retainPageViewportState(
+            (activeViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState(),
+        )
+        activeViewer?.destroy()
         super.onDestroy()
-        viewModel.state.value.viewer?.destroy()
         config = null
         menuToggleToast?.cancel()
         readingModeToast?.cancel()
@@ -381,10 +387,7 @@ class ReaderActivity : BaseActivity() {
                 ReaderPreferences.ColorFilterMode.getOrNull(colorOverlayMode)?.second
             }
 
-            val cropBorderPaged by readerPreferences.cropBorders().collectAsState()
-            val cropBorderWebtoon by readerPreferences.cropBordersWebtoon().collectAsState()
-            val isPagerType = ReadingMode.isPagerType(viewModel.getMangaReadingMode())
-            val cropEnabled = if (isPagerType) cropBorderPaged else cropBorderWebtoon
+            val dualPageMode by readerPreferences.dualPageMode().collectAsState()
 
             ReaderContentOverlay(
                 brightness = state.brightnessOverlayValue,
@@ -425,12 +428,8 @@ class ReaderActivity : BaseActivity() {
                     viewModel.getMangaOrientation(resolveDefault = false),
                 ),
                 onClickOrientation = viewModel::openOrientationModeSelectDialog,
-                cropEnabled = cropEnabled,
-                onClickCropBorder = {
-                    val enabled = viewModel.toggleCropBorders()
-                    menuToggleToast?.cancel()
-                    menuToggleToast = toast(if (enabled) MR.strings.on else MR.strings.off)
-                },
+                dualPageMode = dualPageMode,
+                onChangeDualPageMode = { readerPreferences.dualPageMode().set(it) },
                 onClickSettings = viewModel::openSettingsDialog,
             )
 
@@ -538,7 +537,14 @@ class ReaderActivity : BaseActivity() {
 
         // Destroy previous viewer if there was one
         if (prevViewer != null) {
+            val viewportState = viewModel.consumePageViewportState()
+                ?: (prevViewer as? ReaderPageViewportStateOwner)?.exportPageViewportState()
             prevViewer.destroy()
+            val zoomStates = (prevViewer as? ReaderPageZoomStateOwner)?.exportPageZoomStates()
+            if (zoomStates != null) {
+                (newViewer as? ReaderPageZoomStateOwner)?.importPageZoomStates(zoomStates)
+            }
+            (newViewer as? ReaderPageViewportStateOwner)?.importPageViewportState(viewportState)
             binding.viewerContainer.removeAllViews()
         }
         viewModel.onViewerLoaded(newViewer)
