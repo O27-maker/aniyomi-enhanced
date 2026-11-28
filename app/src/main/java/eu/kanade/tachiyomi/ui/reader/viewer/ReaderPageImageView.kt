@@ -23,6 +23,7 @@ import coil3.asDrawable
 import coil3.dispose
 import coil3.imageLoader
 import coil3.request.CachePolicy
+import coil3.request.Disposable
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.size.Precision
@@ -68,6 +69,48 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private var config: Config? = null
 
+    /** Active Coil request, released when this page holder is recycled. */
+    private var imageRequest: Disposable? = null
+
+    /** Invalidates callbacks that outlive the request or page-view lifecycle that created them. */
+    private var imageRequestGeneration = 0L
+    private var landscapeZoomHandler: android.os.Handler? = null
+    private var landscapeZoomRunnable: Runnable? = null
+
+    private fun cancelLandscapeZoom() {
+        landscapeZoomRunnable?.let { landscapeZoomHandler?.removeCallbacks(it) }
+        landscapeZoomRunnable = null
+        landscapeZoomHandler = null
+    }
+
+    private fun beginImageRequest(): Long {
+        cancelLandscapeZoom()
+        imageRequest?.dispose()
+        imageRequest = null
+        imageRequestGeneration += 1
+        return imageRequestGeneration
+    }
+
+    /**
+     * Keep animated pages from running while their pager holder is detached.
+     * The drawable itself remains attached to the image view so zoom and decoded
+     * image state are preserved when a Spread holder is reattached.
+     */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        (pageView as? AppCompatImageView)?.drawable
+            ?.let { it as? Animatable }
+            ?.start()
+    }
+
+    override fun onDetachedFromWindow() {
+        cancelLandscapeZoom()
+        (pageView as? AppCompatImageView)?.drawable
+            ?.let { it as? Animatable }
+            ?.stop()
+        super.onDetachedFromWindow()
+    }
+
     var onImageLoaded: (() -> Unit)? = null
     var onImageLoadError: (() -> Unit)? = null
     var onScaleChanged: ((newScale: Float) -> Unit)? = null
@@ -100,6 +143,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
     }
 
     open fun onPageSelected(forward: Boolean) {
+        val requestGeneration = imageRequestGeneration
         with(pageView as? SubsamplingScaleImageView) {
             if (this == null) return
             if (isReady) {
@@ -108,13 +152,17 @@ open class ReaderPageImageView @JvmOverloads constructor(
                 setOnImageEventListener(
                     object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
                         override fun onReady() {
-                            setupZoom(config)
-                            landscapeZoom(forward)
-                            this@ReaderPageImageView.onImageLoaded()
+                            if (imageRequestGeneration == requestGeneration) {
+                                setupZoom(config)
+                                landscapeZoom(forward)
+                                this@ReaderPageImageView.onImageLoaded()
+                            }
                         }
 
                         override fun onImageLoadError(e: Exception) {
-                            onImageLoadError()
+                            if (imageRequestGeneration == requestGeneration) {
+                                this@ReaderPageImageView.onImageLoadError()
+                            }
                         }
                     },
                 )
@@ -129,36 +177,111 @@ open class ReaderPageImageView @JvmOverloads constructor(
             sWidth > sHeight &&
             scale == minScale
         ) {
-            handler?.postDelayed(500) {
-                val point = when (config!!.zoomStartPosition) {
-                    ZoomStartPosition.LEFT -> if (forward) {
-                        PointF(0F, 0F)
-                    } else {
-                        PointF(
-                            sWidth.toFloat(),
-                            0F,
-                        )
+            val targetHandler = handler ?: return
+            val requestGeneration = imageRequestGeneration
+            cancelLandscapeZoom()
+            val runnable = Runnable {
+                landscapeZoomRunnable = null
+                landscapeZoomHandler = null
+                if (
+                    imageRequestGeneration == requestGeneration &&
+                    pageView === this &&
+                    isAttachedToWindow &&
+                    isReady
+                ) {
+                    val point = when (config!!.zoomStartPosition) {
+                        ZoomStartPosition.LEFT -> if (forward) {
+                            PointF(0F, 0F)
+                        } else {
+                            PointF(sWidth.toFloat(), 0F)
+                        }
+                        ZoomStartPosition.RIGHT -> if (forward) {
+                            PointF(sWidth.toFloat(), 0F)
+                        } else {
+                            PointF(0F, 0F)
+                        }
+                        ZoomStartPosition.CENTER -> center
                     }
-                    ZoomStartPosition.RIGHT -> if (forward) {
-                        PointF(sWidth.toFloat(), 0F)
-                    } else {
-                        PointF(
-                            0F,
-                            0F,
-                        )
-                    }
-                    ZoomStartPosition.CENTER -> center
-                }
 
-                val targetScale = height.toFloat() / sHeight.toFloat()
-                animateScaleAndCenter(targetScale, point)!!
-                    .withDuration(500)
-                    .withEasing(EASE_IN_OUT_QUAD)
-                    .withInterruptible(true)
-                    .start()
+                    val targetScale = height.toFloat() / sHeight.toFloat()
+                    animateScaleAndCenter(targetScale, point)
+                        ?.withDuration(500)
+                        ?.withEasing(EASE_IN_OUT_QUAD)
+                        ?.withInterruptible(true)
+                        ?.start()
+                }
             }
+            landscapeZoomHandler = targetHandler
+            landscapeZoomRunnable = runnable
+            targetHandler.postDelayed(runnable, 500)
         }
     }
+
+    /**
+     * Returns the decoded page orientation for Spread eligibility.
+     *
+     * A null result means the image is not decoded yet or has no reliable intrinsic
+     * dimensions. Callers must treat that state as ineligible until a later layout pass;
+     * never guess from the screen bounds or the reader page index.
+     */
+    fun isPortraitImage(): Boolean? {
+        val dimensions = when (val view = pageView) {
+            is SubsamplingScaleImageView -> {
+                if (!view.isReady) return null
+                view.sWidth to view.sHeight
+            }
+            is AppCompatImageView -> {
+                val drawable = view.drawable ?: return null
+                drawable.intrinsicWidth to drawable.intrinsicHeight
+            }
+            else -> return null
+        }
+        val (imageWidth, imageHeight) = dimensions
+        if (imageWidth <= 0 || imageHeight <= 0) return null
+        return imageWidth < imageHeight
+    }
+
+    /** Captures user zoom and pan before a page holder is recycled. */
+    fun captureZoomState(): ImageZoomState? {
+        return when (val view = pageView) {
+            is SubsamplingScaleImageView -> {
+                if (!view.isReady || view.scale <= view.minScale) {
+                    null
+                } else {
+                    val center = view.center ?: return null
+                    ImageZoomState(view.scale, center.x, center.y)
+                }
+            }
+            is PhotoView -> {
+                if (view.scale <= 1F) null else ImageZoomState(view.scale)
+            }
+            else -> null
+        }
+    }
+
+    fun restoreZoomState(state: ImageZoomState) {
+        // Page selection can schedule automatic landscape zoom before the image-loaded
+        // callback restores the user's state. Cancel that delayed animation so it cannot
+        // overwrite the restored scale or pan position half a second later.
+        cancelLandscapeZoom()
+        when (val view = pageView) {
+            is SubsamplingScaleImageView -> {
+                if (view.isReady && state.centerX != null && state.centerY != null) {
+                    view.setScaleAndCenter(
+                        state.scale.coerceIn(view.minScale, view.maxScale),
+                        PointF(state.centerX, state.centerY),
+                    )
+                }
+            }
+            is PhotoView -> view.setScale(state.scale.coerceAtLeast(1F), true)
+        }
+    }
+
+    data class ImageZoomState(
+        val scale: Float,
+        val centerX: Float? = null,
+        val centerY: Float? = null,
+    )
 
     fun setImage(drawable: Drawable, config: Config) {
         this.config = config
@@ -182,12 +305,65 @@ open class ReaderPageImageView @JvmOverloads constructor(
         }
     }
 
-    fun recycle() = pageView?.let {
-        when (it) {
-            is SubsamplingScaleImageView -> it.recycle()
-            is AppCompatImageView -> it.dispose()
+    private fun releasePageView() {
+        pageView?.let {
+            when (it) {
+                is SubsamplingScaleImageView -> {
+                    // Image-event listeners capture this wrapper and the page request that
+                    // installed them. Drop them before recycling or reusing the child view.
+                    it.setOnImageEventListener(null)
+                    it.recycle()
+                }
+                is AppCompatImageView -> {
+                    // Stop animated pages before Coil clears the drawable during recycling.
+                    (it.drawable as? Animatable)?.stop()
+                    it.dispose()
+                }
+            }
+            it.isVisible = false
         }
-        it.isVisible = false
+    }
+
+    fun recycle() {
+        beginImageRequest()
+        releasePageView()
+    }
+
+    /**
+     * Permanently release this wrapper when its owning pager holder is destroyed.
+     * Unlike [recycle], this also drops the child view and callbacks that may retain
+     * the wrapper or its owning viewer.
+     */
+    fun disposePermanently() {
+        // Stop animation before recycle() releases the image view and its drawable.
+        (pageView as? AppCompatImageView)?.drawable
+            ?.let { it as? Animatable }
+            ?.stop()
+        recycle()
+        pageView?.apply {
+            setOnClickListener(null)
+            when (this) {
+                is SubsamplingScaleImageView -> {
+                    setOnImageEventListener(null)
+                    setOnStateChangedListener(null)
+                }
+                is PhotoView -> {
+                    setOnScaleChangeListener(null)
+                    setOnDoubleTapListener(null)
+                    setImageDrawable(null)
+                }
+                is AppCompatImageView -> setImageDrawable(null)
+            }
+            removeView(this)
+        }
+        pageView = null
+        config = null
+        pageBackground = null
+        background = null
+        onImageLoaded = null
+        onImageLoadError = null
+        onScaleChanged = null
+        onViewClicked = null
     }
 
     /**
@@ -236,16 +412,19 @@ open class ReaderPageImageView @JvmOverloads constructor(
         (pageView as? SubsamplingScaleImageView)?.let { view ->
 
             val target = fn(view.center ?: return, view)
-            view.animateCenter(target)!!
-                .withEasing(EASE_OUT_QUAD)
-                .withDuration(250)
-                .withInterruptible(true)
-                .start()
+            view.animateCenter(target)
+                ?.withEasing(EASE_OUT_QUAD)
+                ?.withDuration(250)
+                ?.withInterruptible(true)
+                ?.start()
         }
     }
 
     private fun prepareNonAnimatedImageView() {
         if (pageView is SubsamplingScaleImageView) return
+        // Invalidate callbacks before recycling a view of the previous image type.
+        beginImageRequest()
+        releasePageView()
         removeView(pageView)
 
         pageView = if (isWebtoon) {
@@ -290,6 +469,7 @@ open class ReaderPageImageView @JvmOverloads constructor(
         data: Any,
         config: Config,
     ) = (pageView as? SubsamplingScaleImageView)?.apply {
+        val requestGeneration = beginImageRequest()
         setDoubleTapZoomDuration(config.zoomDuration.getSystemScaledDuration())
         setMinimumScaleType(config.minimumScaleType)
         setMinimumDpi(1) // Just so that very small image will be fit for initial load
@@ -297,13 +477,17 @@ open class ReaderPageImageView @JvmOverloads constructor(
         setOnImageEventListener(
             object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
                 override fun onReady() {
-                    setupZoom(config)
-                    if (isVisibleOnScreen()) landscapeZoom(true)
-                    this@ReaderPageImageView.onImageLoaded()
+                    if (imageRequestGeneration == requestGeneration) {
+                        setupZoom(config)
+                        if (isVisibleOnScreen()) landscapeZoom(true)
+                        this@ReaderPageImageView.onImageLoaded()
+                    }
                 }
 
                 override fun onImageLoadError(e: Exception) {
-                    this@ReaderPageImageView.onImageLoadError()
+                    if (imageRequestGeneration == requestGeneration) {
+                        this@ReaderPageImageView.onImageLoadError()
+                    }
                 }
             },
         )
@@ -327,12 +511,16 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     .diskCachePolicy(CachePolicy.DISABLED)
                     .target(
                         onSuccess = { result ->
-                            val image = result as BitmapImage
-                            setImage(ImageSource.bitmap(image.bitmap))
-                            isVisible = true
+                            if (imageRequestGeneration == requestGeneration) {
+                                val image = result as BitmapImage
+                                setImage(ImageSource.bitmap(image.bitmap))
+                                isVisible = true
+                            }
                         },
                         onError = {
-                            onImageLoadError()
+                            if (imageRequestGeneration == requestGeneration) {
+                                onImageLoadError()
+                            }
                         },
                     )
                     .size(ViewSizeResolver(this@ReaderPageImageView))
@@ -341,7 +529,9 @@ open class ReaderPageImageView @JvmOverloads constructor(
                     .customDecoder(true)
                     .crossfade(false)
                     .build()
-                    .let(context.imageLoader::enqueue)
+                    .let { request ->
+                        imageRequest = context.imageLoader.enqueue(request)
+                    }
             }
             else -> {
                 throw IllegalArgumentException("Not implemented for class ${data::class.simpleName}")
@@ -351,6 +541,9 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private fun prepareAnimatedImageView() {
         if (pageView is AppCompatImageView) return
+        // Invalidate callbacks before disposing a view of the previous image type.
+        beginImageRequest()
+        releasePageView()
         removeView(pageView)
 
         pageView = if (isWebtoon) {
@@ -396,25 +589,30 @@ open class ReaderPageImageView @JvmOverloads constructor(
             setZoomTransitionDuration(config.zoomDuration.getSystemScaledDuration())
         }
 
+        val requestGeneration = beginImageRequest()
         val request = ImageRequest.Builder(context)
             .data(data)
             .memoryCachePolicy(CachePolicy.DISABLED)
             .diskCachePolicy(CachePolicy.DISABLED)
             .target(
                 onSuccess = { result ->
-                    val drawable = result.asDrawable(context.resources)
-                    setImageDrawable(drawable)
-                    (drawable as? Animatable)?.start()
-                    isVisible = true
-                    this@ReaderPageImageView.onImageLoaded()
+                    if (imageRequestGeneration == requestGeneration) {
+                        val drawable = result.asDrawable(context.resources)
+                        setImageDrawable(drawable)
+                        if (isAttachedToWindow) (drawable as? Animatable)?.start()
+                        isVisible = true
+                        this@ReaderPageImageView.onImageLoaded()
+                    }
                 },
                 onError = {
-                    this@ReaderPageImageView.onImageLoadError()
+                    if (imageRequestGeneration == requestGeneration) {
+                        this@ReaderPageImageView.onImageLoadError()
+                    }
                 },
             )
             .crossfade(false)
             .build()
-        context.imageLoader.enqueue(request)
+        imageRequest = context.imageLoader.enqueue(request)
     }
 
     private fun Int.getSystemScaledDuration(): Int {

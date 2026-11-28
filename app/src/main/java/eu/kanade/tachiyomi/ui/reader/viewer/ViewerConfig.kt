@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.reader.viewer
 
+import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -11,6 +12,12 @@ import tachiyomi.core.common.preference.Preference
  * Common configuration for all viewers.
  */
 abstract class ViewerConfig(readerPreferences: ReaderPreferences, private val scope: CoroutineScope) {
+
+    /** User-selected presentation, independent of the active reading direction/layout. */
+    var dualPagePresentationMode = DualPagePresentationMode.fromPreference(readerPreferences.dualPageMode().get())
+        private set
+
+    var dualPagePresentationModeChangedListener: ((DualPagePresentationMode) -> Unit)? = null
 
     var imagePropertyChangedListener: (() -> Unit)? = null
 
@@ -46,6 +53,12 @@ abstract class ViewerConfig(readerPreferences: ReaderPreferences, private val sc
         protected set
 
     init {
+        readerPreferences.dualPageMode()
+            .register(
+                { dualPagePresentationMode = DualPagePresentationMode.fromPreference(it) },
+                { dualPagePresentationModeChangedListener?.invoke(dualPagePresentationMode) },
+            )
+
         readerPreferences.readWithLongTap()
             .register({ longTapEnabled = it })
 

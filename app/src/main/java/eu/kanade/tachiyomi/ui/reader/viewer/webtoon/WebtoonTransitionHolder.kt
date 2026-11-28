@@ -64,6 +64,14 @@ class WebtoonTransitionHolder(
      * Binds the given [transition] with this view holder, subscribing to its state.
      */
     fun bind(transition: ChapterTransition) {
+        // A recycled holder may be rebound to the terminal transition, which has no
+        // destination chapter. Stop observing the previous destination before binding
+        // the new transition so stale loading/error UI cannot leak into this boundary.
+        stateJob?.cancel()
+        stateJob = null
+        pagesContainer.removeAllViews()
+        pagesContainer.isVisible = false
+
         transitionView.bind(transition, viewer.downloadManager, viewer.activity.viewModel.manga)
 
         transition.to?.let { observeStatus(it, transition) }
@@ -74,6 +82,11 @@ class WebtoonTransitionHolder(
      */
     override fun recycle() {
         stateJob?.cancel()
+        stateJob = null
+        // A pooled holder can remain idle for a long time. Remove transient controls,
+        // especially retry listeners that capture the previous chapter and viewer.
+        pagesContainer.removeAllViews()
+        pagesContainer.isVisible = false
     }
 
     /**

@@ -1,6 +1,5 @@
 package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
-import android.content.res.Resources
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -17,6 +16,7 @@ import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.util.system.dpToPx
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest
@@ -41,6 +41,7 @@ import tachiyomi.core.common.util.system.logcat
 class WebtoonPageHolder(
     private val frame: ReaderPageImageView,
     viewer: WebtoonViewer,
+    private val hostRecycler: WebtoonRecyclerView = viewer.recycler,
 ) : WebtoonBaseHolder(frame, viewer) {
 
     /**
@@ -63,7 +64,7 @@ class WebtoonPageHolder(
      * Getter to retrieve the height of the recycler view.
      */
     private val parentHeight
-        get() = viewer.recycler.height
+        get() = hostRecycler.height
 
     /**
      * Page of a chapter.
@@ -89,8 +90,23 @@ class WebtoonPageHolder(
      * Binds the given [page] with this view holder, subscribing to its state.
      */
     fun bind(page: ReaderPage) {
-        this.page = page
+        // A holder can be rebound while still attached, without passing through recycle().
+        // Release the previous page's image and controls before exposing the new identity.
+        this.page?.takeIf { it !== page }?.let { previousPage ->
+            frame.captureZoomState()?.let { viewer.savePageZoomState(previousPage, it) }
+            loadJob?.cancel()
+            loadJob = null
+            removeErrorLayout()
+            frame.recycle()
+            progressIndicator.setProgress(0)
+            progressContainer.isVisible = true
+        }
+
+        // Stop the previous page before publishing the new identity. Otherwise an old
+        // collector can briefly observe this.page as the newly bound page.
         loadJob?.cancel()
+        loadJob = null
+        this.page = page
         loadJob = scope.launch { loadPageAndProcessStatus() }
         refreshLayoutParams()
     }
@@ -101,7 +117,7 @@ class WebtoonPageHolder(
                 bottomMargin = 15.dpToPx
             }
 
-            val margin = Resources.getSystem().displayMetrics.widthPixels * (viewer.config.sidePadding / 100f)
+            val margin = hostRecycler.width * (viewer.config.sidePadding / 100f)
             marginEnd = margin.toInt()
             marginStart = margin.toInt()
         }
@@ -111,6 +127,10 @@ class WebtoonPageHolder(
      * Called when the view is recycled and added to the view pool.
      */
     override fun recycle() {
+        // Capture before clearing identity and recycling the image view.
+        page?.let { current -> frame.captureZoomState()?.let { viewer.savePageZoomState(current, it) } }
+        // Clear the page identity before cancellation so stale retry actions cannot target it.
+        page = null
         loadJob?.cancel()
         loadJob = null
 
@@ -135,16 +155,18 @@ class WebtoonPageHolder(
                 loader.loadPage(page)
             }
             page.statusFlow.collectLatest { state ->
+                // Ignore any status emission from a page that no longer owns this holder.
+                if (this@WebtoonPageHolder.page !== page) return@collectLatest
                 when (state) {
                     Page.State.QUEUE -> setQueued()
                     Page.State.LOAD_PAGE -> setLoading()
                     Page.State.DOWNLOAD_IMAGE -> {
                         setDownloading()
                         page.progressFlow.collectLatest { value ->
-                            progressIndicator.setProgress(value)
+                            if (this@WebtoonPageHolder.page === page) progressIndicator.setProgress(value)
                         }
                     }
-                    Page.State.READY -> setImage()
+                    Page.State.READY -> setImage(page)
                     Page.State.ERROR -> setError()
                 }
             }
@@ -181,10 +203,10 @@ class WebtoonPageHolder(
     /**
      * Called when the page is ready.
      */
-    private suspend fun setImage() {
+    private suspend fun setImage(expectedPage: ReaderPage) {
         progressIndicator.setProgress(0)
 
-        val streamFn = page?.stream ?: return
+        val streamFn = expectedPage.stream ?: return
 
         try {
             val (source, isAnimated) = withIOContext {
@@ -193,6 +215,9 @@ class WebtoonPageHolder(
                 Pair(source, isAnimated)
             }
             withUIContext {
+                // A holder may be recycled and rebound while image processing is running
+                // off the UI thread. Never let an old page replace the newly bound image.
+                if (this@WebtoonPageHolder.page !== expectedPage) return@withUIContext
                 frame.setImage(
                     source,
                     isAnimated,
@@ -204,12 +229,19 @@ class WebtoonPageHolder(
                 )
                 removeErrorLayout()
             }
+        } catch (e: CancellationException) {
+            // Recycling or rebinding cancels this load; cancellation is not an image failure.
+            throw e
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
-                setError()
+                if (this@WebtoonPageHolder.page === expectedPage) setError()
             }
         }
+    }
+
+    internal fun restoreZoomState(state: ReaderPageImageView.ImageZoomState) {
+        frame.restoreZoomState(state)
     }
 
     private fun process(imageSource: BufferedSource): BufferedSource {
@@ -252,6 +284,10 @@ class WebtoonPageHolder(
     private fun onImageDecoded() {
         progressContainer.isVisible = false
         removeErrorLayout()
+        page?.let { current ->
+            viewer.restorePageZoomState(current, this)
+            viewer.onSpreadPageOrientationReady(current, frame.isPortraitImage())
+        }
     }
 
     /**
@@ -286,13 +322,12 @@ class WebtoonPageHolder(
         }
 
         val imageUrl = page?.imageUrl
+        errorLayout?.actionOpenInWebView?.setOnClickListener(null)
         errorLayout?.actionOpenInWebView?.isVisible = imageUrl != null
-        if (imageUrl != null) {
-            if (imageUrl.startsWith("http", true)) {
-                errorLayout?.actionOpenInWebView?.setOnClickListener {
-                    val intent = WebViewActivity.newIntent(context, imageUrl)
-                    context.startActivity(intent)
-                }
+        if (imageUrl?.startsWith("http", true) == true) {
+            errorLayout?.actionOpenInWebView?.setOnClickListener {
+                val intent = WebViewActivity.newIntent(context, imageUrl)
+                context.startActivity(intent)
             }
         }
 

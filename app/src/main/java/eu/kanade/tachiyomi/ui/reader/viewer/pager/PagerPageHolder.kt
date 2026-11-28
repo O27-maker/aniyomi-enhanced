@@ -12,8 +12,10 @@ import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import eu.kanade.tachiyomi.ui.reader.viewer.ReaderProgressIndicator
 import eu.kanade.tachiyomi.ui.webview.WebViewActivity
 import eu.kanade.tachiyomi.widget.ViewPagerAdapter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -42,6 +44,10 @@ class PagerPageHolder(
     override val item
         get() = page
 
+    /** Decoded orientation used by Spread; null means the image is not ready yet. */
+    val isPortraitForSpread: Boolean?
+        get() = isPortraitImage()
+
     /**
      * Loading progress bar to indicate the current progress.
      */
@@ -59,8 +65,45 @@ class PagerPageHolder(
      */
     private var loadJob: Job? = null
 
+    private var disposed = false
+
     init {
-        loadJob = scope.launch { loadPageAndProcessStatus() }
+        startLoading()
+    }
+
+    /**
+     * A spread container may detach and later reattach an existing holder. Restart its
+     * page-state collector in that case; detaching must not permanently disable the holder.
+     */
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        startLoading()
+    }
+
+    private fun startLoading() {
+        if (!disposed && loadJob?.isActive != true) {
+            loadJob = scope.launch { loadPageAndProcessStatus() }
+        }
+    }
+
+    /**
+     * Permanently releases this holder when the pager adapter destroys its view.
+     * Detachment alone is not disposal because Spread containers may reattach holders.
+     */
+    fun dispose() {
+        if (disposed) return
+        disposed = true
+        captureZoomState()?.let { viewer.savePageZoomState(page, it) }
+        loadJob?.cancel()
+        loadJob = null
+        scope.cancel()
+        disposePermanently()
+
+        // Drop transient controls that can retain the viewer/activity through click listeners
+        // or custom view properties after the adapter permanently destroys this holder.
+        removeErrorLayout()
+        progressIndicator?.let(::removeView)
+        progressIndicator = null
     }
 
     /**
@@ -158,6 +201,8 @@ class PagerPageHolder(
                 Triple(source, isAnimated, background)
             }
             withUIContext {
+                // A dispatched UI continuation can race with permanent adapter disposal.
+                if (disposed) return@withUIContext
                 setImage(
                     source,
                     isAnimated,
@@ -174,9 +219,12 @@ class PagerPageHolder(
                 }
                 removeErrorLayout()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e)
             withUIContext {
+                if (disposed) return@withUIContext
                 setError()
             }
         }
@@ -250,6 +298,12 @@ class PagerPageHolder(
     override fun onImageLoaded() {
         super.onImageLoaded()
         progressIndicator?.hide()
+        // Restore before notifying Spread: the orientation callback may rebuild the
+        // projection and dispose this holder as part of regrouping.
+        viewer.restorePageZoomState(page, this)
+        // Decoded dimensions are now available to a Spread projection. The listener
+        // decides whether a safe, anchor-preserving projection rebuild is possible.
+        viewer.onSpreadPageOrientationReady(page)
     }
 
     /**
@@ -297,7 +351,15 @@ class PagerPageHolder(
      * Removes the decode error layout from the holder, if found.
      */
     private fun removeErrorLayout() {
-        errorLayout?.root?.isVisible = false
+        errorLayout?.actionRetry?.apply {
+            setOnClickListener(null)
+            viewer = null
+        }
+        errorLayout?.actionOpenInWebView?.apply {
+            setOnClickListener(null)
+            viewer = null
+        }
+        errorLayout?.root?.let(::removeView)
         errorLayout = null
     }
 }

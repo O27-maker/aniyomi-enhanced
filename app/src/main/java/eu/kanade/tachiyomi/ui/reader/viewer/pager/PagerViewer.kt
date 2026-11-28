@@ -6,9 +6,11 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup.LayoutParams
+import android.widget.FrameLayout
 import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
@@ -17,8 +19,16 @@ import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import eu.kanade.tachiyomi.ui.reader.model.InsertPage
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.model.ViewerChapters
+import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
+import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportAnchor
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportState
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageViewportStateOwner
+import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageZoomStateOwner
 import eu.kanade.tachiyomi.ui.reader.viewer.Viewer
 import eu.kanade.tachiyomi.ui.reader.viewer.ViewerNavigation.NavigationRegion
+import eu.kanade.tachiyomi.util.system.createReaderThemeContext
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import tachiyomi.core.common.util.system.logcat
@@ -29,9 +39,13 @@ import kotlin.math.min
  * Implementation of a [Viewer] to display pages with a [ViewPager].
  */
 @Suppress("LeakingThis")
-abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
+abstract class PagerViewer(
+    val activity: ReaderActivity,
+) : Viewer, ReaderPageZoomStateOwner, ReaderPageViewportStateOwner {
 
     val downloadManager: MangaDownloadManager by injectLazy()
+
+    private val readerPreferences: ReaderPreferences by injectLazy()
 
     private val scope = MainScope()
 
@@ -40,6 +54,23 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * top of this class.
      */
     val pager = createPager()
+
+    /**
+     * Stored separately so it can be detached during viewer teardown. The listener captures
+     * this viewer and its activity through onPageChange and is otherwise retained by ViewPager.
+     */
+    private val pageChangeListener = object : ViewPager.SimpleOnPageChangeListener() {
+        override fun onPageSelected(position: Int) {
+            if (!activity.isScrollingThroughPages) {
+                activity.hideMenu()
+            }
+            onPageChange(position)
+        }
+
+        override fun onPageScrollStateChanged(state: Int) {
+            isIdle = state == ViewPager.SCROLL_STATE_IDLE
+        }
+    }
 
     /**
      * Configuration used by the pager, like allow taps, scale mode on images, page transitions...
@@ -51,10 +82,27 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private val adapter = PagerViewerAdapter(this)
 
+    /** Stable root allows the paged reader to swap between ViewPager and Split Scroll. */
+    private val root = FrameLayout(activity)
+    private var splitScrollHost: PagerSplitScrollHostView? = null
+    private var splitScrollController: PagerSplitScrollSegmentController? = null
+    private var pendingSplitScrollViewportState: ReaderPageViewportState? = null
+    private var activeBoundaryHolder: PagerTransitionHolder? = null
+
+    /** Immutable Spread projection currently installed in the pager adapter. */
+    private var activeSpreadProjection: SpreadAdapterProjection<Any>? = null
+
     /**
      * Currently active item. It can be a chapter page or a chapter transition.
      */
     private var currentPage: Any? = null
+    private var currentPageForward = true
+
+    /** Zoom state survives holder disposal while switching reader presentations. */
+    private val pageZoomStates = java.util.IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>()
+
+    /** Original source index requested by moveToPage while the pager changes display units. */
+    private var pendingSourceSelectionIndex: Int? = null
 
     /**
      * Viewer chapters to set when the pager enters idle mode. Otherwise, if the view was settling
@@ -83,45 +131,19 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     init {
         pager.isVisible = false // Don't layout the pager yet
         pager.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        root.addView(pager)
         pager.isFocusable = false
         pager.offscreenPageLimit = 1
         pager.id = R.id.reader_pager
         pager.adapter = adapter
-        pager.addOnPageChangeListener(
-            object : ViewPager.SimpleOnPageChangeListener() {
-                override fun onPageSelected(position: Int) {
-                    if (!activity.isScrollingThroughPages) {
-                        activity.hideMenu()
-                    }
-                    onPageChange(position)
-                }
-
-                override fun onPageScrollStateChanged(state: Int) {
-                    isIdle = state == ViewPager.SCROLL_STATE_IDLE
-                }
-            },
-        )
-        pager.tapListener = { event ->
-            val viewPosition = IntArray(2)
-            pager.getLocationOnScreen(viewPosition)
-            val viewPositionRelativeToWindow = IntArray(2)
-            pager.getLocationInWindow(viewPositionRelativeToWindow)
-            val pos = PointF(
-                (event.rawX - viewPosition[0] + viewPositionRelativeToWindow[0]) / pager.width,
-                (event.rawY - viewPosition[1] + viewPositionRelativeToWindow[1]) / pager.height,
-            )
-            when (config.navigator.getAction(pos)) {
-                NavigationRegion.MENU -> activity.toggleMenu()
-                NavigationRegion.NEXT -> moveToNext()
-                NavigationRegion.PREV -> moveToPrevious()
-                NavigationRegion.RIGHT -> moveRight()
-                NavigationRegion.LEFT -> moveLeft()
-            }
-        }
-        pager.longTapListener = f@{
+        pager.addOnPageChangeListener(pageChangeListener)
+        pager.tapListener = { event -> handleTap(event, pager) }
+        pager.longTapListener = f@{ event ->
             if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
-                val item = adapter.items.getOrNull(pager.currentItem)
-                if (item is ReaderPage) {
+                // In Spread mode the long-pressed page may not be the selected page.
+                val item = pager.findPageHolderAt(event.rawX, event.rawY)?.item as? ReaderPage
+                    ?: adapter.sourceItemAtDisplay(pager.currentItem) as? ReaderPage
+                if (item != null) {
                     activity.onPageLongTap(item)
                     return@f true
                 }
@@ -139,6 +161,31 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
             refreshAdapter()
         }
 
+        config.spreadLayoutChangedListener = {
+            rebuildSpreadProjection()
+        }
+
+        config.dualPagePresentationModeChangedListener = { mode ->
+            when (mode) {
+                DualPagePresentationMode.SPLIT_SCROLL -> {
+                    clearSpreadPresentation()
+                    installSplitScrollPresentation()
+                }
+                DualPagePresentationMode.SPREAD -> {
+                    leaveSplitScrollPresentation()
+                    rebuildSpreadProjection()
+                }
+                DualPagePresentationMode.NONE -> {
+                    leaveSplitScrollPresentation()
+                    clearSpreadPresentation()
+                }
+            }
+        }
+
+        setSpreadPageOrientationChangedListener {
+            rebuildSpreadProjection()
+        }
+
         config.navigationModeChangedListener = {
             val showOnStart = config.navigationOverlayOnStart || config.forceNavigationOverlay
             activity.binding.navigationOverlay.setNavigation(config.navigator, showOnStart)
@@ -146,6 +193,33 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     }
 
     override fun destroy() {
+        // Dispose the alternate host before releasing the authoritative source adapter.
+        leaveSplitScrollPresentation()
+        // Stop selection callbacks before adapter detachment can trigger pager updates.
+        pager.removeOnPageChangeListener(pageChangeListener)
+        // Detach the adapter while the pager is still alive. ViewPager destroys its
+        // instantiated items here, allowing PagerViewerAdapter to permanently dispose
+        // both direct holders and holders nested inside presentation containers.
+        pager.adapter = null
+        // Pager's gesture detector owns these callbacks independently of its adapter.
+        // Clear them so a detached pager cannot retain this viewer and its activity.
+        pager.tapListener = null
+        pager.longTapListener = null
+
+        // The adapter has now disposed instantiated holders; release its remaining page models.
+        adapter.clear()
+        currentPage = null
+        awaitingIdleViewerChapters = null
+
+        // Preference observers are scoped, while these callbacks are explicit viewer references.
+        config.dualPageSplitChangedListener = null
+        config.dualPagePresentationModeChangedListener = null
+        config.spreadLayoutChangedListener = null
+        spreadPageOrientationChangedListener = null
+        activeSpreadProjection = null
+        config.imagePropertyChangedListener = null
+        config.navigationModeChangedListener = null
+
         super.destroy()
         scope.cancel()
     }
@@ -159,43 +233,121 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Returns the view this viewer uses.
      */
     override fun getView(): View {
-        return pager
+        return root
+    }
+
+    /** Route confirmed taps from either the pager or Split Scroll host through one navigator. */
+    private fun handleTap(event: MotionEvent, target: View) {
+        val viewPosition = IntArray(2)
+        target.getLocationOnScreen(viewPosition)
+        val viewPositionRelativeToWindow = IntArray(2)
+        target.getLocationInWindow(viewPositionRelativeToWindow)
+        if (target.width <= 0 || target.height <= 0) return
+        val position = PointF(
+            (event.rawX - viewPosition[0] + viewPositionRelativeToWindow[0]) / target.width,
+            (event.rawY - viewPosition[1] + viewPositionRelativeToWindow[1]) / target.height,
+        )
+        when (config.navigator.getAction(position)) {
+            NavigationRegion.MENU -> activity.toggleMenu()
+            NavigationRegion.NEXT -> moveToNext()
+            NavigationRegion.PREV -> moveToPrevious()
+            NavigationRegion.RIGHT -> moveRightAt(event.rawX, event.rawY)
+            NavigationRegion.LEFT -> moveLeftAt(event.rawX, event.rawY)
+        }
     }
 
     /**
      * Returns the PagerPageHolder for the provided page
      */
     private fun getPageHolder(page: ReaderPage): PagerPageHolder? =
-        pager.children
-            .filterIsInstance(PagerPageHolder::class.java)
-            .firstOrNull { it.item == page }
+        splitScrollController?.holderFor(page) ?: pager.findPageHolder(page)
+
+    /**
+     * Signal used by the live Spread projection. Orientation is only reliable
+     * after the holder reports a successfully decoded image; consumers must preserve the
+     * current source-page anchor before rebuilding display units.
+     */
+    internal var spreadPageOrientationChangedListener: ((ReaderPage) -> Unit)? = null
+        private set
+
+    internal fun onSpreadPageOrientationReady(page: ReaderPage) {
+        spreadPageOrientationChangedListener?.invoke(page)
+    }
+
+    internal fun setSpreadPageOrientationChangedListener(listener: ((ReaderPage) -> Unit)?) {
+        spreadPageOrientationChangedListener = listener
+    }
+
+    /**
+     * Returns decoded orientation only for an instantiated page holder.
+     * Pages not currently decoded remain ineligible for Spread pairing.
+     */
+    internal fun isPortraitPageForSpread(page: ReaderPage): Boolean? =
+        getPageHolder(page)?.isPortraitForSpread
+
+    /**
+     * Spread presentation nests the original page holders inside a frame. Search the
+     * pager's view tree so selection and pan navigation keep resolving the same holder.
+     */
+    private fun android.view.ViewGroup.findPageHolder(page: ReaderPage): PagerPageHolder? =
+        children.firstNotNullOfOrNull { child ->
+            when {
+                child is PagerPageHolder && child.item === page -> child
+                child is android.view.ViewGroup -> child.findPageHolder(page)
+                else -> null
+            }
+        }
 
     /**
      * Called when a new page (either a [ReaderPage] or [ChapterTransition]) is marked as active
      */
     private fun onPageChange(position: Int) {
-        val page = adapter.items.getOrNull(position)
-        if (page != null && currentPage != page) {
-            val allowPreload = checkAllowPreload(page as? ReaderPage)
-            val forward = when {
-                currentPage is ReaderPage && page is ReaderPage -> {
-                    // if both pages have the same number, it's a split page with an InsertPage
-                    if (page.number == (currentPage as ReaderPage).number) {
-                        // the InsertPage is always the second in the reading direction
-                        page is InsertPage
-                    } else {
-                        page.number > (currentPage as ReaderPage).number
-                    }
-                }
-                currentPage is ChapterTransition.Prev && page is ReaderPage ->
-                    false
-                else -> true
+        val projection = activeSpreadProjection
+        val pendingIndex = pendingSourceSelectionIndex?.let { requestedIndex ->
+            pendingSourceSelectionIndex = null
+            requestedIndex.takeIf { adapter.displayIndexForSource(it) == position }
+        }
+        val sourceIndex = if (projection != null) {
+            SpreadAdapterNavigationMap.adapterIndexForDisplay(
+                projection.units,
+                position,
+                pendingIndex ?: adapter.items.indexOfFirst { it === currentPage }.takeIf { it >= 0 },
+            )
+        } else {
+            position
+        }
+        onSourceIndexSelected(sourceIndex)
+    }
+
+    /** Shared source-index selection path for pager and independent Split Scroll columns. */
+    private fun onSourceIndexSelected(sourceIndex: Int?) {
+        val page = sourceIndex?.let(adapter.items::getOrNull) ?: return
+        if (currentPage === page) return
+        val allowPreload = checkAllowPreload(page as? ReaderPage)
+        val forward = when {
+            currentPage is ReaderPage && page is ReaderPage -> {
+                PagerSelectionDirection.isForwardBetweenPages(
+                    currentPageNumber = (currentPage as ReaderPage).number,
+                    nextPageNumber = page.number,
+                    isRightToLeft = this is R2LPagerViewer,
+                    nextIsInsertPage = page is InsertPage,
+                )
             }
-            currentPage = page
-            when (page) {
-                is ReaderPage -> onReaderPageSelected(page, allowPreload, forward)
-                is ChapterTransition -> onTransitionSelected(page)
+            currentPage is ChapterTransition && page is ReaderPage -> {
+                val transition = currentPage as ChapterTransition
+                PagerSelectionDirection.isForwardFromTransition(
+                    isPreviousTransition = transition is ChapterTransition.Prev,
+                    pageMatchesFromChapter = page.chapter == transition.from,
+                    pageMatchesToChapter = page.chapter == transition.to,
+                )
             }
+            else -> true
+        }
+        currentPage = page
+        currentPageForward = forward
+        when (page) {
+            is ReaderPage -> onReaderPageSelected(page, allowPreload, forward)
+            is ChapterTransition -> onTransitionSelected(page)
         }
     }
 
@@ -222,6 +374,42 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Called when a [ReaderPage] is marked as active. It notifies the
      * activity of the change and requests the preload of the next chapter if this is the last page.
      */
+
+    /** A Split Scroll row can bind after its source page was already selected. */
+    internal fun savePageZoomState(page: ReaderPage, state: ReaderPageImageView.ImageZoomState) {
+        pageZoomStates[page] = state
+    }
+
+    override fun exportPageViewportState(): ReaderPageViewportState? {
+        if (config.dualPagePresentationMode != DualPagePresentationMode.SPLIT_SCROLL) return null
+        val snapshot = splitScrollController?.captureViewportSnapshot() ?: return null
+        return ReaderPageViewportState(
+            left = snapshot.left?.let { ReaderPageViewportAnchor(it.page, it.offsetPx) },
+            right = snapshot.right?.let { ReaderPageViewportAnchor(it.page, it.offsetPx) },
+        )
+    }
+
+    override fun importPageViewportState(state: ReaderPageViewportState?) {
+        pendingSplitScrollViewportState = state
+    }
+
+    internal fun restorePageZoomState(page: ReaderPage, holder: PagerPageHolder) {
+        pageZoomStates.remove(page)?.let(holder::restoreZoomState)
+    }
+
+    override fun exportPageZoomStates(): java.util.IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState> =
+        java.util.IdentityHashMap(pageZoomStates).also { pageZoomStates.clear() }
+
+    override fun importPageZoomStates(
+        states: java.util.IdentityHashMap<ReaderPage, ReaderPageImageView.ImageZoomState>,
+    ) {
+        pageZoomStates.putAll(states)
+    }
+
+    internal fun onSplitScrollPageHolderBound(page: ReaderPage, holder: PagerPageHolder) {
+        if (currentPage === page) holder.onPageSelected(currentPageForward)
+    }
+
     private fun onReaderPageSelected(page: ReaderPage, allowPreload: Boolean, forward: Boolean) {
         val pages = page.chapter.pages ?: return
         logcat { "onReaderPageSelected: ${page.number}/${pages.size}" }
@@ -260,6 +448,94 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     }
 
     /**
+     * Rebuild the display projection from the authoritative effective adapter sequence.
+     * Only decoded portrait pages can pair; unknown pages remain single until their own
+     * orientation callback arrives. The active ReaderPage is retained by identity.
+     */
+    private fun rebuildSpreadProjection() {
+        if (config.dualPagePresentationMode != DualPagePresentationMode.SPREAD) {
+            return
+        }
+        if (adapter.items.isEmpty()) return
+
+        val selectedItem = currentPage ?: adapter.sourceItemAtDisplay(pager.currentItem)
+        val currentChapterPages = adapter.currentChapter?.pages
+        val coverPage = if (this is R2LPagerViewer) {
+            currentChapterPages?.lastOrNull()
+        } else {
+            currentChapterPages?.firstOrNull()
+        }
+        val coverPageIndex = coverPage?.let { page ->
+            adapter.items.indexOfFirst { it === page }.takeIf { it >= 0 }
+        }
+        val projection = SpreadAdapterProjection.buildReaderPagesAnchoredToItem(
+            adapterItems = adapter.items,
+            selectedItem = selectedItem,
+            isPortraitPage = ::isPortraitPageForSpread,
+            firstPageSingle = config.firstPageSingle,
+            firstPageIndex = coverPageIndex,
+        )
+        if (projection.units.isEmpty()) return
+        if (activeSpreadProjection?.let { sameSpreadUnits(it.units, projection.units) } == true) return
+
+        if (!adapter.setSpreadProjection(projection, this is R2LPagerViewer)) return
+        activeSpreadProjection = projection
+
+        val selectedSourceIndex = adapter.items.indexOfFirst { it === selectedItem }
+            .takeIf { it >= 0 }
+            ?: projection.units.firstOrNull()?.let {
+                when (it) {
+                    is SpreadAdapterItemMapper.Unit.Single -> it.adapterIndex
+                    is SpreadAdapterItemMapper.Unit.Pair -> it.firstAdapterIndex
+                }
+            }
+        val displayIndex = selectedSourceIndex?.let {
+            SpreadAdapterNavigationMap.displayIndexForAdapter(projection.units, it)
+        } ?: -1
+        if (displayIndex >= 0 && displayIndex != pager.currentItem) {
+            pager.setCurrentItem(displayIndex, false)
+            onPageChange(displayIndex)
+        }
+    }
+
+    private fun sameSpreadUnits(
+        first: List<SpreadAdapterItemMapper.Unit<Any>>,
+        second: List<SpreadAdapterItemMapper.Unit<Any>>,
+    ): Boolean {
+        if (first.size != second.size) return false
+        return first.indices.all { index ->
+            when (val left = first[index]) {
+                is SpreadAdapterItemMapper.Unit.Single -> {
+                    val right = second[index] as? SpreadAdapterItemMapper.Unit.Single<Any>
+                    right != null && left.adapterIndex == right.adapterIndex && left.item === right.item
+                }
+                is SpreadAdapterItemMapper.Unit.Pair -> {
+                    val right = second[index] as? SpreadAdapterItemMapper.Unit.Pair<Any>
+                    right != null &&
+                        left.firstAdapterIndex == right.firstAdapterIndex &&
+                        left.secondAdapterIndex == right.secondAdapterIndex &&
+                        left.first === right.first &&
+                        left.second === right.second
+                }
+            }
+        }
+    }
+
+    /** Return to one adapter item per page without changing the active source-page identity. */
+    private fun clearSpreadPresentation() {
+        val selectedSourceIndex = currentPage?.let { selected ->
+            adapter.items.indexOfFirst { it === selected }
+        } ?: -1
+        activeSpreadProjection = null
+        adapter.clearSpreadProjection()
+        if (selectedSourceIndex >= 0 && selectedSourceIndex < adapter.items.size) {
+            if (pager.currentItem != selectedSourceIndex) {
+                pager.setCurrentItem(selectedSourceIndex, false)
+            }
+        }
+    }
+
+    /**
      * Tells this viewer to set the given [chapters] as active. If the pager is currently idle,
      * it sets the chapters immediately, otherwise they are saved and set when it becomes idle.
      */
@@ -276,29 +552,71 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      */
     private fun setChaptersInternal(chapters: ViewerChapters) {
         val forceTransition = config.alwaysShowChapterTransition ||
-            adapter.items.getOrNull(
-                pager.currentItem,
-            ) is ChapterTransition
-        adapter.setChapters(chapters, forceTransition)
+            currentPage is ChapterTransition
+        // Invalidate column placements before the authoritative source list is mutated.
+        if (splitScrollHost != null) {
+            splitScrollController?.dispose()
+            splitScrollController = null
+        }
+        activeSpreadProjection = null
+        val insertPageToSelect = adapter.setChapters(chapters, forceTransition)
+        // Keep cached zoom only for exact page instances in the new source sequence.
+        pageZoomStates.keys.removeAll { cachedPage -> adapter.items.none { it === cachedPage } }
 
-        // Layout the pager once a chapter is being set
-        if (pager.isGone) {
+        // Layout the active presentation once a chapter is being set
+        if (config.dualPagePresentationMode == DualPagePresentationMode.SPLIT_SCROLL) {
+            val requestedPage = chapters.currChapter.pages?.let { pages ->
+                pages.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0)) ?: pages.lastOrNull()
+            }
+            val requestedIndex = requestedPage?.let { page -> adapter.items.indexOfFirst { it === page } }
+                ?.takeIf { it >= 0 }
+            if (splitScrollHost == null) {
+                installSplitScrollPresentation(requestedIndex)
+            } else {
+                rebuildSplitScrollPresentation(requestedIndex)
+            }
+        } else {
+            rebuildSpreadProjection()
+        }
+
+        if (pager.isGone && splitScrollHost == null) {
             logcat { "Pager first layout" }
             val pages = chapters.currChapter.pages ?: return
-            moveToPage(pages[min(chapters.currChapter.requestedPage, pages.lastIndex)])
+            val requestedPage = chapters.currChapter.requestedPage.coerceAtLeast(0)
+            val page = pages.getOrNull(requestedPage) ?: pages.lastOrNull() ?: return
+            moveToPage(page)
             pager.isVisible = true
+        } else if (splitScrollHost != null && currentPage == null) {
+            chapters.currChapter.pages?.let { pages ->
+                (pages.getOrNull(chapters.currChapter.requestedPage.coerceAtLeast(0)) ?: pages.lastOrNull())
+                    ?.let(::moveToPage)
+            }
         }
+
+        // Select a preprocessed split page only after the new pager/column projection exists.
+        // This preserves the adapter's historical landing-page behavior in every presentation.
+        insertPageToSelect?.let(::moveToPage)
     }
 
     /**
      * Tells this viewer to move to the given [page].
      */
     override fun moveToPage(page: ReaderPage) {
-        val position = adapter.items.indexOf(page)
+        val sourceIndex = adapter.items.indexOfFirst { it === page }
+        if (sourceIndex >= 0 && splitScrollHost != null) {
+            if (splitScrollController != null) {
+                splitScrollController?.moveToSourceIndex(sourceIndex)
+            } else {
+                pendingSourceSelectionIndex = sourceIndex
+            }
+            return
+        }
+        val position = if (sourceIndex >= 0) adapter.displayIndexForSource(sourceIndex) else -1
         if (position != -1) {
             val currentPosition = pager.currentItem
+            pendingSourceSelectionIndex = sourceIndex
             pager.setCurrentItem(position, true)
-            // manually call onPageChange since ViewPager listener is not triggered in this case
+            // Manually call onPageChange since ViewPager listener is not triggered in this case.
             if (currentPosition == position) {
                 onPageChange(position)
             }
@@ -322,9 +640,52 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     }
 
     /**
+     * For tap-based pan navigation, use the page actually under the tap. This matters
+     * when a Spread item contains two independent page holders.
+     */
+    private fun moveRightAt(rawX: Float, rawY: Float) {
+        val holder = root.findPageHolderAt(rawX, rawY)
+            ?: (currentPage as? ReaderPage)?.let(::getPageHolder)
+        if (config.navigateToPan && holder?.canPanRight() == true) {
+            holder.panRight()
+        } else {
+            moveRight()
+        }
+    }
+
+    private fun moveLeftAt(rawX: Float, rawY: Float) {
+        val holder = root.findPageHolderAt(rawX, rawY)
+            ?: (currentPage as? ReaderPage)?.let(::getPageHolder)
+        if (config.navigateToPan && holder?.canPanLeft() == true) {
+            holder.panLeft()
+        } else {
+            moveLeft()
+        }
+    }
+
+    private fun android.view.ViewGroup.findPageHolderAt(rawX: Float, rawY: Float): PagerPageHolder? {
+        for (child in children) {
+            val location = IntArray(2)
+            child.getLocationOnScreen(location)
+            val x = rawX - location[0]
+            val y = rawY - location[1]
+            if (x < 0 || y < 0 || x >= child.width || y >= child.height) continue
+            if (child is PagerPageHolder) return child
+            if (child is android.view.ViewGroup) {
+                child.findPageHolderAt(rawX, rawY)?.let { return it }
+            }
+        }
+        return null
+    }
+
+    /**
      * Moves to the page at the right.
      */
     protected open fun moveRight() {
+        if (splitScrollController != null) {
+            moveSplitScrollSource(1)
+            return
+        }
         if (pager.currentItem != adapter.count - 1) {
             val holder = (currentPage as? ReaderPage)?.let(::getPageHolder)
             if (holder != null && config.navigateToPan && holder.canPanRight()) {
@@ -339,6 +700,10 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * Moves to the page at the left.
      */
     protected open fun moveLeft() {
+        if (splitScrollController != null) {
+            moveSplitScrollSource(-1)
+            return
+        }
         if (pager.currentItem != 0) {
             val holder = (currentPage as? ReaderPage)?.let(::getPageHolder)
             if (holder != null && config.navigateToPan && holder.canPanLeft()) {
@@ -368,10 +733,169 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
      * changed.
      */
     private fun refreshAdapter() {
-        val currentItem = pager.currentItem
+        val currentPage = this.currentPage
         adapter.refresh()
+        if (splitScrollController != null) {
+            rebuildSplitScrollPresentation()
+            return
+        }
         pager.adapter = adapter
-        pager.setCurrentItem(currentItem, false)
+        if (currentPage is ReaderPage) {
+            moveToPage(currentPage)
+        } else {
+            pager.setCurrentItem(pager.currentItem.coerceIn(0, (adapter.count - 1).coerceAtLeast(0)), false)
+        }
+    }
+
+    /** Build the independent columns from the pager adapter's exact effective source order. */
+    private fun installSplitScrollPresentation(preferredSourceIndex: Int? = null) {
+        if (adapter.items.isEmpty() || splitScrollHost != null) return
+        val selectedIndex = preferredSourceIndex ?: currentPage?.let { selected ->
+            adapter.items.indexOfFirst { it === selected }
+        }?.takeIf { it >= 0 } ?: pager.currentItem.coerceIn(0, adapter.items.lastIndex.coerceAtLeast(0))
+
+        // Detaching ViewPager destroys its instantiated holders before the column adapters
+        // create their own holders, preventing two active loaders for the same ReaderPage.
+        activeSpreadProjection = null
+        adapter.clearSpreadProjection()
+        pager.adapter = null
+
+        val splitWidthPreference = readerPreferences.dualPageSplitLeftWidth()
+        val host = PagerSplitScrollHostView(activity).apply {
+            setLeftWidthPercent(splitWidthPreference.get())
+            onLeftWidthChanged = { splitWidthPreference.set(it) }
+        }
+        host.onTap = { event -> handleTap(event, host) }
+        host.onLongTap = { recycler, event ->
+            if (activity.viewModel.state.value.menuVisible || config.longTapEnabled) {
+                val child = recycler.findChildViewUnder(event.x, event.y)
+                val position = child?.let(recycler::getChildAdapterPosition) ?: RecyclerView.NO_POSITION
+                val column = if (recycler === host.leftRecycler) {
+                    PagerSplitScrollPlan.Column.LEFT
+                } else {
+                    PagerSplitScrollPlan.Column.RIGHT
+                }
+                val page = splitScrollController?.pageAt(column, position)
+                if (page != null) {
+                    activity.onPageLongTap(page)
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
+        splitScrollHost = host
+        root.removeView(pager)
+        root.addView(host, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        rebuildSplitScrollPresentation(selectedIndex)
+    }
+
+    /** Recreate the column projection; PagerViewerAdapter.items remains authoritative. */
+    private fun rebuildSplitScrollPresentation(preferredSourceIndex: Int? = null) {
+        val host = splitScrollHost ?: return
+        val selectedIndex = preferredSourceIndex
+            ?: pendingSourceSelectionIndex?.takeIf { it in adapter.items.indices }
+            ?: currentPage?.let { selected -> adapter.items.indexOfFirst { it === selected } }?.takeIf { it >= 0 }
+        val viewportSnapshot = splitScrollController?.captureViewportSnapshot()
+            ?: pendingSplitScrollViewportState?.let { state ->
+                PagerSplitScrollSegmentController.ViewportSnapshot(
+                    left = state.left?.let {
+                        PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx)
+                    },
+                    right = state.right?.let {
+                        PagerSplitScrollSegmentController.ViewportAnchor(it.page, it.topOffsetPx)
+                    },
+                )
+            }
+        splitScrollController?.dispose()
+        splitScrollController = null
+        activeBoundaryHolder?.dispose()
+        activeBoundaryHolder = null
+        host.hideBoundary()
+
+        val plan = PagerSplitScrollPlan.create(
+            source = adapter.items.toList(),
+            isBoundary = { it is ChapterTransition },
+            firstColumn = if (this is R2LPagerViewer) {
+                PagerSplitScrollPlan.Column.RIGHT
+            } else {
+                PagerSplitScrollPlan.Column.LEFT
+            },
+        )
+        if (!plan.matchesSource(adapter.items)) return
+        splitScrollController = PagerSplitScrollSegmentController(
+            viewer = this,
+            host = host,
+            plan = plan,
+            onSelection = ::onSourceIndexSelected,
+            onBoundaryReady = { placement ->
+                val transition = placement?.item as? ChapterTransition
+                if (transition != null) {
+                    activeBoundaryHolder?.dispose()
+                    val holder = PagerTransitionHolder(activity.createReaderThemeContext(), this, transition)
+                    activeBoundaryHolder = holder
+                    host.showBoundary(holder) {
+                        if (transition is ChapterTransition.Next && transition.to == null) {
+                            // The terminal transition has no following segment. Keep its
+                            // view alive and return to the reader menu instead of advancing
+                            // into the deliberately empty trailing segment.
+                            activity.showMenu()
+                        } else {
+                            activeBoundaryHolder?.dispose()
+                            activeBoundaryHolder = null
+                            splitScrollController?.advancePastBoundary()
+                        }
+                    }
+                }
+            },
+            deferInitialViewportChecks = viewportSnapshot != null,
+            initialSelectionSourceIndex = selectedIndex,
+        )
+        pendingSourceSelectionIndex = null
+        val restoredViewport = viewportSnapshot?.let {
+            splitScrollController?.restoreViewportSnapshot(it, selectedIndex)
+        } == true
+        if (restoredViewport) {
+            // bindSegment may select its first page; restore the real active page
+            // without changing either column's independently restored scroll offset.
+            selectedIndex?.let { splitScrollController?.selectSourceIndex(it) }
+        } else {
+            selectedIndex?.let { splitScrollController?.moveToSourceIndex(it) }
+        }
+        pendingSplitScrollViewportState = null
+    }
+
+    /** Restore the ordinary pager before changing to Spread or normal single-page mode. */
+    private fun leaveSplitScrollPresentation() {
+        val host = splitScrollHost ?: return
+        splitScrollController?.dispose()
+        splitScrollController = null
+        activeBoundaryHolder?.dispose()
+        activeBoundaryHolder = null
+        host.clearAdapters()
+        root.removeView(host)
+        splitScrollHost = null
+        pager.adapter = adapter
+        root.addView(pager)
+        val selectedIndex = currentPage?.let { selected ->
+            adapter.items.indexOfFirst { it === selected }
+        }?.takeIf { it >= 0 } ?: 0
+        val displayIndex = adapter.displayIndexForSource(selectedIndex)
+        if (displayIndex >= 0 && adapter.count > 0) {
+            pager.setCurrentItem(displayIndex.coerceIn(0, adapter.count - 1), false)
+        }
+        pager.isVisible = adapter.count > 0
+    }
+
+    /** Move through the authoritative source sequence while preserving its reading direction. */
+    private fun moveSplitScrollSource(delta: Int) {
+        val controller = splitScrollController ?: return
+        var index = currentPage?.let { selected -> adapter.items.indexOfFirst { it === selected } } ?: -1
+        if (index < 0) index = 0
+        val target = index + delta
+        if (target in adapter.items.indices) controller.moveToSourceIndex(target)
     }
 
     /**
@@ -440,11 +964,23 @@ abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
     fun onPageSplit(currentPage: ReaderPage, newPage: InsertPage) {
         activity.runOnUiThread {
             // Need to insert on UI thread else images will go blank
+            activeSpreadProjection = null
             adapter.onPageSplit(currentPage, newPage)
+            if (splitScrollHost != null) {
+                rebuildSplitScrollPresentation()
+            } else {
+                rebuildSpreadProjection()
+            }
         }
     }
 
     private fun cleanupPageSplit() {
+        activeSpreadProjection = null
         adapter.cleanupPageSplit()
+        if (splitScrollHost != null) {
+            rebuildSplitScrollPresentation()
+        } else {
+            rebuildSpreadProjection()
+        }
     }
 }
