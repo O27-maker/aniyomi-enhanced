@@ -13,7 +13,6 @@ on:
       - 'i18n/src/commonMain/moko-resources/base/plurals-aniyomi.xml'
       - 'i18n/src/commonMain/moko-resources/base/plurals.xml'
 
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
@@ -24,23 +23,23 @@ permissions:
 jobs:
   build:
     name: Build app
-    runs-on: 'ubuntu-24.04'
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Clone repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@3b139cfc5fae8b618d3eae3675e383bb1769c019 # v4.5.0
+        uses: actions/dependency-review-action@3b139cfc5fae8b618d3eae3675e383bb1769c019
 
       - name: Set up JDK
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12
         with:
           java-version: 17
           distribution: temurin
 
-      - name: Set up gradle
-        uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b # v4.3.0
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
 
       - name: Check code format
         run: ./gradlew spotlessCheck
@@ -51,14 +50,51 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testReleaseUnitTest
 
-      - name: Upload APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - name: Sign release APKs
+        if: success() && github.event.pull_request.head.repo.full_name == github.repository
+        uses: r0adkll/sign-android-release@f30bdd30588842ac76044ecdbd4b6d0e3e813478
         with:
-          name: arm64-v8a-${{ github.sha }}
-          path: app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: '35.0.1'
+
+      - name: Verify and normalize signed APKs
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          signed_apks=(app/build/outputs/apk/release/*-unsigned-signed.apk)
+          if [[ ${#signed_apks[@]} -ne 5 ]]; then
+            echo "Expected 5 signed APKs, found ${#signed_apks[@]}"
+            exit 1
+          fi
+          for apk in "${signed_apks[@]}"; do
+            clean_name="${apk%-unsigned-signed.apk}.apk"
+            mv "$apk" "$clean_name"
+            echo "Verifying $clean_name"
+            sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+            apksigner_path="$(find "$sdk_root/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+            if [[ -z "$apksigner_path" ]]; then
+              echo "Could not locate apksigner under $sdk_root/build-tools"
+              exit 1
+            fi
+            "$apksigner_path" verify --verbose --print-certs "$clean_name"
+          done
+      - name: Upload signed APKs
+        if: success() && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: signed-release-apks-${{ github.sha }}
+          path: app/build/outputs/apk/release/*-release.apk
 
       - name: Upload mapping
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: mapping-${{ github.sha }}
           path: app/build/outputs/mapping/release

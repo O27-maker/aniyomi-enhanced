@@ -32,6 +32,8 @@ internal class WebtoonSplitScrollHostView(
 
     var onLeftWidthChanged: ((Int) -> Unit)? = null
 
+    private var dragStartWidthPercent = DEFAULT_LEFT_WIDTH_PERCENT
+
     var leftWidthPercent: Int = DEFAULT_LEFT_WIDTH_PERCENT
         private set
 
@@ -63,7 +65,7 @@ internal class WebtoonSplitScrollHostView(
         }
 
         columnsRow = LinearLayout(context).apply {
-            orientation = HORIZONTAL
+            orientation = LinearLayout.HORIZONTAL
             addView(leftFrame)
             addView(rightFrame)
         }
@@ -88,16 +90,28 @@ internal class WebtoonSplitScrollHostView(
 
         resizeHandle = FrameLayout(context).apply {
             isClickable = true
+            isFocusable = true
+            contentDescription = "Resize reader columns"
             setOnTouchListener { view, event ->
                 fun updateWidth() {
                     val location = IntArray(2)
                     columnsRow.getLocationOnScreen(location)
-                    val availableWidth = columnsRow.width.coerceAtLeast(1)
-                    val percent = ((event.rawX - location[0]) * 100f / availableWidth).toInt()
+                    val availableWidth = columnsRow.width
+                    val percent = WebtoonSplitScrollColumnWidths.percentAtPosition(
+                        positionX = event.rawX,
+                        containerLeft = location[0].toFloat(),
+                        containerWidth = availableWidth.toFloat(),
+                        currentPercent = leftWidthPercent,
+                    )
                     setLeftWidthPercent(percent)
                 }
                 when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                    MotionEvent.ACTION_DOWN -> {
+                        dragStartWidthPercent = leftWidthPercent
+                        updateWidth()
+                        true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
                         updateWidth()
                         true
                     }
@@ -108,7 +122,7 @@ internal class WebtoonSplitScrollHostView(
                         true
                     }
                     MotionEvent.ACTION_CANCEL -> {
-                        onLeftWidthChanged?.invoke(leftWidthPercent)
+                        setLeftWidthPercent(dragStartWidthPercent)
                         true
                     }
                     else -> true
@@ -118,17 +132,25 @@ internal class WebtoonSplitScrollHostView(
                 setBackgroundColor(Color.GRAY)
                 alpha = 0.65f
             }
-            addView(line, FrameLayout.LayoutParams(
-                (2 * resources.displayMetrics.density).toInt().coerceAtLeast(2),
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                Gravity.CENTER,
-            ))
+            addView(
+                line,
+                FrameLayout.LayoutParams(
+                    (2 * resources.displayMetrics.density).toInt().coerceAtLeast(2),
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    Gravity.CENTER,
+                ),
+            )
         }
-        addView(resizeHandle, FrameLayout.LayoutParams(
-            (32 * resources.displayMetrics.density).toInt().coerceAtLeast(32),
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            Gravity.LEFT,
-        ))
+        // Keep the drag target compact so it does not block page gestures or
+        // independent vertical scrolling across the full height of the reader.
+        addView(
+            resizeHandle,
+            FrameLayout.LayoutParams(
+                (48 * resources.displayMetrics.density).toInt().coerceAtLeast(48),
+                (72 * resources.displayMetrics.density).toInt().coerceAtLeast(72),
+                Gravity.CENTER_VERTICAL,
+            ),
+        )
         setLeftWidthPercent(DEFAULT_LEFT_WIDTH_PERCENT)
     }
 
@@ -146,16 +168,17 @@ internal class WebtoonSplitScrollHostView(
 
     /** Apply one shared width split while preserving independent column scrolling. */
     fun setLeftWidthPercent(percent: Int) {
-        leftWidthPercent = percent.coerceIn(MIN_WIDTH_PERCENT, MAX_WIDTH_PERCENT)
+        leftWidthPercent = WebtoonSplitScrollColumnWidths.normalize(percent)
+        val (leftWeight, rightWeight) = WebtoonSplitScrollColumnWidths.weights(leftWidthPercent)
         leftFrame.layoutParams = LinearLayout.LayoutParams(
             0,
             ViewGroup.LayoutParams.MATCH_PARENT,
-            leftWidthPercent.toFloat(),
+            leftWeight,
         )
         rightFrame.layoutParams = LinearLayout.LayoutParams(
             0,
             ViewGroup.LayoutParams.MATCH_PARENT,
-            (100 - leftWidthPercent).toFloat(),
+            rightWeight,
         )
         columnsRow.requestLayout()
         resizeHandle.translationX = columnsRow.width * leftWidthPercent / 100f - resizeHandle.width / 2f
@@ -169,8 +192,7 @@ internal class WebtoonSplitScrollHostView(
         bottom: Int,
     ) {
         super.onLayout(changed, left, top, right, bottom)
-        // Position after the child row has received its measured width. onSizeChanged
-        // can run before the first child layout and otherwise leave the handle at x=0.
+        // The row's width is only reliable after its first layout pass.
         resizeHandle.translationX = columnsRow.width * leftWidthPercent / 100f - resizeHandle.width / 2f
     }
 
@@ -225,8 +247,8 @@ internal class WebtoonSplitScrollHostView(
 
     companion object {
         const val DEFAULT_LEFT_WIDTH_PERCENT = 50
-        const val MIN_WIDTH_PERCENT = 20
-        const val MAX_WIDTH_PERCENT = 80
+        const val MIN_WIDTH_PERCENT = WebtoonSplitScrollColumnWidths.MIN_PERCENT
+        const val MAX_WIDTH_PERCENT = WebtoonSplitScrollColumnWidths.MAX_PERCENT
         private const val SPLIT_SCROLL_CACHE_SIZE = 4
     }
 }

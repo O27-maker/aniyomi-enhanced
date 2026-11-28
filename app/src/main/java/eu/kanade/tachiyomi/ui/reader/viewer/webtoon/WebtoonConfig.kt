@@ -32,6 +32,9 @@ class WebtoonConfig(
     var zoomOutDisabled = false
         private set
 
+    var firstPageSingle = false
+        private set
+
     var zoomPropertyChangedListener: ((Boolean) -> Unit)? = null
 
     var sidePadding = 0
@@ -60,6 +63,9 @@ class WebtoonConfig(
             .drop(1)
             .onEach { navigationModeChangedListener?.invoke() }
             .launchIn(scope)
+
+        readerPreferences.dualPageFirstPageSingle()
+            .register({ firstPageSingle = it }, { imagePropertyChangedListener?.invoke() })
 
         readerPreferences.dualPageSplitWebtoon()
             .register({ dualPageSplit = it }, { imagePropertyChangedListener?.invoke() })

@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import eu.kanade.domain.entries.manga.model.readerOrientation
 import eu.kanade.domain.entries.manga.model.readingMode
+import eu.kanade.tachiyomi.ui.reader.setting.DualPagePresentationMode
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderOrientation
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
@@ -69,8 +70,6 @@ internal fun ColumnScope.ReadingModePage(screenModel: ReaderSettingsScreenModel)
 
 @Composable
 private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenModel) {
-    HeadingItem(MR.strings.pager_viewer)
-
     val navigationModePager by screenModel.preferences.navigationModePager().collectAsState()
     val pagerNavInverted by screenModel.preferences.pagerNavInverted().collectAsState()
     TapZonesItems(
@@ -117,16 +116,48 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
         pref = screenModel.preferences.navigateToPan(),
     )
 
+    val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
+    val presentationMode = DualPagePresentationMode.fromPreference(dualPageMode)
+    SettingsChipRow(MR.strings.pager_viewer) {
+        FilterChip(
+            selected = presentationMode == DualPagePresentationMode.SPREAD,
+            onClick = {
+                screenModel.preferences.dualPageMode().set(
+                    presentationMode.toggleTo(DualPagePresentationMode.SPREAD)
+                        .preferenceValue,
+                )
+            },
+            label = { Text(stringResource(MR.strings.dual_page_spread)) },
+        )
+        FilterChip(
+            selected = presentationMode == DualPagePresentationMode.SPLIT_SCROLL,
+            onClick = {
+                screenModel.preferences.dualPageMode().set(
+                    presentationMode.toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
+                        .preferenceValue,
+                )
+            },
+            label = { Text(stringResource(MR.strings.dual_page_split_scroll)) },
+        )
+    }
+
+    if (presentationMode == DualPagePresentationMode.SPREAD) {
+        CheckboxItem(
+            label = stringResource(MR.strings.dual_page_first_page_alone),
+            pref = screenModel.preferences.dualPageFirstPageSingle(),
+        )
+    }
+
     val dualPageSplitPaged by screenModel.preferences.dualPageSplitPaged().collectAsState()
     CheckboxItem(
         label = stringResource(MR.strings.pref_dual_page_split),
-        pref = screenModel.preferences.dualPageInvertPaged(),
+        pref = screenModel.preferences.dualPageSplitPaged(),
     )
 
     if (dualPageSplitPaged) {
         CheckboxItem(
             label = stringResource(MR.strings.pref_dual_page_invert),
-            pref = screenModel.preferences.dualPageRotateToFitInvert(),
+            pref = screenModel.preferences.dualPageInvertPaged(),
         )
     }
 
@@ -148,7 +179,37 @@ private fun ColumnScope.PagerViewerSettings(screenModel: ReaderSettingsScreenMod
 private fun ColumnScope.WebtoonViewerSettings(screenModel: ReaderSettingsScreenModel) {
     val numberFormat = remember { NumberFormat.getPercentInstance() }
 
-    HeadingItem(MR.strings.webtoon_viewer)
+    val dualPageMode by screenModel.preferences.dualPageMode().collectAsState()
+    val presentationMode = DualPagePresentationMode.fromPreference(dualPageMode)
+    SettingsChipRow(MR.strings.webtoon_viewer) {
+        FilterChip(
+            selected = presentationMode == DualPagePresentationMode.SPREAD,
+            onClick = {
+                screenModel.preferences.dualPageMode().set(
+                    presentationMode.toggleTo(DualPagePresentationMode.SPREAD)
+                        .preferenceValue,
+                )
+            },
+            label = { Text(stringResource(MR.strings.dual_page_spread)) },
+        )
+        FilterChip(
+            selected = presentationMode == DualPagePresentationMode.SPLIT_SCROLL,
+            onClick = {
+                screenModel.preferences.dualPageMode().set(
+                    presentationMode.toggleTo(DualPagePresentationMode.SPLIT_SCROLL)
+                        .preferenceValue,
+                )
+            },
+            label = { Text(stringResource(MR.strings.dual_page_split_scroll)) },
+        )
+    }
+
+    if (presentationMode == DualPagePresentationMode.SPREAD) {
+        CheckboxItem(
+            label = stringResource(MR.strings.dual_page_first_page_alone),
+            pref = screenModel.preferences.dualPageFirstPageSingle(),
+        )
+    }
 
     val navigationModeWebtoon by screenModel.preferences.navigationModeWebtoon().collectAsState()
     val webtoonNavInverted by screenModel.preferences.webtoonNavInverted().collectAsState()

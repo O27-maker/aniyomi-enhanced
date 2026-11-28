@@ -37,14 +37,14 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      * Context that has been wrapped to use the correct theme values based on the
      * current app theme and reader background color
      */
-    private var readerThemedContext = viewer.activity.createReaderThemeContext()
+    private var readerThemedContext: android.content.Context? = viewer.activity.createReaderThemeContext()
 
     /**
      * Updates this adapter with the given [chapters]. It handles setting a few pages of the
      * next/previous chapter to allow seamless transitions and inverting the pages if the viewer
      * has R2L direction.
      */
-    fun setChapters(chapters: ViewerChapters, forceTransition: Boolean) {
+    fun setChapters(chapters: ViewerChapters, forceTransition: Boolean): InsertPage? {
         val newItems = mutableListOf<Any>()
 
         // Forces chapter transition if there is missing chapters
@@ -73,16 +73,24 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         if (currPages != null) {
             val pages = currPages.toMutableList()
 
-            val lastPage = pages.last()
+            // Chapters can briefly expose an empty page list while sources are being
+            // initialized. There is no last page to anchor preprocessed splits yet.
+            if (pages.isNotEmpty()) {
+                val lastPage = pages.last()
 
-            // Insert preprocessed pages into current page list
-            preprocessed.keys.sortedDescending()
-                .forEach { key ->
-                    if (lastPage.index == key) {
-                        insertPageLastPage = preprocessed[key]
+                // Insert preprocessed pages into current page list
+                preprocessed.keys.sortedDescending()
+                    .forEach { key ->
+                        // A preprocessed split can outlive a source refresh. Ignore its
+                        // old index instead of inserting beyond the refreshed page list.
+                        if (key !in pages.indices) return@forEach
+
+                        if (lastPage.index == key) {
+                            insertPageLastPage = preprocessed[key]
+                        }
+                        preprocessed[key]?.let { pages.add(key + 1, it) }
                     }
-                    preprocessed[key]?.let { pages.add(key + 1, it) }
-                }
+            }
 
             newItems.addAll(pages)
         }
@@ -110,37 +118,156 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         }
 
         // Resets double-page splits, else insert pages get misplaced
-        items.filterIsInstance<InsertPage>().also { items.removeAll(it) }
+        items.filterIsInstance<InsertPage>().also { oldInsertPages ->
+            items.removeAll { item -> oldInsertPages.any { it === item } }
+        }
 
         if (viewer is R2LPagerViewer) {
             newItems.reverse()
         }
 
+        invalidateSpreadProjection()
         preprocessed = mutableMapOf()
         items = newItems
         notifyDataSetChanged()
 
-        // Will skip insert page otherwise
-        if (insertPageLastPage != null) {
-            viewer.moveToPage(insertPageLastPage!!)
-        }
+        // The owning viewer selects this page after rebuilding its active presentation.
+        // Split Scroll disposes its old controller before the source sequence is replaced,
+        // so navigation cannot safely happen from inside this adapter mutation.
+        return insertPageLastPage
     }
 
     /**
      * Returns the amount of items of the adapter.
      */
-    override fun getCount(): Int {
-        return items.size
+    private var spreadProjection: SpreadAdapterProjection<Any>? = null
+    private var spreadIsR2L: Boolean = false
+
+    override fun getCount(): Int = spreadProjection?.units?.size ?: items.size
+
+    /**
+     * Install an immutable display projection only while it describes the current source
+     * sequence. The source list remains authoritative for chapter and page operations.
+     */
+    internal fun setSpreadProjection(
+        projection: SpreadAdapterProjection<Any>,
+        isR2L: Boolean,
+    ): Boolean {
+        if (!projection.matchesSource(items)) return false
+        spreadProjection = projection
+        spreadIsR2L = isR2L
+        notifyDataSetChanged()
+        return true
+    }
+
+    internal fun clearSpreadProjection() {
+        if (!invalidateSpreadProjection()) return
+        notifyDataSetChanged()
+    }
+
+    /** Drop the derived snapshot without notifying until the source mutation is complete. */
+    private fun invalidateSpreadProjection(): Boolean {
+        if (spreadProjection == null) return false
+        spreadProjection = null
+        return true
+    }
+
+    internal fun sourceItemAtDisplay(displayIndex: Int): Any? {
+        val projection = spreadProjection ?: return items.getOrNull(displayIndex)
+        return SpreadAdapterNavigationMap.adapterIndexForDisplay(
+            projection.units,
+            displayIndex,
+        )?.let(items::getOrNull)
+    }
+
+    internal fun displayIndexForSource(sourceIndex: Int): Int {
+        val projection = spreadProjection ?: return sourceIndex.takeIf { it in items.indices } ?: -1
+        if (!projection.matchesSource(items)) return -1
+        return SpreadAdapterNavigationMap.displayIndexForAdapter(projection.units, sourceIndex)
+    }
+
+    /**
+     * Permanently dispose reader holders when the pager adapter removes their views.
+     * A presentation container may wrap the original holders, so walk the complete
+     * removed view tree rather than checking only its root.
+     * Ordinary detach/reattach remains reusable until the adapter destroys the tree.
+     */
+    override fun destroyView(container: ViewGroup, position: Int, view: View) {
+        disposeViewTree(view)
+    }
+
+    private fun disposeViewTree(view: View) {
+        when (view) {
+            is PagerPageHolder -> view.dispose()
+            is PagerTransitionHolder -> view.dispose()
+            is ViewGroup -> {
+                for (index in 0 until view.childCount) {
+                    disposeViewTree(view.getChildAt(index))
+                }
+                // Release the projection's page references only after its child holders
+                // have been permanently disposed.
+                if (view is SpreadFrameLayout) view.clearBinding()
+            }
+        }
     }
 
     /**
      * Creates a new view for the item at the given [position].
      */
     override fun createView(container: ViewGroup, position: Int): View {
-        return when (val item = items[position]) {
-            is ReaderPage -> PagerPageHolder(readerThemedContext, viewer, item)
-            is ChapterTransition -> PagerTransitionHolder(readerThemedContext, viewer, item)
+        val projection = spreadProjection
+        if (projection != null) {
+            check(projection.matchesSource(items)) {
+                "Spread projection no longer matches the source adapter sequence"
+            }
+            return createSpreadView(container, projection.units[position], spreadIsR2L)
+        }
+        return createItemView(items[position])
+    }
+
+    private fun createItemView(item: Any): View {
+        return when (item) {
+            is ReaderPage -> PagerPageHolder(requireNotNull(readerThemedContext), viewer, item)
+            is ChapterTransition -> PagerTransitionHolder(requireNotNull(readerThemedContext), viewer, item)
             else -> throw NotImplementedError("Holder for ${item.javaClass} not implemented")
+        }
+    }
+
+    /**
+     * Create the view tree for one immutable Spread display unit. Original source items
+     * remain authoritative; only regular ReaderPages may be paired by the projection.
+     * Transition items keep their full-width transition holder.
+     *
+     * This factory does not alter adapter count or selection. The owning pager adapter
+     * must use the same projection snapshot for its count and item-position mapping.
+     */
+    internal fun createSpreadView(
+        container: ViewGroup,
+        unit: SpreadAdapterItemMapper.Unit<Any>,
+        isR2L: Boolean,
+    ): View {
+        return when (unit) {
+            is SpreadAdapterItemMapper.Unit.Single -> {
+                when (unit.item) {
+                    is ReaderPage -> {
+                        val holder = createItemView(unit.item) as PagerPageHolder
+                        SpreadFrameLayout(container.context).apply {
+                            bind(unit, holder, isR2L = isR2L)
+                        }
+                    }
+                    is ChapterTransition -> createItemView(unit.item)
+                    else -> throw NotImplementedError("Spread holder for ${unit.item.javaClass} not implemented")
+                }
+            }
+            is SpreadAdapterItemMapper.Unit.Pair -> {
+                val first = createItemView(unit.first) as? PagerPageHolder
+                    ?: error("The first Spread item is not a reader page")
+                val second = createItemView(unit.second) as? PagerPageHolder
+                    ?: error("The second Spread item is not a reader page")
+                SpreadFrameLayout(container.context).apply {
+                    bind(unit, first, second, isR2L)
+                }
+            }
         }
     }
 
@@ -149,12 +276,27 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
      */
     override fun getItemPosition(view: Any): Int {
         if (view is PositionableView) {
-            val position = items.indexOf(view.item)
-            if (position != -1) {
-                return position
+            val projection = spreadProjection
+            if (projection != null) {
+                val position = when (val identity = view.item) {
+                    is SpreadAdapterItemMapper.Unit<*> ->
+                        projection.units.indexOfFirst { it === identity }
+                    is PagerPageHolder -> -1 // Recreate source holders inside their SpreadFrame.
+                    else -> {
+                        val sourceIndex = items.indexOfFirst { it === identity }
+                        if (sourceIndex == -1) {
+                            -1
+                        } else {
+                            SpreadAdapterNavigationMap.displayIndexForAdapter(projection.units, sourceIndex)
+                        }
+                    }
+                }
+                if (position != -1) return position
             } else {
-                logcat { "Position for ${view.item} not found" }
+                val position = items.indexOfFirst { it === view.item }
+                if (position != -1) return position
             }
+            logcat { "Position for ${view.item} not found" }
         }
         return POSITION_NONE
     }
@@ -162,7 +304,10 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
     fun onPageSplit(currentPage: Any?, newPage: InsertPage) {
         if (currentPage !is ReaderPage) return
 
-        val currentIndex = items.indexOf(currentPage)
+        val currentIndex = items.indexOfFirst { it === currentPage }
+        // A page may finish decoding after its chapter has been replaced. Never insert
+        // a split page for an item that is no longer part of the effective adapter sequence.
+        if (currentIndex == -1) return
 
         // Put aside preprocessed pages for next chapter so they don't get removed when changing chapter
         if (currentPage.chapter.chapter.id != currentChapter?.chapter?.id) {
@@ -183,10 +328,11 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
         }
 
         // Same here it will enter a endless cycle of insert pages
-        if (items[placeAtIndex] is InsertPage) {
+        if (items.getOrNull(placeAtIndex) is InsertPage) {
             return
         }
 
+        invalidateSpreadProjection()
         items.add(placeAtIndex, newPage)
 
         notifyDataSetChanged()
@@ -194,11 +340,25 @@ class PagerViewerAdapter(private val viewer: PagerViewer) : ViewPagerAdapter() {
 
     fun cleanupPageSplit() {
         val insertPages = items.filterIsInstance(InsertPage::class.java)
-        items.removeAll(insertPages)
+        if (insertPages.isNotEmpty()) invalidateSpreadProjection()
+        items.removeAll { item -> insertPages.any { it === item } }
         notifyDataSetChanged()
     }
 
     fun refresh() {
         readerThemedContext = viewer.activity.createReaderThemeContext()
+    }
+
+    /**
+     * Drop chapter/page references after the pager has detached this adapter and destroyed
+     * its instantiated holder trees.
+     */
+    fun clear() {
+        invalidateSpreadProjection()
+        items.clear()
+        preprocessed.clear()
+        nextTransition = null
+        currentChapter = null
+        readerThemedContext = null
     }
 }
