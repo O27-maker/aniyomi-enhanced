@@ -42,9 +42,9 @@ class AppUpdateChecker {
 
 val GITHUB_REPO: String by lazy {
     if (isPreviewBuildType) {
-        "aniyomiorg/aniyomi-preview"
+        "O27-maker/aniyomi-enhanced"
     } else {
-        "aniyomiorg/aniyomi"
+        "O27-maker/aniyomi-enhanced"
     }
 }
 
@@ -52,7 +52,7 @@ val RELEASE_TAG: String by lazy {
     if (isPreviewBuildType) {
         "r${BuildConfig.COMMIT_COUNT}"
     } else {
-        "v${BuildConfig.VERSION_NAME}"
+        "${BuildConfig.VERSION_NAME}"
     }
 }
 
