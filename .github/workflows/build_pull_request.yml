@@ -61,8 +61,53 @@ jobs:
       - name: Check code format
         run: ./gradlew spotlessCheck
 
+      - name: Decode release keystore
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          ANDROID_SIGNING_KEY: ${{ secrets.ANDROID_SIGNING_KEY }}
+        run: |
+          if [ -n "$ANDROID_SIGNING_KEY" ]; then
+            echo "$ANDROID_SIGNING_KEY" | base64 --decode > "$RUNNER_TEMP/aniyomi-plus-release.jks"
+          else
+            echo "Permanent signing key is unavailable."
+            exit 1
+          fi
+
       - name: Build app
+        env:
+          ANDROID_SIGNING_KEY_PATH: ${{ runner.temp }}/aniyomi-plus-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease
+
+      - name: Verify permanent APK signing certificate
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          ANDROID_SIGNING_KEY_PATH: ${{ runner.temp }}/aniyomi-plus-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -s "$ANDROID_SIGNING_KEY_PATH"
+          expected_fingerprint="$(keytool -exportcert -keystore "$ANDROID_SIGNING_KEY_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | sha256sum | awk '{print $1}')"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$apksigner"
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/release/*.apk)
+          if [[ ${#apks[@]} -ne 5 ]]; then
+            echo "Expected 5 APKs, found ${#apks[@]}"
+            exit 1
+          fi
+          for apk in "${apks[@]}"; do
+            output="$("$apksigner" verify --print-certs "$apk")"
+            actual_fingerprint="$(printf '%s\\n' "$output" | grep -i 'certificate SHA-256 digest:' | head -n 1 | sed 's/.*: //' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+            if [[ "$actual_fingerprint" != "$expected_fingerprint" ]]; then
+              echo "Signing certificate mismatch for $apk"
+              exit 1
+            fi
+            echo "Verified permanent signing certificate for $(basename "$apk")"
+          done
 
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest
@@ -72,6 +117,7 @@ jobs:
         with:
           name: installable-apks-${{ github.sha }}
           path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
           if-no-files-found: error
 
       - name: Upload mapping
